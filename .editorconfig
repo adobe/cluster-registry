@@ -1,0 +1,30 @@
+
+# top-most EditorConfig file
+root = true
+
+# Unix-style newlines with a newline ending every file
+[*]
+end_of_line = lf
+charset = utf-8
+indent_size = 4
+
+# Formatting/indentation rules for source files
+[*.{js,css,java,json}]
+insert_final_newline = true
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+
+# Formatting/indentation rules for markup/configuration files
+[*.{html,xml}]
+insert_final_newline = true
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+
+# Formatting/indentation rules for miscellaneous files
+[*.{eslint,babelrc}]
+insert_final_newline = true
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true

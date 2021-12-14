@@ -1,0 +1,35 @@
+# OSX os files
+.DS_Store
+.DS_Store?
+
+# local/env
+.env
+.envrc
+.local
+docker/
+
+# build artifacts
+cluster-registry
+kubeconfig
+.dynamodb
+
+# Binaries for programs and plugins
+bin
+testbin/*
+__debug_bin
+
+# Test binary, build with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Kubernetes Generated files - skip generated files, except for vendored files
+!vendor/**/zz_generated.*
+
+# editor and IDE paraphernalia
+.idea
+*.swp
+*.swo
+*~
+.vscode

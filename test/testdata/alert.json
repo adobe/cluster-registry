@@ -1,0 +1,18 @@
+{
+    "Receiver": "cluster-registry-webhook-testing",
+    "Status": "firing",
+    "Alerts": [{
+        "Status": "firing",
+         "Labels": {
+             "Alertname": "TestAlertMapping"
+         },
+        "StartsAt": "2019-02-13T06:15:32Z",
+        "EndsAt": "2100-02-13T06:15:32Z"
+    }],
+    "GroupLabels": {
+        "Alertname": "TestAlertMapping"
+    },
+    "CommonLabels": {
+        "Alertname": "TestAlertMapping"
+    }
+}

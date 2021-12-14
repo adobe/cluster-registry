@@ -1,0 +1,469 @@
+{
+    "schemes": [
+        "http",
+        "https"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "Cluster Registry API",
+        "title": "Cluster Registry API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "http://cluster-registry.missionctrl.cloud.adobe.io",
+    "basePath": "/api",
+    "paths": {
+        "/v1/clusters": {
+            "get": {
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "description": "List all clusters. Use query parameters to filter results. Auth is required",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cluster"
+                ],
+                "summary": "List all clusters",
+                "operationId": "get-clusters",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by region",
+                        "name": "region",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by environment",
+                        "name": "environment",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by businessUnit",
+                        "name": "businessUnit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit number of clusters returned (default is 10)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset/skip number of clusters (default is 0)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.clusterList"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/clusters/{name}": {
+            "get": {
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "description": "Get an cluster. Auth is required",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cluster"
+                ],
+                "summary": "Get an cluster",
+                "operationId": "get-cluster",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Name of the cluster to get",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ClusterSpec"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Error"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "api.clusterList": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ClusterSpec"
+                    }
+                },
+                "itemsCount": {
+                    "type": "integer"
+                }
+            }
+        },
+        "utils.Error": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            }
+        },
+        "v1.APIServer": {
+            "type": "object",
+            "properties": {
+                "certificateAuthorityData": {
+                    "description": "Information about K8s Api CA Cert",
+                    "type": "string"
+                },
+                "endpoint": {
+                    "description": "Information about K8s Api Endpoint\n+kubebuilder:validation:Required",
+                    "type": "string"
+                }
+            }
+        },
+        "v1.AllowedOnboardingTeam": {
+            "type": "object",
+            "properties": {
+                "gitTeams": {
+                    "description": "List of git teams",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "ldapGroups": {
+                    "description": "List of ldap groups",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "name": {
+                    "description": "Name of the team\n+kubebuilder:validation:Required",
+                    "type": "string"
+                }
+            }
+        },
+        "v1.ClusterSpec": {
+            "type": "object",
+            "properties": {
+                "accountId": {
+                    "description": "The cloud account associated with the cluster\n+kubebuilder:validation:Required",
+                    "type": "string"
+                },
+                "allowedOnboardingTeams": {
+                    "description": "Git teams and/or LDAP groups that are allowed to onboard and deploy on the cluster",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AllowedOnboardingTeam"
+                    }
+                },
+                "apiServer": {
+                    "description": "Information about K8s API endpoint and CA cert\n+kubebuilder:validation:Required",
+                    "$ref": "#/definitions/v1.APIServer"
+                },
+                "businessUnit": {
+                    "description": "The BU that owns and maintains the cluster\n+kubebuilder:validation:Required",
+                    "type": "string"
+                },
+                "capabilities": {
+                    "description": "List of cluster capabilities",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "cloudType": {
+                    "description": "The cloud provider.\n+kubebuilder:validation:Required",
+                    "type": "string"
+                },
+                "environment": {
+                    "description": "Cluster environment.\n+kubebuilder:validation:Required",
+                    "type": "string"
+                },
+                "extra": {
+                    "description": "Ethos Extra specific information",
+                    "$ref": "#/definitions/v1.Extra"
+                },
+                "k8sInfraRelease": {
+                    "description": "K8s Infrastructure release information\n+kubebuilder:validation:Required",
+                    "$ref": "#/definitions/v1.K8sInfraRelease"
+                },
+                "lastUpdated": {
+                    "description": "Timestamp when cluster information was updated",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Cluster name\n+kubebuilder:validation:Required\n+kubebuilder:validation:MaxLength=64\n+kubebuilder:validation:MinLength=3",
+                    "type": "string"
+                },
+                "offering": {
+                    "description": "The Ethos offering that the cluster is meant for\n+kubebuilder:validation:Required",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "peerVirtualNetworks": {
+                    "description": "Information about Virtual Networks peered with the cluster",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.PeerVirtualNetwork"
+                    }
+                },
+                "phase": {
+                    "description": "Cluster phase\n+kubebuilder:validation:Required\n+kubebuilder:validation:Enum=Building;Testing;Running;Upgrading",
+                    "type": "string"
+                },
+                "region": {
+                    "description": "Cluster standard region name\n+kubebuilder:validation:Required",
+                    "type": "string"
+                },
+                "registeredAt": {
+                    "description": "Timestamp when cluster was registered in Cluster Registry\n+kubebuilder:validation:Required",
+                    "type": "string"
+                },
+                "shortName": {
+                    "description": "Cluster name, without dash.\n+kubebuilder:validation:Required\n+kubebuilder:validation:MaxLength=64\n+kubebuilder:validation:MinLength=3",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Cluster status\n+kubebuilder:validation:Required\n+kubebuilder:validation:Enum=Inactive;Active;Deprecated;Deleted",
+                    "type": "string"
+                },
+                "tags": {
+                    "description": "Cluster tags that were applied",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "tiers": {
+                    "description": "List of tiers with their associated information\n+kubebuilder:validation:Required",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.Tier"
+                    }
+                },
+                "type": {
+                    "description": "The type of the cluster",
+                    "type": "string"
+                },
+                "virtualNetworks": {
+                    "description": "Virtual Private Networks information\n+kubebuilder:validation:Required",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.VirtualNetwork"
+                    }
+                }
+            }
+        },
+        "v1.Extra": {
+            "type": "object",
+            "properties": {
+                "domainName": {
+                    "description": "Name of the domain\n+kubebuilder:validation:Required",
+                    "type": "string"
+                },
+                "ecrIamArns": {
+                    "description": "List of IAM Arns",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "egressPorts": {
+                    "description": "Egress ports allowed outside of the namespace",
+                    "type": "string"
+                },
+                "lbEndpoints": {
+                    "description": "Load balancer endpoints\n+kubebuilder:validation:Required",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "loggingEndpoints": {
+                    "description": "Logging endpoints\n+kubebuilder:validation:Required",
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "nfsInfo": {
+                    "description": "NFS information",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "v1.K8sInfraRelease": {
+            "type": "object",
+            "properties": {
+                "gitSha": {
+                    "description": "GitSha of the release",
+                    "type": "string"
+                },
+                "lastUpdated": {
+                    "description": "When the release was applied on the cluster",
+                    "type": "string"
+                },
+                "release": {
+                    "description": "Release name",
+                    "type": "string"
+                }
+            }
+        },
+        "v1.PeerVirtualNetwork": {
+            "type": "object",
+            "properties": {
+                "cidrs": {
+                    "description": "Remote Virtual Netowrk CIDRs",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "id": {
+                    "description": "Remote Virtual Netowrk ID",
+                    "type": "string"
+                },
+                "ownerID": {
+                    "description": "Cloud account of the owner",
+                    "type": "string"
+                }
+            }
+        },
+        "v1.Tier": {
+            "type": "object",
+            "properties": {
+                "containerRuntime": {
+                    "description": "Container runtime\n+kubebuilder:validation:Required\n+kubebuilder:validation:Enum=docker;cri-o",
+                    "type": "string"
+                },
+                "enableKataSupport": {
+                    "description": "EnableKataSupport",
+                    "type": "boolean"
+                },
+                "instanceType": {
+                    "description": "Type of the instances\n+kubebuilder:validation:Required",
+                    "type": "string"
+                },
+                "kernelParameters": {
+                    "description": "KernelParameters",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "labels": {
+                    "description": "Instance K8s labels",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "maxCapacity": {
+                    "description": "Max number of instances\n+kubebuilder:validation:Required",
+                    "type": "integer"
+                },
+                "minCapacity": {
+                    "description": "Min number of instances\n+kubebuilder:validation:Required",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "Name of the tier\n+kubebuilder:validation:Required",
+                    "type": "string"
+                },
+                "taints": {
+                    "description": "Instance K8s taints",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "v1.VirtualNetwork": {
+            "type": "object",
+            "properties": {
+                "cidrs": {
+                    "description": "CIDRs used in this VirtualNetwork\n+kubebuilder:validation:Required",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "id": {
+                    "description": "Virtual private network Id\n+kubebuilder:validation:Required",
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "bearerAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}

@@ -1,0 +1,21 @@
+apiVersion: config.registry.ethos.adobe.com/v1
+kind: ClientConfig
+health:
+  healthProbeBindAddress: :8081
+metrics:
+  bindAddress: 127.0.0.1:8080
+webhook:
+  port: 9443
+leaderElection:
+  leaderElect: true
+  resourceNamespace: cluster-registry
+  resourceName: 0c4967d2.registry.ethos.adobe.com
+namespace: cluster-registry
+alertmanagerWebhook:
+  bindAddress: 127.0.0.1:9092
+  alertMap:
+    - alertName: ClusterCapacityWarning
+      onFiring: 
+        onboarding: "off"
+      onResolved:
+        onboarding: "on"

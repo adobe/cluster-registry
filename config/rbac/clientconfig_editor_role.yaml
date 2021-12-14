@@ -1,0 +1,24 @@
+# permissions for end users to edit clientconfigs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: clientconfig-editor-role
+rules:
+- apiGroups:
+  - config.registry.ethos.adobe.com
+  resources:
+  - clientconfigs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - config.registry.ethos.adobe.com
+  resources:
+  - clientconfigs/status
+  verbs:
+  - get
