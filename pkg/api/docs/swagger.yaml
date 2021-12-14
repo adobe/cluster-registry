@@ -1,0 +1,385 @@
+basePath: /api
+definitions:
+  api.clusterList:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/v1.ClusterSpec'
+        type: array
+      itemsCount:
+        type: integer
+    type: object
+  utils.Error:
+    properties:
+      errors:
+        additionalProperties: true
+        type: object
+    type: object
+  v1.APIServer:
+    properties:
+      certificateAuthorityData:
+        description: Information about K8s Api CA Cert
+        type: string
+      endpoint:
+        description: |-
+          Information about K8s Api Endpoint
+          +kubebuilder:validation:Required
+        type: string
+    type: object
+  v1.AllowedOnboardingTeam:
+    properties:
+      gitTeams:
+        description: List of git teams
+        items:
+          type: string
+        type: array
+      ldapGroups:
+        description: List of ldap groups
+        items:
+          type: string
+        type: array
+      name:
+        description: |-
+          Name of the team
+          +kubebuilder:validation:Required
+        type: string
+    type: object
+  v1.ClusterSpec:
+    properties:
+      accountId:
+        description: |-
+          The cloud account associated with the cluster
+          +kubebuilder:validation:Required
+        type: string
+      allowedOnboardingTeams:
+        description: Git teams and/or LDAP groups that are allowed to onboard and deploy on the cluster
+        items:
+          $ref: '#/definitions/v1.AllowedOnboardingTeam'
+        type: array
+      apiServer:
+        $ref: '#/definitions/v1.APIServer'
+        description: |-
+          Information about K8s API endpoint and CA cert
+          +kubebuilder:validation:Required
+      businessUnit:
+        description: |-
+          The BU that owns and maintains the cluster
+          +kubebuilder:validation:Required
+        type: string
+      capabilities:
+        description: List of cluster capabilities
+        items:
+          type: string
+        type: array
+      cloudType:
+        description: |-
+          The cloud provider.
+          +kubebuilder:validation:Required
+        type: string
+      environment:
+        description: |-
+          Cluster environment.
+          +kubebuilder:validation:Required
+        type: string
+      extra:
+        $ref: '#/definitions/v1.Extra'
+        description: Ethos Extra specific information
+      k8sInfraRelease:
+        $ref: '#/definitions/v1.K8sInfraRelease'
+        description: |-
+          K8s Infrastructure release information
+          +kubebuilder:validation:Required
+      lastUpdated:
+        description: Timestamp when cluster information was updated
+        type: string
+      name:
+        description: |-
+          Cluster name
+          +kubebuilder:validation:Required
+          +kubebuilder:validation:MaxLength=64
+          +kubebuilder:validation:MinLength=3
+        type: string
+      offering:
+        description: |-
+          The Ethos offering that the cluster is meant for
+          +kubebuilder:validation:Required
+        items:
+          type: string
+        type: array
+      peerVirtualNetworks:
+        description: Information about Virtual Networks peered with the cluster
+        items:
+          $ref: '#/definitions/v1.PeerVirtualNetwork'
+        type: array
+      phase:
+        description: |-
+          Cluster phase
+          +kubebuilder:validation:Required
+          +kubebuilder:validation:Enum=Building;Testing;Running;Upgrading
+        type: string
+      region:
+        description: |-
+          Cluster standard region name
+          +kubebuilder:validation:Required
+        type: string
+      registeredAt:
+        description: |-
+          Timestamp when cluster was registered in Cluster Registry
+          +kubebuilder:validation:Required
+        type: string
+      shortName:
+        description: |-
+          Cluster name, without dash.
+          +kubebuilder:validation:Required
+          +kubebuilder:validation:MaxLength=64
+          +kubebuilder:validation:MinLength=3
+        type: string
+      status:
+        description: |-
+          Cluster status
+          +kubebuilder:validation:Required
+          +kubebuilder:validation:Enum=Inactive;Active;Deprecated;Deleted
+        type: string
+      tags:
+        description: Cluster tags that were applied
+        items:
+          type: string
+        type: array
+      tiers:
+        description: |-
+          List of tiers with their associated information
+          +kubebuilder:validation:Required
+        items:
+          $ref: '#/definitions/v1.Tier'
+        type: array
+      type:
+        description: The type of the cluster
+        type: string
+      virtualNetworks:
+        description: |-
+          Virtual Private Networks information
+          +kubebuilder:validation:Required
+        items:
+          $ref: '#/definitions/v1.VirtualNetwork'
+        type: array
+    type: object
+  v1.Extra:
+    properties:
+      domainName:
+        description: |-
+          Name of the domain
+          +kubebuilder:validation:Required
+        type: string
+      ecrIamArns:
+        additionalProperties:
+          type: string
+        description: List of IAM Arns
+        type: object
+      egressPorts:
+        description: Egress ports allowed outside of the namespace
+        type: string
+      lbEndpoints:
+        additionalProperties:
+          type: string
+        description: |-
+          Load balancer endpoints
+          +kubebuilder:validation:Required
+        type: object
+      loggingEndpoints:
+        description: |-
+          Logging endpoints
+          +kubebuilder:validation:Required
+        items:
+          additionalProperties:
+            type: string
+          type: object
+        type: array
+      nfsInfo:
+        additionalProperties:
+          type: string
+        description: NFS information
+        type: object
+    type: object
+  v1.K8sInfraRelease:
+    properties:
+      gitSha:
+        description: GitSha of the release
+        type: string
+      lastUpdated:
+        description: When the release was applied on the cluster
+        type: string
+      release:
+        description: Release name
+        type: string
+    type: object
+  v1.PeerVirtualNetwork:
+    properties:
+      cidrs:
+        description: Remote Virtual Netowrk CIDRs
+        items:
+          type: string
+        type: array
+      id:
+        description: Remote Virtual Netowrk ID
+        type: string
+      ownerID:
+        description: Cloud account of the owner
+        type: string
+    type: object
+  v1.Tier:
+    properties:
+      containerRuntime:
+        description: |-
+          Container runtime
+          +kubebuilder:validation:Required
+          +kubebuilder:validation:Enum=docker;cri-o
+        type: string
+      enableKataSupport:
+        description: EnableKataSupport
+        type: boolean
+      instanceType:
+        description: |-
+          Type of the instances
+          +kubebuilder:validation:Required
+        type: string
+      kernelParameters:
+        additionalProperties:
+          type: string
+        description: KernelParameters
+        type: object
+      labels:
+        additionalProperties:
+          type: string
+        description: Instance K8s labels
+        type: object
+      maxCapacity:
+        description: |-
+          Max number of instances
+          +kubebuilder:validation:Required
+        type: integer
+      minCapacity:
+        description: |-
+          Min number of instances
+          +kubebuilder:validation:Required
+        type: integer
+      name:
+        description: |-
+          Name of the tier
+          +kubebuilder:validation:Required
+        type: string
+      taints:
+        description: Instance K8s taints
+        items:
+          type: string
+        type: array
+    type: object
+  v1.VirtualNetwork:
+    properties:
+      cidrs:
+        description: |-
+          CIDRs used in this VirtualNetwork
+          +kubebuilder:validation:Required
+        items:
+          type: string
+        type: array
+      id:
+        description: |-
+          Virtual private network Id
+          +kubebuilder:validation:Required
+        type: string
+    type: object
+host: http://cluster-registry.missionctrl.cloud.adobe.io
+info:
+  contact: {}
+  description: Cluster Registry API
+  title: Cluster Registry API
+  version: "1.0"
+paths:
+  /v1/clusters:
+    get:
+      consumes:
+      - application/json
+      description: List all clusters. Use query parameters to filter results. Auth is required
+      operationId: get-clusters
+      parameters:
+      - description: Filter by region
+        in: query
+        name: region
+        type: string
+      - description: Filter by environment
+        in: query
+        name: environment
+        type: string
+      - description: Filter by businessUnit
+        in: query
+        name: businessUnit
+        type: string
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      - description: Limit number of clusters returned (default is 10)
+        in: query
+        name: limit
+        type: integer
+      - description: Offset/skip number of clusters (default is 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.clusterList'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.Error'
+      security:
+      - bearerAuth: []
+      summary: List all clusters
+      tags:
+      - cluster
+  /v1/clusters/{name}:
+    get:
+      consumes:
+      - application/json
+      description: Get an cluster. Auth is required
+      operationId: get-cluster
+      parameters:
+      - description: Name of the cluster to get
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.ClusterSpec'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.Error'
+      security:
+      - bearerAuth: []
+      summary: Get an cluster
+      tags:
+      - cluster
+schemes:
+- http
+- https
+securityDefinitions:
+  bearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

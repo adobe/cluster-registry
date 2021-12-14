@@ -1,0 +1,79 @@
+{
+    "apiVersion": "registry.ethos.adobe.com/v1",
+    "kind": "Cluster",
+    "metadata": {
+        "name": "cluster05-prod-useast1",
+        "namespace": "cluster-registry"
+    },
+    "spec": {
+        "accountId": "11111-2222-3333-4444-55555555",
+        "apiServer": {
+            "endpoint": "https://cluster05-prod-useast1.example.com",
+            "certificateAuthorityData": ""
+        },
+        "businessUnit": "BU1",
+        "cloudType": "azure",
+        "environment": "prod",
+        "extra": {
+            "domainName": "example.com",
+            "egressPorts": "80,443",
+            "lbEndpoints": {
+                "internal": "internal.cluster05-prod-useast1.example.com",
+                "public": "cluster05-prod-useast1.example.com"
+            }
+        },
+        "k8sInfraRelease": {
+            "gitSha": "1e8cbd109d7a77909f627ec5247520b70cc209e9",
+            "lastUpdated": "2021-03-22T11:55:41Z",
+            "release": "2021-W06-1234"
+        },
+        "name": "cluster05-prod-useast1",
+        "offering": [
+            "PaaS",
+            "CaaS"
+        ],
+        "phase": "Upgrading",
+        "region": "useast1",
+        "registeredAt": "2019-02-13T06:15:32Z",
+        "shortName": "cluster05produseast1",
+        "status": "Deprecated",
+        "tiers": [
+            {
+                "containerRuntime": "cri-o",
+                "enableKataSupport": true,
+                "instanceType": "Standard_F16s_v2",
+                "labels": {
+                    "node.kubernetes.io/instance-family": "Fs_v2"
+                },
+                "maxCapacity": 1000,
+                "minCapacity": 1,
+                "name": "kata0",
+                "taints": [
+                    "node.kubernetes.io/kata-containers=true:NoSchedule"
+                ]
+            },
+            {
+                "containerRuntime": "docker",
+                "instanceType": "Standard_E16s_v3",
+                "labels": {
+                    "node.kubernetes.io/role": "proxy"
+                },
+                "maxCapacity": 1000,
+                "minCapacity": 1,
+                "name": "proxy",
+                "taints": [
+                    "node.kubernetes.io/type=proxy:NoSchedule"
+                ]
+            }
+        ],
+        "type": "Shared",
+        "virtualNetworks": [
+            {
+                "cidrs": [
+                    "10.0.0.0/24"
+                ],
+                "id": "vnet-1234"
+            }
+        ]
+    }
+}

@@ -1,0 +1,20 @@
+# permissions for end users to view clientconfigs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: clientconfig-viewer-role
+rules:
+- apiGroups:
+  - config.registry.ethos.adobe.com
+  resources:
+  - clientconfigs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - config.registry.ethos.adobe.com
+  resources:
+  - clientconfigs/status
+  verbs:
+  - get

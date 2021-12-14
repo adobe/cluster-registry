@@ -1,0 +1,314 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.4.1
+  creationTimestamp: null
+  name: clusters.registry.ethos.adobe.com
+spec:
+  group: registry.ethos.adobe.com
+  names:
+    kind: Cluster
+    listKind: ClusterList
+    plural: clusters
+    singular: cluster
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: Cluster is the Schema for the clusters API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: ClusterSpec defines the desired state of Cluster
+            properties:
+              accountId:
+                description: The cloud account associated with the cluster
+                type: string
+              allowedOnboardingTeams:
+                description: Git teams and/or LDAP groups that are allowed to onboard
+                  and deploy on the cluster
+                items:
+                  description: AllowedOnboardingTeam represents the Git teams and/or
+                    LDAP groups that are allowed to onboard.
+                  properties:
+                    gitTeams:
+                      description: List of git teams
+                      items:
+                        type: string
+                      type: array
+                    ldapGroups:
+                      description: List of ldap groups
+                      items:
+                        type: string
+                      type: array
+                    name:
+                      description: Name of the team
+                      type: string
+                  required:
+                  - name
+                  type: object
+                type: array
+              apiServer:
+                description: Information about K8s API endpoint and CA cert
+                properties:
+                  certificateAuthorityData:
+                    description: Information about K8s Api CA Cert
+                    type: string
+                  endpoint:
+                    description: Information about K8s Api Endpoint
+                    type: string
+                required:
+                - certificateAuthorityData
+                - endpoint
+                type: object
+              businessUnit:
+                description: The BU that owns and maintains the cluster
+                type: string
+              capabilities:
+                description: List of cluster capabilities
+                items:
+                  type: string
+                type: array
+              cloudType:
+                description: The cloud provider.
+                type: string
+              environment:
+                description: Cluster environment.
+                type: string
+              extra:
+                description: Ethos Extra specific information
+                properties:
+                  domainName:
+                    description: Name of the domain
+                    type: string
+                  ecrIamArns:
+                    additionalProperties:
+                      type: string
+                    description: List of IAM Arns
+                    type: object
+                  egressPorts:
+                    description: Egress ports allowed outside of the namespace
+                    type: string
+                  lbEndpoints:
+                    additionalProperties:
+                      type: string
+                    description: Load balancer endpoints
+                    type: object
+                  loggingEndpoints:
+                    description: Logging endpoints
+                    items:
+                      additionalProperties:
+                        type: string
+                      type: object
+                    type: array
+                  nfsInfo:
+                    additionalProperties:
+                      type: string
+                    description: NFS information
+                    type: object
+                required:
+                - domainName
+                - lbEndpoints
+                type: object
+              k8sInfraRelease:
+                description: K8s Infrastructure release information
+                properties:
+                  gitSha:
+                    description: GitSha of the release
+                    type: string
+                  lastUpdated:
+                    description: When the release was applied on the cluster
+                    type: string
+                  release:
+                    description: Release name
+                    type: string
+                required:
+                - gitSha
+                - lastUpdated
+                - release
+                type: object
+              lastUpdated:
+                description: Timestamp when cluster information was updated
+                type: string
+              name:
+                description: Cluster name
+                maxLength: 64
+                minLength: 3
+                type: string
+              offering:
+                description: The Ethos offering that the cluster is meant for
+                items:
+                  description: Offering - the Ethos offering that the cluster is meant
+                    for
+                  enum:
+                  - CaaS
+                  - PaaS
+                  type: string
+                type: array
+              peerVirtualNetworks:
+                description: Information about Virtual Networks peered with the cluster
+                items:
+                  description: PeerVirtualNetwork -  peering information done at cluster
+                    onboarding
+                  properties:
+                    cidrs:
+                      description: Remote Virtual Netowrk CIDRs
+                      items:
+                        type: string
+                      type: array
+                    id:
+                      description: Remote Virtual Netowrk ID
+                      type: string
+                    ownerID:
+                      description: Cloud account of the owner
+                      type: string
+                  type: object
+                type: array
+              phase:
+                description: Cluster phase
+                enum:
+                - Building
+                - Testing
+                - Running
+                - Upgrading
+                type: string
+              region:
+                description: Cluster standard region name
+                type: string
+              registeredAt:
+                description: Timestamp when cluster was registered in Cluster Registry
+                type: string
+              shortName:
+                description: Cluster name, without dash.
+                maxLength: 64
+                minLength: 3
+                type: string
+              status:
+                description: Cluster status
+                enum:
+                - Inactive
+                - Active
+                - Deprecated
+                - Deleted
+                type: string
+              tags:
+                additionalProperties:
+                  type: string
+                description: Cluster tags that were applied
+                type: object
+              tiers:
+                description: List of tiers with their associated information
+                items:
+                  description: Tier details
+                  properties:
+                    containerRuntime:
+                      description: Container runtime
+                      enum:
+                      - docker
+                      - cri-o
+                      type: string
+                    enableKataSupport:
+                      description: EnableKataSupport
+                      type: boolean
+                    instanceType:
+                      description: Type of the instances
+                      type: string
+                    kernelParameters:
+                      additionalProperties:
+                        type: string
+                      description: KernelParameters
+                      type: object
+                    labels:
+                      additionalProperties:
+                        type: string
+                      description: Instance K8s labels
+                      type: object
+                    maxCapacity:
+                      description: Max number of instances
+                      type: integer
+                    minCapacity:
+                      description: Min number of instances
+                      type: integer
+                    name:
+                      description: Name of the tier
+                      type: string
+                    taints:
+                      description: Instance K8s taints
+                      items:
+                        type: string
+                      type: array
+                  required:
+                  - containerRuntime
+                  - instanceType
+                  - maxCapacity
+                  - minCapacity
+                  - name
+                  type: object
+                type: array
+              type:
+                description: The type of the cluster
+                type: string
+              virtualNetworks:
+                description: Virtual Private Networks information
+                items:
+                  description: VirtualNetwork information.
+                  properties:
+                    cidrs:
+                      description: CIDRs used in this VirtualNetwork
+                      items:
+                        type: string
+                      type: array
+                    id:
+                      description: Virtual private network Id
+                      type: string
+                  required:
+                  - cidrs
+                  - id
+                  type: object
+                type: array
+            required:
+            - accountId
+            - apiServer
+            - businessUnit
+            - cloudType
+            - environment
+            - k8sInfraRelease
+            - name
+            - offering
+            - phase
+            - region
+            - registeredAt
+            - shortName
+            - status
+            - tiers
+            - virtualNetworks
+            type: object
+          status:
+            description: ClusterStatus defines the observed state of Cluster
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
