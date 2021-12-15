@@ -46,7 +46,37 @@ clean:
 ############
 
 .PHONY: build
-build: # TODO
+build: build-api build-cc
+
+.PHONY: build-api
+build-api:
+	$(GO_BUILD_RECIPE) -o cluster-registry-api cmd/api/api.go
+
+.PHONY: build-cc
+build-cc:
+	$(GO_BUILD_RECIPE) -o cluster-registry-client cmd/cc/client.go
+
+.PHONY: release
+release:
+	./hack/release.sh
+
+.PHONY: image
+image: .hack-api-image .hack-cc-image
+
+.hack-api-image: cmd/api/Dockerfile build-api
+	docker build -t $(IMAGE_API):$(TAG) -f cmd/api/Dockerfile .
+	touch $@
+
+.hack-cc-image: cmd/cc/Dockerfile build-cc
+	docker build -t $(IMAGE_CC):$(TAG) -f cmd/cc/Dockerfile .
+	touch $@
+
+.PHONY: update-go-deps
+update-go-deps:
+	for m in $$(go list -mod=readonly -m -f '{{ if and (not .Indirect) (not .Main)}}{{.Path}}{{end}}' all); do \
+		go get $$m; \
+	done
+	@echo "Don't forget to run 'make tidy'"
 
 
 ##############
