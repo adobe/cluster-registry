@@ -10,8 +10,6 @@ export IMAGE_API="${IMAGE_API:-"adobe/cluster-registry-api"}"
 export IMAGE_CC="${IMAGE_CC:-"adobe/cluster-registry-client"}"
 export TAG="${GITHUB_REF##*/}"
 
-echo "tag: ${TAG}"
-
 IMAGE_SUFFIX="-dev"
 
 if [[ "$TAG" =~ ^v[0-9]+\.[0-9]+ ]] || [ "${TAG}" == "main" ]; then
