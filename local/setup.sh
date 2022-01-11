@@ -102,6 +102,3 @@ if [[ "${RUN_CC}" == 1 ]]; then
 fi
 
 echo 'Local stack was set up successfully.'
-
-# debug only
-docker ps -a
