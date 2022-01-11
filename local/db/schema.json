@@ -1,0 +1,19 @@
+{
+    "AttributeDefinitions": [
+        {
+            "AttributeName": "name",
+            "AttributeType": "S"
+        }
+    ],
+    "ProvisionedThroughput": {
+        "WriteCapacityUnits": 5,
+        "ReadCapacityUnits": 5
+    },
+    "TableName": "cluster-registry-local",
+    "KeySchema": [
+        {
+            "KeyType": "HASH",
+            "AttributeName": "name"
+        }
+    ]
+}
