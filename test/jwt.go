@@ -20,10 +20,10 @@ import (
 )
 
 func getToken() string {
-	resourceID := os.Getenv("OIDC_CLIENT_ID")       // Cluster Registry App ID
-	tenantID := os.Getenv("OIDC_TENANT_ID")         // Tenant ID
-	clientID := os.Getenv("TEST_CLIENT_ID")         // Test App ID
-	clientSecret := os.Getenv("TEST_CLIENT_SECRET") // Test App Secret
+	resourceID := os.Getenv("OIDC_CLIENT_ID")            // Cluster Registry App ID
+	tenantID := os.Getenv("OIDC_TENANT_ID")              // Tenant ID
+	clientID := os.Getenv("OIDC_TEST_CLIENT_ID")         // Test Client ID
+	clientSecret := os.Getenv("OIDC_TEST_CLIENT_SECRET") // Test Client Secret
 
 	clientCredentials := auth.NewClientCredentialsConfig(clientID, clientSecret, tenantID)
 
