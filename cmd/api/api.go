@@ -26,7 +26,7 @@ import (
 // @description Cluster Registry API
 // @title Cluster Registry API
 
-// @host http://cluster-registry.missionctrl.cloud.adobe.io
+// @host http://127.0.0.1:8080
 // @BasePath /api
 
 // @schemes http https

@@ -10,7 +10,7 @@
         "contact": {},
         "version": "1.0"
     },
-    "host": "http://cluster-registry.missionctrl.cloud.adobe.io",
+    "host": "http://127.0.0.1:8080",
     "basePath": "/api",
     "paths": {
         "/v1/clusters": {
@@ -74,7 +74,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.clusterList"
+                            "$ref": "#/definitions/pkg_api_api.clusterList"
                         }
                     },
                     "500": {
@@ -138,7 +138,21 @@
         }
     },
     "definitions": {
-        "api.clusterList": {
+        "github.com_adobe_cluster-registry_pkg_api_api.clusterList": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ClusterSpec"
+                    }
+                },
+                "itemsCount": {
+                    "type": "integer"
+                }
+            }
+        },
+        "pkg_api_api.clusterList": {
             "type": "object",
             "properties": {
                 "items": {
@@ -286,8 +300,8 @@
                 },
                 "tags": {
                     "description": "Cluster tags that were applied",
-                    "type": "array",
-                    "items": {
+                    "type": "object",
+                    "additionalProperties": {
                         "type": "string"
                     }
                 },
