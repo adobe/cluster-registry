@@ -224,7 +224,7 @@ func (s *e2eTestSuite) TBD_Test_EndToEnd_UpdateCluster() {
 	}
 	fmt.Printf("Successfully created Cluster %s\n", inputCluster.ClusterName)
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(30 * time.Second)
 
 	jwt_token := getToken()
 	bearer := "Bearer " + jwt_token
