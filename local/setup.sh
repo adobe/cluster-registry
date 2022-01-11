@@ -48,7 +48,7 @@ docker run -d \
 echo 'Creating a local k8s cluster...'
 kind delete cluster --name="${KIND_CLUSTERNAME}" > /dev/null 2>&1 || true
 kind create cluster --name="${KIND_CLUSTERNAME}" --kubeconfig=${ROOT_DIR}/kubeconfig \
-			--kindest/node:"${KIND_NODE_VERSION}" --config="${ROOT_DIR}/local/kind/kind.yaml"
+			--image=kindest/node:"${KIND_NODE_VERSION}" --config="${ROOT_DIR}/local/kind/kind.yaml"
 
 echo 'Testing local k8s cluster...'
 export KUBECONFIG=${ROOT_DIR}/kubeconfig
