@@ -5,9 +5,10 @@ on:
   pull_request:
 
 jobs:
-  unit-tests:
+  tests:
+    environment: CI 
     runs-on: ubuntu-latest
-    name: Unit tests
+    name: CI tests
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -17,19 +18,13 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: '${{ env.golang-version }}'
-      - name: Run tests
+      - name: Run unit tests
         run: make test
-  e2e-tests:
-    runs-on: ubuntu-latest
-    name: E2E tests
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Import environment variables from file
-        run: cat ".github/env" >> $GITHUB_ENV
-      - name: Setup Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: '${{ env.golang-version }}'
-      - name: Run tests
+      - name: Run e2e tests
+        env:
+          OIDC_ISSUER_URL: ${{ secrets.OIDC_ISSUER_URL }}
+          OIDC_TENANT_ID: ${{ secrets.OIDC_TENANT_ID }}
+          OIDC_CLIENT_ID: ${{ secrets.OIDC_CLIENT_ID }}
+          OIDC_TEST_CLIENT_ID: ${{ secrets.OIDC_TEST_CLIENT_ID }}
+          OIDC_TEST_CLIENT_SECRET: ${{ secrets.OIDC_TEST_CLIENT_SECRET }}
         run: make test-e2e
