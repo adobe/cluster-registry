@@ -48,14 +48,15 @@ docker run -d \
 echo 'Creating a local k8s cluster...'
 kind delete cluster --name="${KIND_CLUSTERNAME}" > /dev/null 2>&1 || true
 kind create cluster --name="${KIND_CLUSTERNAME}" --kubeconfig=${ROOT_DIR}/kubeconfig \
-			--image=k8sonboarding.azurecr.io/kindest/node:"${KIND_NODE_VERSION}" --config="${ROOT_DIR}/local/kind/kind.yaml"
+			--kindest/node:"${KIND_NODE_VERSION}" --config="${ROOT_DIR}/local/kind/kind.yaml"
 
 echo 'Testing local k8s cluster...'
 export KUBECONFIG=${ROOT_DIR}/kubeconfig
 docker network connect "${NETWORK}" "${KIND_CLUSTERNAME}-control-plane"
-cp "${ROOT_DIR}/kubeconfig" "/tmp/kubeconfig"
+cp "${ROOT_DIR}/kubeconfig" "${ROOT_DIR}/kubeconfig_client"
+chmod +r "${ROOT_DIR}/kubeconfig_client"
 
-perl -pi.bak -e "s/0.0.0.0/${KIND_CLUSTERNAME}-control-plane/g" "/tmp/kubeconfig"
+perl -pi.bak -e "s/0.0.0.0/${KIND_CLUSTERNAME}-control-plane/g" "${ROOT_DIR}/kubeconfig_client"
 kubectl cluster-info --context kind-k8s-cluster-registry
 kubectl create ns cluster-registry
 
@@ -89,7 +90,7 @@ if [[ "${RUN_CC}" == 1 ]]; then
 	echo 'Running cluster-registry cc'
 	docker run -d \
 		--name ${CONTAINER_CC} \
-		-v /tmp/kubeconfig:/kubeconfig \
+		-v "${ROOT_DIR}/kubeconfig_client":/kubeconfig \
 		-e AWS_ACCESS_KEY_ID \
 		-e AWS_SECRET_ACCESS_KEY \
 		-e KUBECONFIG=/kubeconfig \
@@ -97,7 +98,7 @@ if [[ "${RUN_CC}" == 1 ]]; then
 		-e SQS_ENDPOINT=http://${CONTAINER_SQS}:9324 \
 		-e SQS_QUEUE_NAME=${SQS_QUEUE_NAME} \
 		--network ${NETWORK} \
-			${IMAGE_CC}:${TAG}
+		${IMAGE_CC}:${TAG}
 fi
 
 echo 'Local stack was set up successfully.'
