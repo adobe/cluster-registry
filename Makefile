@@ -133,7 +133,7 @@ test-cc: source-env
 .PHONY: test-e2e
 test-e2e: source-env
 	$(shell pwd)/local/setup.sh
-	@. local/.env.local && go test github.com/adobe/cluster-registry/test
+	@. local/.env.local && go test github.com/adobe/cluster-registry/test/e2e
 	$(shell pwd)/local/cleanup.sh
 
 source-env:

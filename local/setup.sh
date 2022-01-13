@@ -45,6 +45,15 @@ docker run -d \
 	--network ${NETWORK} \
     ${IMAGE_SQS}
 
+echo 'Run mocking oidc instance'
+docker run -d \
+    --name ${CONTAINER_OIDC} \
+	-v ${ROOT_DIR}/local/oidc:/usr/share/nginx/html \
+	-v ${ROOT_DIR}/local/oidc/default.conf:/etc/nginx/config.d/default.conf:ro \
+    -p 80:80 \
+	--network ${NETWORK} \
+    ${IMAGE_OIDC}
+
 echo 'Creating a local k8s cluster...'
 kind delete cluster --name="${KIND_CLUSTERNAME}" > /dev/null 2>&1 || true
 kind create cluster --name="${KIND_CLUSTERNAME}" --kubeconfig=${ROOT_DIR}/kubeconfig \
@@ -77,7 +86,7 @@ if [[ "${RUN_API}" == 1 ]]; then
 		-e DB_AWS_REGION \
 		-e DB_ENDPOINT=http://${CONTAINER_DB}:8000 \
 		-e DB_TABLE_NAME=${DB_TABLE_NAME} \
-		-e OIDC_ISSUER_URL \
+		-e OIDC_ISSUER_URL=http://${CONTAINER_OIDC} \
 		-e OIDC_CLIENT_ID \
 		-e SQS_AWS_REGION \
 		-e SQS_ENDPOINT=http://${CONTAINER_SQS}:9324 \
