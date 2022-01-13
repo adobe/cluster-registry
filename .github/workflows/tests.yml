@@ -21,10 +21,4 @@ jobs:
       - name: Run unit tests
         run: make test
       - name: Run e2e tests
-        env:
-          OIDC_ISSUER_URL: ${{ secrets.OIDC_ISSUER_URL }}
-          OIDC_TENANT_ID: ${{ secrets.OIDC_TENANT_ID }}
-          OIDC_CLIENT_ID: ${{ secrets.OIDC_CLIENT_ID }}
-          OIDC_TEST_CLIENT_ID: ${{ secrets.OIDC_TEST_CLIENT_ID }}
-          OIDC_TEST_CLIENT_SECRET: ${{ secrets.OIDC_TEST_CLIENT_SECRET }}
         run: make test-e2e
