@@ -6,7 +6,6 @@ on:
 
 jobs:
   tests:
-    environment: CI
     runs-on: ubuntu-latest
     name: CI tests
     steps:
