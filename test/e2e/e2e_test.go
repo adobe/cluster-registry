@@ -132,7 +132,7 @@ func (s *e2eTestSuite) Test_EndToEnd_CreateCluster() {
 	}
 	fmt.Printf("Successfully created Cluster %s\n", inputCluster.Spec.Name)
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(20 * time.Second)
 
 	jwtToken := jwt.GenerateDefaultSignedToken()
 	bearer := "Bearer " + jwtToken
