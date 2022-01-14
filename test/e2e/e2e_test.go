@@ -26,6 +26,7 @@ import (
 	"github.com/adobe/cluster-registry/pkg/api/database"
 	"github.com/adobe/cluster-registry/pkg/api/monitoring"
 	registryv1 "github.com/adobe/cluster-registry/pkg/cc/api/registry/v1"
+	"github.com/adobe/cluster-registry/test/jwt"
 	"github.com/stretchr/testify/suite"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
@@ -63,8 +64,9 @@ func (s *e2eTestSuite) TearDownTest() {
 func (s *e2eTestSuite) Test_EndToEnd_GetClusters() {
 
 	var clusters clusterList
-	jwt_token := getToken()
-	bearer := "Bearer " + jwt_token
+	jwtToken := jwt.GenerateDefaultSignedToken()
+	bearer := "Bearer " + jwtToken
+
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/api/v1/clusters", s.apiPort), nil)
 	if err != nil {
 		log.Fatal(err)
@@ -97,7 +99,7 @@ func (s *e2eTestSuite) Test_EndToEnd_CreateCluster() {
 	var inputCluster registryv1.Cluster
 	var outputCluster registryv1.ClusterSpec
 
-	input_file := "./testdata/cluster05-prod-useast1.json"
+	input_file := "../testdata/cluster05-prod-useast1.json"
 	data, err := ioutil.ReadFile(input_file)
 	if err != nil {
 		log.Fatal(err.Error())
@@ -108,7 +110,7 @@ func (s *e2eTestSuite) Test_EndToEnd_CreateCluster() {
 		log.Fatal(err.Error())
 	}
 
-	config, err := clientcmd.BuildConfigFromFlags("", "../kubeconfig")
+	config, err := clientcmd.BuildConfigFromFlags("", "../../kubeconfig")
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -130,10 +132,10 @@ func (s *e2eTestSuite) Test_EndToEnd_CreateCluster() {
 	}
 	fmt.Printf("Successfully created Cluster %s\n", inputCluster.Spec.Name)
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(20 * time.Second)
 
-	jwt_token := getToken()
-	bearer := "Bearer " + jwt_token
+	jwtToken := jwt.GenerateDefaultSignedToken()
+	bearer := "Bearer " + jwtToken
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/api/v1/clusters/%s", s.apiPort, inputCluster.Spec.Name), nil)
 	if err != nil {
 		log.Fatal(err)
@@ -165,8 +167,6 @@ func (s *e2eTestSuite) Test_EndToEnd_CreateCluster() {
 	s.T().Cleanup(
 		func() {
 			m := monitoring.NewMetrics("cluster_registry_api_e2e_test", nil, true)
-			d := database.NewDb(m)
-			d.DeleteCluster(inputCluster.Spec.Name)
 
 			_, err = clientset.CoreV1().RESTClient().
 				Delete().
@@ -179,6 +179,9 @@ func (s *e2eTestSuite) Test_EndToEnd_CreateCluster() {
 			if err != nil {
 				fmt.Printf("Cannot delete Cluster %s\nErr:\n%s", inputCluster.Spec.Name, err.Error())
 			}
+
+			d := database.NewDb(m)
+			d.DeleteCluster(inputCluster.Spec.Name)
 		})
 }
 
@@ -188,7 +191,7 @@ func (s *e2eTestSuite) TBD_Test_EndToEnd_UpdateCluster() {
 	var inputCluster registryv1.Cluster
 	var outputCluster registryv1.ClusterSpec
 
-	input_file := "./testdata/cluster05-prod-useast1-update.json"
+	input_file := "../testdata/cluster05-prod-useast1-update.json"
 	data, err := ioutil.ReadFile(input_file)
 	if err != nil {
 		log.Fatal(err.Error())
@@ -199,7 +202,7 @@ func (s *e2eTestSuite) TBD_Test_EndToEnd_UpdateCluster() {
 		log.Fatal(err.Error())
 	}
 
-	config, err := clientcmd.BuildConfigFromFlags("", "../kubeconfig")
+	config, err := clientcmd.BuildConfigFromFlags("", "../../kubeconfig")
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -226,8 +229,8 @@ func (s *e2eTestSuite) TBD_Test_EndToEnd_UpdateCluster() {
 
 	time.Sleep(10 * time.Second)
 
-	jwt_token := getToken()
-	bearer := "Bearer " + jwt_token
+	jwtToken := jwt.GenerateDefaultSignedToken()
+	bearer := "Bearer " + jwtToken
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/api/v1/clusters/%s", s.apiPort, inputCluster.Spec.Name), nil)
 	if err != nil {
 		log.Fatal(err)

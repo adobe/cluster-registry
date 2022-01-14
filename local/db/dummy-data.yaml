@@ -1,0 +1,241 @@
+- apiVersion: registry.ethos.adobe.com/v1
+  kind: Cluster
+  metadata:
+    name: cluster01-prod-useast1
+    namespace: cluster-registry
+  spec:
+    name: cluster01-prod-useast1
+    shortName: cluster01produseast1
+    apiServer:
+      endpoint: https://cluster01-prod-useast1.example.com
+      certificateAuthorityData: LS0tLS1CRUdJTiBDRVJUSUZJ==
+    region: useast1
+    cloudType: azure
+    environment: Prod
+    type: Shared
+    businessUnit: BU1
+    offering:
+    - caas
+    - paas
+    allowedTeams:
+    - name: my-team
+      gitTeams:
+      - git_team_1
+      - git_team_2
+      ldapGroups:
+      - LDAP_GROUP_EXAMPLE_1
+      - LDAP_GROUP_EXAMPLE_2
+    capabilities:
+    - vpc-peering
+    - gpu-compute
+    extra:
+      loggingEndpoints:
+      - region: useast1
+        endpoint: splunk-us-east1.example.com
+        isDefault: true
+      - region: useast2
+        endpoint: splunk-us-east2.example.com
+        isDefault: false
+      domainName: example.com
+      ecrIamArns:
+        iamRoles:
+        - arn:aws:iam::account-id:role/xxx
+        - arn:aws:iam::account-id:role/yyy
+        iamUser:
+        - arn:aws:iam::111222333:user/ecr-login
+      lbEndpoints:
+        public: cluster01-prod-useast1.example.com
+      egressPorts:
+      - 1024-65535
+      nfsInfo:
+      - name: xxx
+        basePath: xyz
+        endpoint: xyz
+    tiers:
+    - name: worker
+      instanceType: c5.9xlarge
+      maxCapacity: 1000
+      minCapacity: 3
+      rootDeviceSize: 200
+    - name: workerMemoryOptimized
+      instanceType: r5.8xlarge
+      labels:
+       node.kubernetes.io/workload.memory-optimized: true
+      maxCapacity: 100
+      minCapacity: 0
+      rootDeviceSize: 200
+      taints:
+      - workload=memory-optimized:NoSchedule
+    accountId: 11111-2222-3333-4444-555555555
+    virtualNetworks:
+    - id: "/subscriptions/11111-2222-3333-4444-555555555/resourceGroups/cluster01_prod_useast1_network/providers/Microsoft.Network/virtualNetworks/cluster01_prod_useast1-vnet/subnets/cluster01_prod_useast1_master_network_10_0_0_0_24"
+      cidrs:
+      - 10.0.0.0/24
+    - id: "/subscriptions/11111-2222-3333-4444-555555555/resourceGroups/cluster01_prod_useast1_network/providers/Microsoft.Network/virtualNetworks/cluster01_prod_useast1-vnet/subnets/cluster01_prod_useast1_worker_network_10_1_0_0_24"
+      cidrs:
+      - 10.1.0.0/24
+    peerVirtualNetworks:
+    - id: 123r
+      cidrs:
+      - 10.2.0.1/23
+      - 10.3.0.1/24
+      ownerID: ownerxxx
+    registeredAt: '2019-02-13T06:15:32Z'
+    lastUpdated: '2020-02-13T06:15:32Z'
+    k8sInfraRelease:
+      gitSha: 1e8cbd109d7a77909f627ec5247520b70cc209e9
+      lastUpdated: '2021-03-22T11:55:41Z'
+      release: 2021-W06-0-116-gd0c7e403
+    status: Deprecated
+    phase: Running
+    tags:
+      onboarding: off
+      scaling: off
+- apiVersion: registry.ethos.adobe.com/v1
+  kind: Cluster
+  metadata:
+    name: cluster02-prod-euwest1	
+    namespace: cluster-registry
+  spec:
+    name: cluster02-prod-euwest1	
+    shortName: cluster02prodeuwest1	
+    apiServer:
+      endpoint: https://cluster02-prod-euwest1.example.com
+      certificateAuthorityData: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0==
+    region: euwest1	
+    cloudType: azure
+    environment: Prod
+    type: Dedicated
+    businessUnit: BU2
+    offering:
+    - caas
+    - paas
+    allowedTeams:
+    - name: my-team
+      gitTeams:
+      - git_team_3
+      - git_team_4
+      ldapGroups:
+      - LDAP_GROUP_EXAMPLE_2
+      - LDAP_GROUP_EXAMPLE_3
+    capabilities:
+    - mct-support
+    extra:
+      domainName: example.com
+      ecrIamArns:
+        iamRoles:
+        - arn:aws:iam::account-id:role/xxx
+        iamUser:
+        - arn:aws:iam::461989703686:user/ecr-login
+      lbEndpoints:
+        public: cluster02-prod-euwest1.example.com
+    tiers:
+    - name: worker
+      instanceType: c5.9xlarge
+      maxCapacity: 1000
+      minCapacity: 3
+      rootDeviceSize: 200
+    - name: workerMemoryOptimized
+      instanceType: r5.8xlarge
+      labels:
+        node.kubernetes.io/workload.memory-optimized: true
+      maxCapacity: 100
+      minCapacity: 0
+      rootDeviceSize: 200
+      taints:
+      - workload=memory-optimized:NoSchedule
+    accountId: 11111-2222-3333-4444-55555555
+    virtualNetworks:
+    - id: "/subscriptions/11111-2222-3333-4444-55555555/resourceGroups/cluster02_prod_euwest1_network/providers/Microsoft.Network/virtualNetworks/cluster02_prod_euwest1_network-vnet/subnets/cluster02_prod_euwest1_network_10_3_0_0_24"
+      cidrs:
+      - 10.3.0.0/24
+    registeredAt: '2019-02-13T06:15:32Z'
+    lastUpdated: '2020-02-13T06:15:32Z'
+    k8sInfraRelease:
+      gitSha: 1e8cbd109d7a77909f627ec5247520b70cc209e9
+      lastUpdated: '2021-03-22T11:55:41Z'
+      release: 2021-W06-0-116-gd0c7e403
+    status: Active
+    phase: Upgrading
+    tags:
+      onboarding: off
+      scaling: on
+- apiVersion: registry.ethos.adobe.com/v1
+  kind: Cluster
+  metadata:
+    name: cluster03-prod-uswest1
+    namespace: cluster-registry
+  spec:
+    name: cluster03-prod-uswest1
+    shortName: cluster03produswest1
+    apiServer:
+      endpoint: https://cluster03-prod-uswest1.example.com
+      certificateAuthorityData: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS==
+    region: uswest1
+    cloudType: aws
+    environment: Prod
+    type: Dedicated
+    businessUnit: BU1
+    offering:
+    - paas
+    allowedTeams:
+    - name: my-team
+      gitTeams:
+      - git_team_5
+      - git_team_6
+      ldapGroups:
+      - LDAP_GROUP_EXAMPLE_4
+      - LDAP_GROUP_EXAMPLE_5
+    capabilities:
+    - gpu-compute
+    caas:
+      loggingEndpoints:
+      - region: useast1
+        endpoint: splunk-us-east1.example.com
+        isDefault: true
+      domainName: example.com
+      ecrIamArns:
+        iamRoles:
+        - arn:aws:iam::account-id:role/role3
+        iamUser:
+        - arn:aws:iam::111222333444:user/role1
+      lbEndpoints:
+        public: cluster03-prod-uswest1.example.com
+      egressPorts:
+      - '80,443'
+      nfsInfo:
+      - name: my-nfs
+        basePath: "/nfs"
+        endpoint: nfs.example.com
+        mountOptions: rw
+        accessControlled: true
+        isDefault: true
+    tiers:
+    - name: proxy
+      instanceType: r5a.4xlarge
+      maxCapacity: 200
+      minCapacity: 3
+      rootDeviceSize: 200
+    - name: worker
+      instanceType: c5.9xlarge
+      labels:
+        node.kubernetes.io/workload.memory-optimized: true
+      maxCapacity: 1000
+      minCapacity: 3
+      rootDeviceSize: 200
+    accountId: 12345678
+    virtualNetworks:
+    - id: vpc-123456
+      cidrs:
+      - 10.0.22.0/8
+    registeredAt: '2020-03-19T07:55:46.132Z'
+    lastUpdated: '2020-03-20T07:55:46.132Z'
+    k8sInfraRelease:
+      gitSha: 110bb4f33b2142dde01e74a9bae7148534c2685b
+      lastUpdated: '2021-03-22T11:55:41Z'
+      release: 2021-W06-0-116-gd0c7e403
+    status: Active
+    phase: Running
+    tags:
+      onboarding: on
+      scaling: on

@@ -5,9 +5,9 @@ on:
   pull_request:
 
 jobs:
-  unit-tests:
+  tests:
     runs-on: ubuntu-latest
-    name: Unit tests
+    name: CI tests
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -17,5 +17,7 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: '${{ env.golang-version }}'
-      - name: Run tests
+      - name: Run unit tests
         run: make test
+      - name: Run e2e tests
+        run: make test-e2e

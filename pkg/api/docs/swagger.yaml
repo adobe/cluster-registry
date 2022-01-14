@@ -1,6 +1,15 @@
 basePath: /api
 definitions:
-  api.clusterList:
+  github.com_adobe_cluster-registry_pkg_api_api.clusterList:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/v1.ClusterSpec'
+        type: array
+      itemsCount:
+        type: integer
+    type: object
+  pkg_api_api.clusterList:
     properties:
       items:
         items:
@@ -52,7 +61,8 @@ definitions:
           +kubebuilder:validation:Required
         type: string
       allowedOnboardingTeams:
-        description: Git teams and/or LDAP groups that are allowed to onboard and deploy on the cluster
+        description: Git teams and/or LDAP groups that are allowed to onboard and
+          deploy on the cluster
         items:
           $ref: '#/definitions/v1.AllowedOnboardingTeam'
         type: array
@@ -141,10 +151,10 @@ definitions:
           +kubebuilder:validation:Enum=Inactive;Active;Deprecated;Deleted
         type: string
       tags:
-        description: Cluster tags that were applied
-        items:
+        additionalProperties:
           type: string
-        type: array
+        description: Cluster tags that were applied
+        type: object
       tiers:
         description: |-
           List of tiers with their associated information
@@ -288,7 +298,7 @@ definitions:
           +kubebuilder:validation:Required
         type: string
     type: object
-host: http://cluster-registry.missionctrl.cloud.adobe.io
+host: http://127.0.0.1:8080
 info:
   contact: {}
   description: Cluster Registry API
@@ -299,7 +309,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: List all clusters. Use query parameters to filter results. Auth is required
+      description: List all clusters. Use query parameters to filter results. Auth
+        is required
       operationId: get-clusters
       parameters:
       - description: Filter by region
@@ -332,7 +343,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.clusterList'
+            $ref: '#/definitions/pkg_api_api.clusterList'
         "500":
           description: Internal Server Error
           schema:

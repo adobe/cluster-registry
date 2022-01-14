@@ -60,7 +60,8 @@ build-cc:
 release:
 	./hack/release.sh
 
-.PHONY: image
+.PHONY: image 
+image: GOOS := linux
 image: .hack-api-image .hack-cc-image
 
 .hack-api-image: cmd/api/Dockerfile build-api
@@ -129,6 +130,12 @@ test-cc: source-env
 	test -f ${ENVTEST_ASSETS_DIR}/setup-envtest.sh || curl -sSLo ${ENVTEST_ASSETS_DIR}/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.7.2/hack/setup-envtest.sh
 	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); go test -race $(TEST_RUN_ARGS) -short $(CC_PKGS) -count=1 -v
 
+.PHONY: test-e2e
+test-e2e: source-env
+	$(shell pwd)/local/setup.sh
+	@. local/.env.local && go test github.com/adobe/cluster-registry/test/e2e
+	$(shell pwd)/local/cleanup.sh
+
 source-env:
 	source $(shell pwd)/.env.sample
 
@@ -166,3 +173,9 @@ GOBIN=$(shell pwd)/bin go get $(2) ;\
 rm -rf $$TMP_DIR ;\
 }
 endef
+
+# -------------
+# DOCUMENTATION
+# -------------
+swagger:
+	swag init --parseDependency --parseInternal --parseDepth 2 -g cmd/api/api.go --output pkg/api/docs/	
