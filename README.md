@@ -14,3 +14,4 @@ All clusters ar automatically registered and the information is accurately refle
 ## Architecture diagram
 
 ![architecture](https://lucid.app/publicSegments/view/4b7b1961-92a4-484d-b9af-534fa1be3ba7/image.png)
+
