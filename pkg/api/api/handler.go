@@ -13,7 +13,6 @@ governing permissions and limitations under the License.
 package api
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -35,21 +34,23 @@ type Handler interface {
 
 // handler struct
 type handler struct {
-	db  database.Db
-	met monitoring.MetricsI
+	db        database.Db
+	appConfig *utils.AppConfig
+	metrics   monitoring.MetricsI
 }
 
 // NewHandler func
-func NewHandler(d database.Db, m monitoring.MetricsI) Handler {
+func NewHandler(appConfig *utils.AppConfig, d database.Db, m monitoring.MetricsI) Handler {
 	h := &handler{
-		db:  d,
-		met: m,
+		db:        d,
+		metrics:   m,
+		appConfig: appConfig,
 	}
 	return h
 }
 
 func (h *handler) Register(v1 *echo.Group) {
-	a, err := authz.NewAuthenticator(h.met)
+	a, err := authz.NewAuthenticator(h.appConfig, h.metrics)
 	if err != nil {
 		log.Fatalf("Failed to initialize authenticator: %v", err)
 	}
@@ -88,30 +89,27 @@ func (h *handler) GetCluster(ctx echo.Context) error {
 
 // ListClusters godoc
 // @Summary List all clusters
-// @Description List all clusters. Use query parameters to filter results. Auth is required
+// @Description List all clusters. Use query parametricsers to filter results. Auth is required
 // @ID get-clusters
 // @Tags cluster
 // @Accept  json
 // @Produce  json
 // @Param region query string false "Filter by region"
 // @Param environment query string false "Filter by environment"
-// @Param businessUnit query string false "Filter by businessUnit"
 // @Param status query string false "Filter by status"
-// @Param limit query integer false "Limit number of clusters returned (default is 10)"
-// @Param offset query integer false "Offset/skip number of clusters (default is 0)"
+// @Param offset query integer false "Offset to start pagination search results (default is 0)"
+// @Param limit query integer false "The number of results per page (default is 200)"
 // @Success 200 {object} clusterList
 // @Failure 500 {object} utils.Error
 // @Security bearerAuth
 // @Router /v1/clusters [get]
 func (h *handler) ListClusters(ctx echo.Context) error {
-	var (
-		clusters []registryv1.Cluster
-		count    int
-	)
 
-	region := ctx.QueryParam("region")
+	var clusters []registryv1.Cluster
+	var count int
+
 	environment := ctx.QueryParam("environment")
-	businessUnit := ctx.QueryParam("businessUnit")
+	region := ctx.QueryParam("region")
 	status := ctx.QueryParam("status")
 
 	offset, err := strconv.Atoi(ctx.QueryParam("offset"))
@@ -121,11 +119,9 @@ func (h *handler) ListClusters(ctx echo.Context) error {
 
 	limit, err := strconv.Atoi(ctx.QueryParam("limit"))
 	if err != nil {
-		limit = 20
+		limit = 200
 	}
 
-	fmt.Println(limit, offset)
-	clusters, count, _ = h.db.ListClusters(region, environment, businessUnit, status)
-
-	return ctx.JSON(http.StatusOK, newClusterListResponse(clusters, count))
+	clusters, count, more, _ := h.db.ListClusters(offset, limit, region, environment, status)
+	return ctx.JSON(http.StatusOK, newClusterListResponse(clusters, count, offset, limit, more))
 }

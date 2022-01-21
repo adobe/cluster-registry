@@ -16,7 +16,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/adobe/cluster-registry/pkg/api/monitoring"
@@ -33,8 +32,6 @@ const (
 )
 
 var (
-	clientID    = os.Getenv("OIDC_CLIENT_ID")
-	issuerURL   = os.Getenv("OIDC_ISSUER_URL")
 	tokenLookup = "Authorization"
 	authScheme  = "Bearer"
 )
@@ -47,16 +44,16 @@ type Authenticator struct {
 }
 
 // NewAuthenticator creates new Authenticator
-func NewAuthenticator(m monitoring.MetricsI) (*Authenticator, error) {
+func NewAuthenticator(appConfig *utils.AppConfig, m monitoring.MetricsI) (*Authenticator, error) {
 	ctx := context.Background()
-	provider, err := oidc.NewProvider(ctx, issuerURL)
+	provider, err := oidc.NewProvider(ctx, appConfig.OidcIssuerUrl)
 
 	if err != nil {
 		return nil, fmt.Errorf("init verifier failed: %v", err)
 	}
 
 	config := &oidc.Config{
-		ClientID: clientID,
+		ClientID: appConfig.OidcClientId,
 	}
 
 	verifier := provider.Verifier(config)

@@ -18,6 +18,7 @@ import (
 	_ "github.com/adobe/cluster-registry/pkg/api/docs"
 	"github.com/adobe/cluster-registry/pkg/api/monitoring"
 	"github.com/adobe/cluster-registry/pkg/api/sqs"
+	"github.com/adobe/cluster-registry/pkg/api/utils"
 	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
@@ -37,6 +38,8 @@ import (
 // @in header
 // @name Authorization
 func main() {
+
+	appConfig := utils.LoadApiConfig()
 	a := api.NewRouter()
 
 	a.GET("/api/swagger/*", echoSwagger.WrapHandler)
@@ -46,11 +49,11 @@ func main() {
 	m := monitoring.NewMetrics("cluster_registry_api", nil, false)
 	m.Use(a)
 
-	d := database.NewDb(m)
-	h := api.NewHandler(d, m)
+	d := database.NewDb(appConfig, m)
+	h := api.NewHandler(appConfig, d, m)
 	h.Register(v1)
 
-	c := sqs.NewConsumer(d, m)
+	c := sqs.NewConsumer(appConfig, d, m)
 	go c.Consume()
 
 	a.Logger.Fatal(a.Start(":8080"))

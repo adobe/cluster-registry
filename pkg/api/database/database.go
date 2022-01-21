@@ -13,11 +13,10 @@ governing permissions and limitations under the License.
 package database
 
 import (
-	"os"
-	"reflect"
 	"time"
 
 	"github.com/adobe/cluster-registry/pkg/api/monitoring"
+	"github.com/adobe/cluster-registry/pkg/api/utils"
 	registryv1 "github.com/adobe/cluster-registry/pkg/cc/api/registry/v1"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -35,40 +34,61 @@ const (
 // Db provides an interface for interacting with dynamonDb
 type Db interface {
 	GetCluster(name string) (*registryv1.Cluster, error)
-	ListClusters(region string, environment string, businessUnit string, status string) ([]registryv1.Cluster, int, error)
+	ListClusters(offset int, limit int, environment string, region string, status string) ([]registryv1.Cluster, int, bool, error)
 	PutCluster(cluster *registryv1.Cluster) error
 	DeleteCluster(name string) error
 }
 
 // db struct
 type db struct {
-	dbAPI     dynamodbiface.DynamoDBAPI
-	tableName string
-	met       monitoring.MetricsI
+	dbAPI   dynamodbiface.DynamoDBAPI
+	table   dbTable
+	index   dbTable
+	metrics monitoring.MetricsI
+}
+
+type dbTable struct {
+	name         string
+	partitionKey string
+	searchKey    string
 }
 
 // ClusterDb encapsulates the Cluster CRD
 type ClusterDb struct {
-	Name    string              `json:"name,hash"`
-	Cluster *registryv1.Cluster `json:"crd,hash"`
+	TablePartitionKey string              `json:"name,string"`
+	IndexPartitionKey string              `json:"kind,string"`
+	Region            string              `json:"region,string"`
+	Environment       string              `json:"environment,string"`
+	Status            string              `json:"status,string"`
+	Cluster           *registryv1.Cluster `json:"crd,hash"`
 }
 
 // NewDb func
-func NewDb(m monitoring.MetricsI) Db {
-	dbEndpoint := os.Getenv("DB_ENDPOINT")
-	awsRegion := os.Getenv("DB_AWS_REGION")
-	dbTableName := os.Getenv("DB_TABLE_NAME")
+func NewDb(appConfig *utils.AppConfig, m monitoring.MetricsI) Db {
+	var t, i dbTable
 
 	sess := session.Must(session.NewSession(&aws.Config{
-		Region:   aws.String(awsRegion),
-		Endpoint: aws.String(dbEndpoint),
+		Region:   aws.String(appConfig.AwsRegion),
+		Endpoint: aws.String(appConfig.DbEndpoint),
 	}))
+
+	t = dbTable{
+		name:         appConfig.DbTableName,
+		partitionKey: "name",
+	}
+
+	i = dbTable{
+		name:         appConfig.DbIndexName,
+		partitionKey: "kind",
+		searchKey:    "name",
+	}
 
 	d := dynamodb.New(sess)
 	dbInst := &db{
-		dbAPI:     d,
-		tableName: dbTableName,
-		met:       m,
+		dbAPI:   d,
+		table:   t,
+		index:   i,
+		metrics: m,
 	}
 
 	return dbInst
@@ -77,7 +97,7 @@ func NewDb(m monitoring.MetricsI) Db {
 // GetCluster a single cluster
 func (d *db) GetCluster(name string) (*registryv1.Cluster, error) {
 	params := &dynamodb.GetItemInput{
-		TableName: &d.tableName,
+		TableName: &d.table.name,
 		Key: map[string]*dynamodb.AttributeValue{
 			"name": {
 				S: aws.String(name),
@@ -89,99 +109,86 @@ func (d *db) GetCluster(name string) (*registryv1.Cluster, error) {
 	resp, err := d.dbAPI.GetItem(params)
 	elapsed := float64(time.Since(start)) / float64(time.Second)
 
-	d.met.RecordEgressRequestCnt(egressTarget)
-	d.met.RecordEgressRequestDur(egressTarget, elapsed)
+	d.metrics.RecordEgressRequestCnt(egressTarget)
+	d.metrics.RecordEgressRequestDur(egressTarget, elapsed)
 
 	if err != nil {
-		log.Warn(err.Error())
+		log.Errorf("Cannot get cluster '%s' from the database. Error: '%v'", name, err.Error())
 		return nil, err
 	}
 
 	if resp.Item == nil {
-		log.Warn("Cluster " + name + " not found")
+		log.Warnf("Cluster '%s' not found in the database.", name)
 		return nil, nil
 	}
 
 	var clusterDb *ClusterDb
 	err = dynamodbattribute.UnmarshalMap(resp.Item, &clusterDb)
 	if err != nil {
-		log.Error(err.Error())
+		log.Errorf("Cannot unmarshal cluster '%s'. Error: '%v'", err.Error())
 		return nil, err
 	}
 
 	return clusterDb.Cluster, err
 }
 
-// ListClusters all clusters
-func (d *db) ListClusters(region string, environment string, businessUnit string, status string) ([]registryv1.Cluster, int, error) {
+// ListClusters list all clusters
+func (d *db) ListClusters(offset int, limit int, region string, environment string, status string) ([]registryv1.Cluster, int, bool, error) {
+
 	var clusters []registryv1.Cluster = []registryv1.Cluster{}
+	var queryInput *dynamodb.QueryInput
+	var filter expression.ConditionBuilder
+	var keyCondition expression.KeyConditionBuilder
+	var expr expression.Expression
 	var err error
 
-	// add all params to a map
-	queryParams := make(map[string]string, 4)
-	var params *dynamodb.ScanInput
-	var filt expression.ConditionBuilder
-
+	if status != "" {
+		filter = expression.Name("status").Equal(expression.Value(status))
+	} else {
+		filter = expression.Name("status").NotEqual(expression.Value("Deleted"))
+	}
 	if region != "" {
-		queryParams["region"] = region
+		filter = filter.And(expression.Name("region").Equal(expression.Value(region)))
 	}
 	if environment != "" {
-		queryParams["environment"] = environment
-	}
-	if businessUnit != "" {
-		queryParams["businessUnit"] = businessUnit
-	}
-	if status != "" {
-		queryParams["status"] = status
+		filter = filter.And(expression.Name("environment").Equal(expression.Value(environment)))
 	}
 
-	// TODO: use nested filtering
-	if len(queryParams) > 0 {
-		for k, v := range queryParams {
-			if reflect.DeepEqual(filt, expression.ConditionBuilder{}) {
-				filt = expression.Name(k).Equal(expression.Value(v))
-			} else {
-				filt = filt.And(expression.Name(k).Equal(expression.Value(v)))
-			}
-		}
+	keyCondition = expression.Key(d.index.partitionKey).Equal(expression.Value("cluster"))
+	expr, err = expression.NewBuilder().WithKeyCondition(keyCondition).WithFilter(filter).Build()
 
-		expr, err := expression.NewBuilder().WithFilter(filt).Build()
-		if err != nil {
-			log.Error(err.Error())
-			os.Exit(1)
-		}
-		params = &dynamodb.ScanInput{
-			ExpressionAttributeNames:  expr.Names(),
-			ExpressionAttributeValues: expr.Values(),
-			FilterExpression:          expr.Filter(),
-			ProjectionExpression:      expr.Projection(),
-			TableName:                 aws.String(d.tableName),
-		}
-	} else {
-		params = &dynamodb.ScanInput{
-			TableName: aws.String(d.tableName),
-		}
+	if err != nil {
+		log.Errorf("Building dynamodb query expersion failed: '%v'.", err.Error())
+		return nil, 0, false, err
+	}
+
+	queryInput = &dynamodb.QueryInput{
+		TableName:                 &d.table.name,
+		IndexName:                 &d.index.name,
+		KeyConditionExpression:    expr.KeyCondition(),
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+		FilterExpression:          expr.Filter(),
 	}
 
 	for {
 		start := time.Now()
-		result, err := d.dbAPI.Scan(params)
+		result, err := d.dbAPI.Query(queryInput)
 		elapsed := float64(time.Since(start)) / float64(time.Second)
 
-		d.met.RecordEgressRequestCnt(egressTarget)
-		d.met.RecordEgressRequestDur(egressTarget, elapsed)
+		d.metrics.RecordEgressRequestCnt(egressTarget)
+		d.metrics.RecordEgressRequestDur(egressTarget, elapsed)
 
 		if err != nil {
-			log.Error("Query DynamonDB API call failed: " + err.Error())
+			log.Errorf("DynamonDB API query call failed: '%v'.", err.Error())
 		}
 
 		for _, i := range result.Items {
-			item := ClusterDb{}
+			var item ClusterDb
 
 			err = dynamodbattribute.UnmarshalMap(i, &item)
-
 			if err != nil {
-				log.Error("Got error unmarshalling: " + err.Error())
+				log.Errorf("Got error when trying to unmarshal cluster: '%v'.", err.Error())
 			}
 
 			clusters = append(clusters, *item.Cluster)
@@ -189,23 +196,43 @@ func (d *db) ListClusters(region string, environment string, businessUnit string
 		if result.LastEvaluatedKey == nil {
 			break
 		}
-		params.ExclusiveStartKey = result.LastEvaluatedKey
+		queryInput.ExclusiveStartKey = result.LastEvaluatedKey
 	}
 
-	return clusters, len(clusters), err
+	count := len(clusters)
+	startIndex := offset
+	endIndex := offset + limit
+	more := false
+
+	if endIndex > count {
+		endIndex = count
+	}
+	if endIndex < count {
+		more = true
+	}
+
+	return clusters[startIndex:endIndex], endIndex - startIndex, more, err
 }
 
 // PutCluster (create/update) a cluster in database
 func (d *db) PutCluster(cluster *registryv1.Cluster) error {
 
-	clusterDb, err := dynamodbattribute.MarshalMap(ClusterDb{Name: cluster.Spec.Name, Cluster: cluster})
+	clusterDb, err := dynamodbattribute.MarshalMap(ClusterDb{
+		TablePartitionKey: cluster.Spec.Name,
+		IndexPartitionKey: "cluster",
+		Region:            cluster.Spec.Region,
+		Environment:       cluster.Spec.Environment,
+		Status:            cluster.Spec.Status,
+		Cluster:           cluster,
+	})
+
 	if err != nil {
-		log.Error("Cannot marshal cluster into AttributeValue map")
+		log.Errorf("Cannot marshal cluster '%s' into AttributeValue map.", cluster.Name)
 		return err
 	}
 
 	params := &dynamodb.PutItemInput{
-		TableName: &d.tableName,
+		TableName: &d.table.name,
 		Item:      clusterDb,
 	}
 
@@ -213,15 +240,15 @@ func (d *db) PutCluster(cluster *registryv1.Cluster) error {
 	_, err = d.dbAPI.PutItem(params)
 	elapsed := float64(time.Since(start)) / float64(time.Second)
 
-	d.met.RecordEgressRequestCnt(egressTarget)
-	d.met.RecordEgressRequestDur(egressTarget, elapsed)
+	d.metrics.RecordEgressRequestCnt(egressTarget)
+	d.metrics.RecordEgressRequestDur(egressTarget, elapsed)
 
 	if err != nil {
-		log.Error(err.Error())
+		log.Errorf("Cluster '%s' cannot be updated or created in the database. Error: '%v'", cluster.Name, err.Error())
 		return err
 	}
 
-	log.Info("Cluster " + cluster.Name + " updated successfully")
+	log.Infof("Cluster '%s' updated successfully.", cluster.Name)
 
 	return err
 }
@@ -229,7 +256,7 @@ func (d *db) PutCluster(cluster *registryv1.Cluster) error {
 // DeleteCluster delete a cluster from database
 func (d *db) DeleteCluster(name string) error {
 	params := &dynamodb.DeleteItemInput{
-		TableName: &d.tableName,
+		TableName: &d.table.name,
 		Key: map[string]*dynamodb.AttributeValue{
 			"name": {
 				S: aws.String(name),
@@ -241,17 +268,15 @@ func (d *db) DeleteCluster(name string) error {
 	_, err := d.dbAPI.DeleteItem(params)
 	elapsed := float64(time.Since(start)) / float64(time.Second)
 
-	d.met.RecordEgressRequestCnt(egressTarget)
-	d.met.RecordEgressRequestDur(egressTarget, elapsed)
+	d.metrics.RecordEgressRequestCnt(egressTarget)
+	d.metrics.RecordEgressRequestDur(egressTarget, elapsed)
 
 	if err != nil {
-		log.Error(err.Error())
+		log.Errorf("Cluster deletion error from db: %v", err.Error())
 		return err
 	}
 
-	log.Info("Cluster " + name + " deleted successfully")
+	log.Infof("Cluster %s deleted successfully", name)
 
 	return err
 }
-
-// DeleteAllClusters

@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/adobe/cluster-registry/pkg/api/utils"
 	registryv1 "github.com/adobe/cluster-registry/pkg/cc/api/registry/v1"
 	"github.com/adobe/cluster-registry/pkg/cc/monitoring"
 	"github.com/aws/aws-sdk-go/aws"
@@ -38,16 +39,12 @@ type producer struct {
 }
 
 // NewProducer - create new message queue producer
-func NewProducer(m monitoring.MetricsI) Producer {
+func NewProducer(appConfig *utils.AppConfig, m monitoring.MetricsI) Producer {
 
-	sqsSvc := NewSQS()
-	sqsQueueName, err := getSqsQueueName(sqsEndpoint)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
+	sqsSvc := NewSQS(appConfig)
 
 	urlResult, err := sqsSvc.GetQueueUrl(&sqs.GetQueueUrlInput{
-		QueueName: &sqsQueueName,
+		QueueName: &appConfig.SqsQueueName,
 	})
 	if err != nil {
 		log.Fatal(err.Error())

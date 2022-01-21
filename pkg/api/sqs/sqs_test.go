@@ -14,12 +14,11 @@ package sqs
 
 import (
 	"errors"
-	"fmt"
-	"os"
 	"strconv"
 	"testing"
 
 	"github.com/adobe/cluster-registry/pkg/api/database"
+	"github.com/adobe/cluster-registry/pkg/api/utils"
 	registryv1 "github.com/adobe/cluster-registry/pkg/cc/api/registry/v1"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/request"
@@ -44,8 +43,8 @@ func (m mockDatabase) GetCluster(name string) (*registryv1.Cluster, error) {
 	return nil, nil
 }
 
-func (m mockDatabase) ListClusters(region string, environment string, businessUnit string, status string) ([]registryv1.Cluster, int, error) {
-	return m.clusters, len(m.clusters), nil
+func (m mockDatabase) ListClusters(offset int, limit int, region string, environment string, status string) ([]registryv1.Cluster, int, bool, error) {
+	return m.clusters, len(m.clusters), false, nil
 }
 
 func (m *mockDatabase) PutCluster(cluster *registryv1.Cluster) error {
@@ -145,101 +144,11 @@ func getQueueDepth(s sqsiface.SQSAPI) (int, error) {
 func TestNewSqs(t *testing.T) {
 	test := assert.New(t)
 
-	os.Setenv("SQS_ENDPOINT", "dummy-url")
-	os.Setenv("SQS_AWS_REGION", "dummy-region")
+	appConfig := &utils.AppConfig{
+		SqsEndpoint:  "dummy-url",
+		SqsAwsRegion: "dummy-region",
+	}
 
-	s := NewSQS()
+	s := NewSQS(appConfig)
 	test.NotNil(s)
-}
-
-func TestGetSqsAwsRegion(t *testing.T) {
-	test := assert.New(t)
-	tcs := []struct {
-		name            string
-		endpointURL     string
-		envSqsAwsRegion string
-		expectedRegion  string
-		expectedError   error
-	}{
-		{
-			name:            "get from endpoint",
-			endpointURL:     "https://sqs.us-west-2.amazonaws.com/myaccountid/myqueue",
-			envSqsAwsRegion: "",
-			expectedRegion:  "us-west-2",
-			expectedError:   nil,
-		},
-		{
-			name:            "get from env var",
-			endpointURL:     "https://sqs.amazonaws.com/myaccountid/myqueue",
-			envSqsAwsRegion: "us-west-2",
-			expectedRegion:  "us-west-2",
-			expectedError:   nil,
-		},
-		{
-			name:            "error",
-			endpointURL:     "https://sqs.amazonaws.com/myaccountid/myqueue",
-			envSqsAwsRegion: "",
-			expectedRegion:  "",
-			expectedError:   fmt.Errorf("cannot get sqs aws region from sqsEndpoint or from environment variables"),
-		},
-	}
-
-	for _, tc := range tcs {
-		os.Setenv("SQS_AWS_REGION", tc.envSqsAwsRegion)
-		awsRegion, err := getSqsAwsRegion(tc.endpointURL)
-
-		if tc.expectedError != nil {
-			test.Error(err, "there should be an error processing the message")
-			test.Contains(fmt.Sprintf("%v", err), fmt.Sprintf("%v", tc.expectedError), "the error message should be as expected")
-		} else {
-			test.NoError(err)
-		}
-		test.Equal(tc.expectedRegion, awsRegion)
-	}
-}
-
-func TestGetSqsQueueName(t *testing.T) {
-	test := assert.New(t)
-	tcs := []struct {
-		name              string
-		endpointURL       string
-		envSqsQueueName   string
-		expectedQueueName string
-		expectedError     error
-	}{
-		{
-			name:              "get from endpoint",
-			endpointURL:       "https://sqs.us-west-2.amazonaws.com/myaccountid/myqueue",
-			envSqsQueueName:   "",
-			expectedQueueName: "myqueue",
-			expectedError:     nil,
-		},
-		{
-			name:              "get from env var",
-			endpointURL:       "https://sqs.us-west-2.amazonaws.com",
-			envSqsQueueName:   "myqueue",
-			expectedQueueName: "myqueue",
-			expectedError:     nil,
-		},
-		{
-			name:              "error",
-			endpointURL:       "https://sqs.us-west-2.amazonaws.com",
-			envSqsQueueName:   "",
-			expectedQueueName: "",
-			expectedError:     fmt.Errorf("cannot get sqs queue name from sqsEndpoint or from environment variables"),
-		},
-	}
-
-	for _, tc := range tcs {
-		os.Setenv("SQS_QUEUE_NAME", tc.envSqsQueueName)
-		queueName, err := getSqsQueueName(tc.endpointURL)
-
-		if tc.expectedError != nil {
-			test.Error(err, "there should be an error processing the message")
-			test.Contains(fmt.Sprintf("%v", err), fmt.Sprintf("%v", tc.expectedError), "the error message should be as expected")
-		} else {
-			test.NoError(err)
-		}
-		test.Equal(tc.expectedQueueName, queueName)
-	}
 }
