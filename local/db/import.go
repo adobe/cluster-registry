@@ -8,14 +8,17 @@ import (
 
 	"github.com/adobe/cluster-registry/pkg/api/database"
 	"github.com/adobe/cluster-registry/pkg/api/monitoring"
+	"github.com/adobe/cluster-registry/pkg/api/utils"
 	registryv1 "github.com/adobe/cluster-registry/pkg/cc/api/registry/v1"
 	"gopkg.in/yaml.v2"
 )
 
 func main() {
 	var clusters []registryv1.Cluster
+
 	m := monitoring.NewMetrics("cluster_registry_api_local", nil, false)
-	d := database.NewDb(m)
+	appConfig := utils.LoadApiConfig()
+	d := database.NewDb(appConfig, m)
 
 	input_file := flag.String("input-file", "dummy-data.yaml", "yaml file path")
 	flag.Parse()

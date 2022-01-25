@@ -81,11 +81,13 @@ if [[ "${RUN_API}" == 1 ]]; then
 	docker run -d \
 		--name ${CONTAINER_API} \
 		-p 8080:8080 \
+		-e AWS_REGION \
 		-e AWS_ACCESS_KEY_ID \
 		-e AWS_SECRET_ACCESS_KEY \
 		-e DB_AWS_REGION \
 		-e DB_ENDPOINT=http://${CONTAINER_DB}:8000 \
 		-e DB_TABLE_NAME=${DB_TABLE_NAME} \
+		-e DB_INDEX_NAME=${DB_INDEX_NAME} \
 		-e OIDC_ISSUER_URL=http://${CONTAINER_OIDC} \
 		-e OIDC_CLIENT_ID \
 		-e SQS_AWS_REGION \
