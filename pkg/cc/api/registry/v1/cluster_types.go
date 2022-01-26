@@ -23,7 +23,7 @@ type ClusterSpec struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MaxLength=64
 	// +kubebuilder:validation:MinLength=3
-	Name string `json:"name,hash"`
+	Name string `json:"name"`
 
 	// Cluster name, without dash.
 	// +kubebuilder:validation:Required

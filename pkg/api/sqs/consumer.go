@@ -49,7 +49,7 @@ type consumer struct {
 	maxMessages     int64
 	pollWaitSeconds int64
 	retrySeconds    int
-	met             monitoring.MetricsI
+	metrics         monitoring.MetricsI
 }
 
 // NewConsumer - creates new message queue consumer
@@ -71,7 +71,7 @@ func NewConsumer(appConfig *utils.AppConfig, d database.Db, m monitoring.Metrics
 		maxMessages:     1,
 		pollWaitSeconds: 1,
 		retrySeconds:    5,
-		met:             m,
+		metrics:         m,
 	}
 }
 
@@ -95,8 +95,8 @@ func (c *consumer) worker(id int) {
 		}))
 		elapsed := float64(time.Since(start)) / float64(time.Second)
 
-		c.met.RecordEgressRequestCnt(egressTarget)
-		c.met.RecordEgressRequestDur(egressTarget, elapsed)
+		c.metrics.RecordEgressRequestCnt(egressTarget)
+		c.metrics.RecordEgressRequestDur(egressTarget, elapsed)
 
 		if err != nil {
 			log.Error(err.Error())
@@ -178,8 +178,8 @@ func (c *consumer) delete(m *sqs.Message) error {
 		&sqs.DeleteMessageInput{QueueUrl: &c.queueURL, ReceiptHandle: m.ReceiptHandle})
 	elapsed := float64(time.Since(start)) / float64(time.Second)
 
-	c.met.RecordEgressRequestCnt(egressTarget)
-	c.met.RecordEgressRequestDur(egressTarget, elapsed)
+	c.metrics.RecordEgressRequestCnt(egressTarget)
+	c.metrics.RecordEgressRequestDur(egressTarget, elapsed)
 
 	if err != nil {
 		log.Error(err.Error())

@@ -59,6 +59,8 @@ func TestGetCluster(t *testing.T) {
 	test := assert.New(t)
 	appConfig := &utils.AppConfig{}
 
+	t.Log("Test getting a single cluster from the api.")
+
 	tcs := []struct {
 		name             string
 		clusterName      string
@@ -111,6 +113,8 @@ func TestGetCluster(t *testing.T) {
 		ctx.SetParamNames("name")
 		ctx.SetParamValues(tc.clusterName)
 
+		t.Logf("\tTest %s:\tWhen checking for cluster %s and http status code %d", tc.name, tc.clusterName, tc.expectedStatus)
+
 		err := h.GetCluster(ctx)
 		test.NoError(err)
 
@@ -128,6 +132,8 @@ func TestGetCluster(t *testing.T) {
 func TestListClusters(t *testing.T) {
 	test := assert.New(t)
 	appConfig := &utils.AppConfig{}
+
+	t.Log("Test getting all clusters from the api.")
 
 	tcs := []struct {
 		name           string
@@ -170,6 +176,7 @@ func TestListClusters(t *testing.T) {
 		rec := httptest.NewRecorder()
 		ctx := r.NewContext(req, rec)
 
+		t.Logf("\tTest %s:\tWhen checking for status code %d and number of items %d", tc.name, tc.expectedStatus, tc.expectedItems)
 		err := h.ListClusters(ctx)
 
 		test.NoError(err)

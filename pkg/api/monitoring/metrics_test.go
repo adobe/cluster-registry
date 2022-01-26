@@ -28,11 +28,9 @@ const (
 	ingressCode               = "200"
 	ingressMethod             = "GET"
 	ingressURL                = "/api/v1/clusters/:name"
-	ingressTarget             = "testing_ingress"
 	minRand                   = 1
 	maxRand                   = 2.5
 	subsystem                 = "testing"
-	testingPort               = "12345"
 )
 
 func TestNewMetrics(t *testing.T) {

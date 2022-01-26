@@ -33,7 +33,7 @@ CC_PKGS = $(shell go list ./pkg/cc/...)
 CC_PKGS += $(shell go list ./cmd/cc/...)
 
 .PHONY: all
-all: format generate build test
+all: format generate build test test-e2e
 
 .PHONY: clean
 clean:
@@ -85,19 +85,25 @@ update-go-deps:
 ##############
 
 .PHONY: format
-format: go-fmt jsonnet-fmt check-license shellcheck
+format: go-fmt go-vet go-lint go-sec check-license
 
 .PHONY: go-fmt
 go-fmt:
-	gofmt -s -w .
+	@echo 'Formatting go code...'
+	@gofmt -s -w .
+	@echo 'Not formatiing issues found in go codebase!'
+	
 
 .PHONY: check-license
 check-license:
 	./hack/check_license.sh
 
-.PHONY: lint
-lint: golangci-lint
-	$(GOLANGCI_LINT) run
+
+.PHONY: go-lint
+go-lint: golangci-lint
+	@echo 'Linting go code...'
+	$(GOLANGCI_LINT) run -v --timeout 5m
+	@echo 'Not linting issues found in go codebase!'
 
 .PHONY: lint-fix
 lint-fix: golangci-lint
@@ -110,6 +116,18 @@ golangci-lint:
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell dirname $(GOLANGCI_LINT)) v1.41.1 ;\
 	}
 
+GOSEC = $(shell pwd)/bin/gosec
+go-sec: ## Inspects source code for security problems
+	@if ! command -v gosec >/dev/null 2>&1 ; then $(call go-get-tool,$(GOSEC),github.com/securego/gosec/v2/cmd/gosec); fi
+	@echo 'Checking source code for security problems...'
+	$(GOSEC)  ./pkg/...
+	@echo 'No security problems found in go codebase!'
+
+go-vet: ## Identifying subtle source code issues
+	@echo 'Vetting go code...'
+	@go vet $(shell pwd)/pkg/api/...
+	@echo 'Not issues found in go codebase!'
+
 
 ###########
 # Testing #
@@ -121,23 +139,21 @@ ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
 test: test-api test-cc
 
 .PHONY: test-api
-test-api: source-env
-	source $(shell pwd)/.env.sample; go test -race $(TEST_RUN_ARGS) -short $(API_PKGS) -count=1 -v
+test-api:
+	go test -race $(TEST_RUN_ARGS) -short $(API_PKGS) -count=1 -v
 
 .PHONY: test-cc
-test-cc: source-env
+test-cc:
 	mkdir -p ${ENVTEST_ASSETS_DIR}
 	test -f ${ENVTEST_ASSETS_DIR}/setup-envtest.sh || curl -sSLo ${ENVTEST_ASSETS_DIR}/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.7.2/hack/setup-envtest.sh
 	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); go test -race $(TEST_RUN_ARGS) -short $(CC_PKGS) -count=1 -v
 
 .PHONY: test-e2e
-test-e2e: source-env
+test-e2e:
 	$(shell pwd)/local/setup.sh
-	@. local/.env.local && go test github.com/adobe/cluster-registry/test/e2e
+	@. local/.env.local && go test -race github.com/adobe/cluster-registry/test/e2e -count=1 -v
 	$(shell pwd)/local/cleanup.sh
 
-source-env:
-	source $(shell pwd)/.env.sample
 
 
 ###############
@@ -163,15 +179,15 @@ generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and
 
 # go-get-tool will 'go get' any package $2 and install it to $1.
 define go-get-tool
-@[ -f $(1) ] || { \
-set -e ;\
-TMP_DIR=$$(mktemp -d) ;\
-cd $$TMP_DIR ;\
-go mod init tmp ;\
-echo "Downloading $(2)" ;\
-GOBIN=$(shell pwd)/bin go get $(2) ;\
-rm -rf $$TMP_DIR ;\
-}
+	@[ -f $(1) ] || {						\
+	set -e ;								\
+	TMP_DIR=$$(mktemp -d) ;					\
+	cd $$TMP_DIR ;							\
+	go mod init tmp ;						\
+	echo "Downloading $(2)";				\
+	GOBIN=$(shell pwd)/bin go get $(2);	\
+	rm -rf $$TMP_DIR;						\
+	}
 endef
 
 # -------------

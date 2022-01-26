@@ -35,7 +35,7 @@ type Producer interface {
 type producer struct {
 	sqs      sqsiface.SQSAPI
 	queueURL string
-	met      monitoring.MetricsI
+	metrics  monitoring.MetricsI
 }
 
 // NewProducer - create new message queue producer
@@ -53,7 +53,7 @@ func NewProducer(appConfig *utils.AppConfig, m monitoring.MetricsI) Producer {
 	return &producer{
 		sqs:      sqsSvc,
 		queueURL: *urlResult.QueueUrl,
-		met:      m,
+		metrics:  m,
 	}
 }
 
@@ -80,8 +80,8 @@ func (p *producer) Send(ctx context.Context, c *registryv1.Cluster) error {
 	})
 	elapsed := float64(time.Since(start)) / float64(time.Second)
 
-	p.met.RecordEgressRequestCnt(egressTarget)
-	p.met.RecordEgressRequestDur(egressTarget, elapsed)
+	p.metrics.RecordEgressRequestCnt(egressTarget)
+	p.metrics.RecordEgressRequestDur(egressTarget, elapsed)
 
 	if err != nil {
 		log.Error(err.Error())
