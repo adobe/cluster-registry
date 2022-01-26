@@ -116,10 +116,11 @@ golangci-lint:
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell dirname $(GOLANGCI_LINT)) v1.41.1 ;\
 	}
 
+GOSEC = $(shell pwd)/bin/gosec
 go-sec: ## Inspects source code for security problems
-	@if ! command -v gosec >/dev/null 2>&1 ; then go install github.com/securego/gosec/v2/cmd/gosec; exit 1; fi
+	@if ! command -v gosec >/dev/null 2>&1 ; then $(call go-get-tool,$(GOSEC),github.com/securego/gosec/v2/cmd/gosec); fi
 	@echo 'Checking source code for security problems...'
-	@gosec  ./pkg/...
+	$(GOSEC)  ./pkg/...
 	@echo 'No security problems found in go codebase!'
 
 go-vet: ## Identifying subtle source code issues
@@ -178,15 +179,15 @@ generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and
 
 # go-get-tool will 'go get' any package $2 and install it to $1.
 define go-get-tool
-@[ -f $(1) ] || { \
-set -e ;\
-TMP_DIR=$$(mktemp -d) ;\
-cd $$TMP_DIR ;\
-go mod init tmp ;\
-echo "Downloading $(2)" ;\
-GOBIN=$(shell pwd)/bin go get $(2) ;\
-rm -rf $$TMP_DIR ;\
-}
+	@[ -f $(1) ] || {						\
+	set -e ;								\
+	TMP_DIR=$$(mktemp -d) ;					\
+	cd $$TMP_DIR ;							\
+	go mod init tmp ;						\
+	echo "Downloading $(2)";				\
+	GOBIN=$(shell pwd)/bin go install $(2);	\
+	rm -rf $$TMP_DIR;						\
+	}
 endef
 
 # -------------
