@@ -185,7 +185,7 @@ define go-get-tool
 	cd $$TMP_DIR ;							\
 	go mod init tmp ;						\
 	echo "Downloading $(2)";				\
-	GOBIN=$(shell pwd)/bin go install $(2);	\
+	GOBIN=$(shell pwd)/bin go get $(2);	\
 	rm -rf $$TMP_DIR;						\
 	}
 endef
