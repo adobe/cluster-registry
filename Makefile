@@ -102,7 +102,7 @@ check-license:
 .PHONY: go-lint
 go-lint: golangci-lint
 	@echo 'Linting go code...'
-	$(GOLANGCI_LINT) run
+	$(GOLANGCI_LINT) run -v --timeout 2m
 	@echo 'Not linting issues found in go codebase!'
 
 .PHONY: lint-fix
