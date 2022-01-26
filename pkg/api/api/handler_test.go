@@ -20,13 +20,14 @@ import (
 
 	"github.com/adobe/cluster-registry/pkg/api/database"
 	"github.com/adobe/cluster-registry/pkg/api/monitoring"
+	"github.com/adobe/cluster-registry/pkg/api/utils"
 	registryv1 "github.com/adobe/cluster-registry/pkg/cc/api/registry/v1"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 )
 
-// mockDatabase database.db
+// mockDatabase extends database.db
 type mockDatabase struct {
 	database.Db
 	clusters []registryv1.Cluster
@@ -41,20 +42,23 @@ func (m mockDatabase) GetCluster(name string) (*registryv1.Cluster, error) {
 	return nil, nil
 }
 
-func (m mockDatabase) ListClusters(region string, environment string, businessUnit string, status string) ([]registryv1.Cluster, int, error) {
-	return m.clusters, len(m.clusters), nil
+func (m mockDatabase) ListClusters(offset int, limit int, environment string, region string, status string) ([]registryv1.Cluster, int, bool, error) {
+	return m.clusters, len(m.clusters), false, nil
 }
 
 func TestNewHandler(t *testing.T) {
 	test := assert.New(t)
+	appConfig := &utils.AppConfig{}
 	d := mockDatabase{}
 	m := monitoring.NewMetrics("cluster_registry_api_handler_test", nil, true)
-	h := NewHandler(d, m)
+	h := NewHandler(appConfig, d, m)
 	test.NotNil(h)
 }
 
 func TestGetCluster(t *testing.T) {
 	test := assert.New(t)
+	appConfig := &utils.AppConfig{}
+
 	tcs := []struct {
 		name             string
 		clusterName      string
@@ -95,7 +99,7 @@ func TestGetCluster(t *testing.T) {
 
 		d := mockDatabase{clusters: tc.clusters}
 		m := monitoring.NewMetrics("cluster_registry_api_handler_test", nil, true)
-		h := NewHandler(d, m)
+		h := NewHandler(appConfig, d, m)
 		r := NewRouter()
 
 		req := httptest.NewRequest(echo.GET, "/api/v1/clusters/:name", nil)
@@ -123,6 +127,8 @@ func TestGetCluster(t *testing.T) {
 
 func TestListClusters(t *testing.T) {
 	test := assert.New(t)
+	appConfig := &utils.AppConfig{}
+
 	tcs := []struct {
 		name           string
 		clusters       []registryv1.Cluster
@@ -156,7 +162,7 @@ func TestListClusters(t *testing.T) {
 
 		d := mockDatabase{clusters: tc.clusters}
 		m := monitoring.NewMetrics("cluster_registry_api_handler_test", nil, true)
-		h := NewHandler(d, m)
+		h := NewHandler(appConfig, d, m)
 		r := NewRouter()
 
 		req := httptest.NewRequest(echo.GET, "/api/v1/clusters", nil)

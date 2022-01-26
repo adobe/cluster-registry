@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/adobe/cluster-registry/pkg/api/monitoring"
+	"github.com/adobe/cluster-registry/pkg/api/utils"
 	"github.com/adobe/cluster-registry/test/jwt"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/labstack/echo/v4"
@@ -52,6 +53,10 @@ func (s *staticKeySet) VerifySignature(ctx context.Context, jwt string) (payload
 
 func TestToken(t *testing.T) {
 
+	appConfig := &utils.AppConfig{
+		OidcClientId:  "oidc-client-id",
+		OidcIssuerUrl: "https://accounts.google.com",
+	}
 	test := assert.New(t)
 	tcs := []struct {
 		name           string
@@ -61,7 +66,7 @@ func TestToken(t *testing.T) {
 	}{
 		{
 			name:           "valid token",
-			authHeader:     jwt.BuildAuthHeader(false, dummySigningKeyFile, signingKeyPrivate, jwt.Claim{}),
+			authHeader:     jwt.BuildAuthHeader(appConfig, false, dummySigningKeyFile, signingKeyPrivate, jwt.Claim{}),
 			code:           http.StatusOK,
 			signingKeyFile: dummySigningKeyFile,
 		},
@@ -79,25 +84,25 @@ func TestToken(t *testing.T) {
 		},
 		{
 			name:           "no signature",
-			authHeader:     authScheme + " " + noSignatureToken,
+			authHeader:     "Bearer " + noSignatureToken,
 			code:           http.StatusForbidden,
 			signingKeyFile: dummySigningKeyFile,
 		},
 		{
 			name:           "invalid signature",
-			authHeader:     jwt.BuildAuthHeader(false, dummySigningKeyFile, signingKeyPrivate, jwt.Claim{}),
+			authHeader:     jwt.BuildAuthHeader(appConfig, false, dummySigningKeyFile, signingKeyPrivate, jwt.Claim{}),
 			code:           http.StatusForbidden,
 			signingKeyFile: invalidDummySigningKeyFile,
 		},
 		{
 			name:           "expired token",
-			authHeader:     jwt.BuildAuthHeader(true, dummySigningKeyFile, signingKeyPrivate, jwt.Claim{}),
+			authHeader:     jwt.BuildAuthHeader(appConfig, true, dummySigningKeyFile, signingKeyPrivate, jwt.Claim{}),
 			code:           http.StatusForbidden,
 			signingKeyFile: dummySigningKeyFile,
 		},
 		{
 			name:           "invalid aud",
-			authHeader:     jwt.BuildAuthHeader(false, dummySigningKeyFile, signingKeyPrivate, jwt.Claim{Key: "aud", Value: "test"}),
+			authHeader:     jwt.BuildAuthHeader(appConfig, false, dummySigningKeyFile, signingKeyPrivate, jwt.Claim{Key: "aud", Value: "test"}),
 			code:           http.StatusForbidden,
 			signingKeyFile: dummySigningKeyFile,
 		},
@@ -113,20 +118,20 @@ func TestToken(t *testing.T) {
 		if tc.authHeader != "" {
 			req.Header.Set(echo.HeaderAuthorization, tc.authHeader)
 		}
+
 		res := httptest.NewRecorder()
 		c := e.NewContext(req, res)
-
 		m := monitoring.NewMetrics("cluster_registry_api_authz_test", nil, true)
-		auth, err := NewAuthenticator(m)
+		auth, err := NewAuthenticator(appConfig, m)
 		pubKeys := []*jose.JSONWebKey{jwt.GetSigningKey(tc.signingKeyFile, signingKeyPublic)}
 
 		if err != nil {
 			t.Fatalf("Failed to initialize authenticator: %v", err)
 		}
 		auth.setVerifier(oidc.NewVerifier(
-			issuerURL,
+			appConfig.OidcIssuerUrl,
 			&staticKeySet{keys: pubKeys},
-			&oidc.Config{ClientID: clientID},
+			&oidc.Config{ClientID: appConfig.OidcClientId},
 		))
 
 		h := auth.VerifyToken()(handler)

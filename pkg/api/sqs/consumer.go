@@ -24,6 +24,7 @@ import (
 
 	"github.com/adobe/cluster-registry/pkg/api/database"
 	"github.com/adobe/cluster-registry/pkg/api/monitoring"
+	"github.com/adobe/cluster-registry/pkg/api/utils"
 	registryv1 "github.com/adobe/cluster-registry/pkg/cc/api/registry/v1"
 )
 
@@ -52,15 +53,11 @@ type consumer struct {
 }
 
 // NewConsumer - creates new message queue consumer
-func NewConsumer(d database.Db, m monitoring.MetricsI) Consumer {
-	sqsSvc := NewSQS()
-	sqsQueueName, err := getSqsQueueName(sqsEndpoint)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
+func NewConsumer(appConfig *utils.AppConfig, d database.Db, m monitoring.MetricsI) Consumer {
+	sqsSvc := NewSQS(appConfig)
 
 	urlResult, err := sqsSvc.GetQueueUrl(&sqs.GetQueueUrlInput{
-		QueueName: &sqsQueueName,
+		QueueName: &appConfig.SqsQueueName,
 	})
 	if err != nil {
 		log.Fatal(err.Error())

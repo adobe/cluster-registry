@@ -237,7 +237,7 @@ func TestProcessMessage(t *testing.T) {
 			test.NoError(err)
 		}
 
-		listClusters, _, err := c.db.ListClusters("", "", "", "")
+		listClusters, _, _, err := c.db.ListClusters(0, 10, "", "", "")
 		if err != nil {
 			test.Error(err, "cannot list cluster from database")
 		}

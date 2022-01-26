@@ -25,6 +25,7 @@ import (
 
 	"github.com/adobe/cluster-registry/pkg/api/database"
 	"github.com/adobe/cluster-registry/pkg/api/monitoring"
+	"github.com/adobe/cluster-registry/pkg/api/utils"
 	registryv1 "github.com/adobe/cluster-registry/pkg/cc/api/registry/v1"
 	"github.com/adobe/cluster-registry/test/jwt"
 	"github.com/stretchr/testify/suite"
@@ -64,7 +65,8 @@ func (s *e2eTestSuite) TearDownTest() {
 func (s *e2eTestSuite) Test_EndToEnd_GetClusters() {
 
 	var clusters clusterList
-	jwtToken := jwt.GenerateDefaultSignedToken()
+	appConfig := utils.LoadApiConfig()
+	jwtToken := jwt.GenerateDefaultSignedToken(appConfig)
 	bearer := "Bearer " + jwtToken
 
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/api/v1/clusters", s.apiPort), nil)
@@ -99,6 +101,7 @@ func (s *e2eTestSuite) Test_EndToEnd_CreateCluster() {
 	var inputCluster registryv1.Cluster
 	var outputCluster registryv1.ClusterSpec
 
+	appConfig := utils.LoadApiConfig()
 	input_file := "../testdata/cluster05-prod-useast1.json"
 	data, err := ioutil.ReadFile(input_file)
 	if err != nil {
@@ -134,7 +137,7 @@ func (s *e2eTestSuite) Test_EndToEnd_CreateCluster() {
 
 	time.Sleep(20 * time.Second)
 
-	jwtToken := jwt.GenerateDefaultSignedToken()
+	jwtToken := jwt.GenerateDefaultSignedToken(appConfig)
 	bearer := "Bearer " + jwtToken
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/api/v1/clusters/%s", s.apiPort, inputCluster.Spec.Name), nil)
 	if err != nil {
@@ -180,7 +183,7 @@ func (s *e2eTestSuite) Test_EndToEnd_CreateCluster() {
 				fmt.Printf("Cannot delete Cluster %s\nErr:\n%s", inputCluster.Spec.Name, err.Error())
 			}
 
-			d := database.NewDb(m)
+			d := database.NewDb(appConfig, m)
 			d.DeleteCluster(inputCluster.Spec.Name)
 		})
 }
@@ -191,6 +194,7 @@ func (s *e2eTestSuite) TBD_Test_EndToEnd_UpdateCluster() {
 	var inputCluster registryv1.Cluster
 	var outputCluster registryv1.ClusterSpec
 
+	appConfig := utils.LoadApiConfig()
 	input_file := "../testdata/cluster05-prod-useast1-update.json"
 	data, err := ioutil.ReadFile(input_file)
 	if err != nil {
@@ -229,7 +233,7 @@ func (s *e2eTestSuite) TBD_Test_EndToEnd_UpdateCluster() {
 
 	time.Sleep(10 * time.Second)
 
-	jwtToken := jwt.GenerateDefaultSignedToken()
+	jwtToken := jwt.GenerateDefaultSignedToken(appConfig)
 	bearer := "Bearer " + jwtToken
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/api/v1/clusters/%s", s.apiPort, inputCluster.Spec.Name), nil)
 	if err != nil {

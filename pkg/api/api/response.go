@@ -19,7 +19,10 @@ import (
 
 type clusterList struct {
 	Items      []*registryv1.ClusterSpec `json:"items"`
-	ItemsCount int                       `json:"itemsCount"`
+	ItemsCount int                       `json:"itemsCount"` // TODO: should be rename to total
+	Offset     int                       `json:"offset"`
+	Limit      int                       `json:"limit"`
+	More       bool                      `json:"more"`
 }
 
 func newClusterResponse(ctx echo.Context, c *registryv1.Cluster) *registryv1.ClusterSpec {
@@ -27,9 +30,9 @@ func newClusterResponse(ctx echo.Context, c *registryv1.Cluster) *registryv1.Clu
 	return cs
 }
 
-func newClusterListResponse(clusters []registryv1.Cluster, count int) *clusterList {
+func newClusterListResponse(clusters []registryv1.Cluster, count int, offset int, limit int, more bool) *clusterList {
 	r := new(clusterList)
-	r.Items = make([]*registryv1.ClusterSpec, 0)
+	r.Items = make([]*registryv1.ClusterSpec, 0) // TODO: check memory allocation
 
 	for _, c := range clusters {
 		cs := c.Spec
@@ -37,5 +40,9 @@ func newClusterListResponse(clusters []registryv1.Cluster, count int) *clusterLi
 	}
 
 	r.ItemsCount = count
+	r.Offset = offset
+	r.Limit = limit
+	r.More = more
+
 	return r
 }

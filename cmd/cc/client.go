@@ -17,6 +17,7 @@ import (
 	"os"
 
 	"github.com/adobe/cluster-registry/pkg/api/sqs"
+	"github.com/adobe/cluster-registry/pkg/api/utils"
 	"github.com/adobe/cluster-registry/pkg/cc/controllers"
 	"github.com/adobe/cluster-registry/pkg/cc/monitoring"
 
@@ -55,6 +56,7 @@ func main() {
 	var probeAddr string
 	var alertmanagerWebhookAddr string
 	var namespace string
+
 	flag.StringVar(&configFile, "config", "",
 		"The controller will load its initial configuration from this file. "+
 			"Omit this flag to use the default configuration values. "+
@@ -118,11 +120,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	appConfig := utils.LoadClientConfig()
+	sqsProducer := sqs.NewProducer(appConfig, m)
+
 	if err = (&controllers.ClusterReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("Cluster"),
 		Scheme: mgr.GetScheme(),
-		Queue:  sqs.NewProducer(m),
+		Queue:  sqsProducer,
 		CAData: base64.StdEncoding.EncodeToString(mgr.GetConfig().CAData),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Cluster")

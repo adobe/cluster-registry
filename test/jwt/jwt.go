@@ -20,9 +20,9 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"time"
 
+	"github.com/adobe/cluster-registry/pkg/api/utils"
 	"gopkg.in/square/go-jose.v2"
 )
 
@@ -39,28 +39,23 @@ const (
 	validDate   = "2099-03-11T00:00:00Z"
 )
 
-var (
-	clientID  = os.Getenv("OIDC_CLIENT_ID")
-	issuerURL = os.Getenv("OIDC_ISSUER_URL")
-)
-
 type Claim struct {
 	Key   string
 	Value string
 }
 
 // BuildAuthHeader builds the authorization header with a JWT bearer token
-func BuildAuthHeader(expiredToken bool, signingKeyFile string, signingKeyType string, c Claim) string {
-	signedToken := GenerateSignedToken(expiredToken, signingKeyFile, signingKeyType, c)
+func BuildAuthHeader(appConfig *utils.AppConfig, expiredToken bool, signingKeyFile string, signingKeyType string, c Claim) string {
+	signedToken := GenerateSignedToken(appConfig, expiredToken, signingKeyFile, signingKeyType, c)
 	return authScheme + " " + signedToken
 }
 
-func GenerateDefaultSignedToken() string {
-	return GenerateSignedToken(false, "", "", Claim{})
+func GenerateDefaultSignedToken(appConfig *utils.AppConfig) string {
+	return GenerateSignedToken(appConfig, false, "", "", Claim{})
 }
 
 // GenerateSignedToken generates and sign a jwt token
-func GenerateSignedToken(expiredToken bool, signingKeyFile string, signingKeyType string, c Claim) string {
+func GenerateSignedToken(appConfig *utils.AppConfig, expiredToken bool, signingKeyFile string, signingKeyType string, c Claim) string {
 
 	if signingKeyFile == "" {
 		signingKeyFile = dummySigningKeyFile
@@ -71,11 +66,11 @@ func GenerateSignedToken(expiredToken bool, signingKeyFile string, signingKeyTyp
 	}
 
 	if c.Key == "" {
-		aud := os.Getenv("OIDC_CLIENT_ID")
+		aud := appConfig.OidcClientId
 		c = Claim{Key: "aud", Value: aud}
 	}
 
-	dt := newDummyToken(signingKeyFile, signingKeyType)
+	dt := newDummyToken(appConfig, signingKeyFile, signingKeyType)
 
 	if expiredToken == true {
 		expiration, _ := time.Parse(time.RFC3339Nano, expiredDate)
@@ -133,13 +128,13 @@ type dummyToken struct {
 }
 
 // newDummyToken
-func newDummyToken(signingKeyFile string, signingKeyType string) *dummyToken {
+func newDummyToken(appConfig *utils.AppConfig, signingKeyFile string, signingKeyType string) *dummyToken {
 	claims := make(map[string]string)
 	claims["exp"] = fmt.Sprint(time.Now().Add(1 * time.Hour).Unix())
 	claims["iat"] = fmt.Sprint(time.Now().Unix())
-	claims["iss"] = issuerURL
-	claims["ipd"] = issuerURL
-	claims["aud"] = clientID
+	claims["iss"] = appConfig.OidcIssuerUrl
+	claims["ipd"] = appConfig.OidcIssuerUrl
+	claims["aud"] = appConfig.OidcClientId
 	claims["oid"] = dummyOid
 
 	return &dummyToken{
