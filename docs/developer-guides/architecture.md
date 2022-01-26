@@ -10,7 +10,7 @@ The Cluster Register has couple of components:
 
 * this CRD will be populated from cluster build/upgrade CD tool - reads data from cluster config and updates cluster CRD attributes.
 * cluster-registry-client (in-cluster light k8s operator) that watches for CRD changes and send messages to a AWS SQS queue. It also expose a webhook in order to receive information from Observability (ex. cluster capacity).
-* cluster-registry-api reads the information related to all Ethos clusters from the AWS SQS and will be centralize it into a DynamoDB database and presented via REST API.
+* cluster-registry-api reads the information related to all K8s fleet clusters clusters from the AWS SQS and will be centralize it into a DynamoDB database and presented via REST API.
   * The API exposes only GET HTTP methods
   * All API requests are authenticated. As auth Provider cluster-registry-api can use any OIDC compliant provider (Okta, AzureAD).
 

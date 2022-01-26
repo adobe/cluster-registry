@@ -77,12 +77,11 @@ Will your change introduce downtime at deployment time?
 
 ### Operations
 
-How will your change impact Ethos Operators?
+How will your change impact end users/consumers?
 
 Will operators need to change existing practices or adopt new ones?
 
-Does documentation need to be created or modified? Overview and troubleshooting
-guides are especially useful to operators.
+Does documentation need to be created or modified?
 
 ### Security
 

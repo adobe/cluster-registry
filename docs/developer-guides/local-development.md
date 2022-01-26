@@ -8,9 +8,10 @@ Cluster Registry development stack consist of the following applications that ru
 
 * cluster-registry-api
 * cluster-registry-client
-* aws sqs
-* aws dynamoDb
-* a local k8s cluster created with kind
+* local aws sqs
+* local aws dynamoDb
+* local k8s cluster created with kind
+* local oidc mocking provider
 
 If you want to test one of the Cluster Registry components call directly setup script by specifying to/not to run that component:
 
