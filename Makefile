@@ -102,7 +102,7 @@ check-license:
 .PHONY: go-lint
 go-lint: golangci-lint
 	@echo 'Linting go code...'
-	$(GOLANGCI_LINT) run -v --timeout 2m
+	$(GOLANGCI_LINT) run -v --timeout 5m
 	@echo 'Not linting issues found in go codebase!'
 
 .PHONY: lint-fix
@@ -117,7 +117,7 @@ golangci-lint:
 	}
 
 go-sec: ## Inspects source code for security problems
-	@if ! command -v gosec >/dev/null 2>&1 ; then go get github.com/securego/gosec/v2/cmd/gosec; exit 1; fi
+	@if ! command -v gosec >/dev/null 2>&1 ; then go install github.com/securego/gosec/v2/cmd/gosec; exit 1; fi
 	@echo 'Checking source code for security problems...'
 	@gosec  ./pkg/...
 	@echo 'No security problems found in go codebase!'
