@@ -40,7 +40,7 @@ var (
 type Authenticator struct {
 	verifier *oidc.IDTokenVerifier
 	ctx      context.Context
-	met      monitoring.MetricsI
+	metrics  monitoring.MetricsI
 }
 
 // NewAuthenticator creates new Authenticator
@@ -60,7 +60,7 @@ func NewAuthenticator(appConfig *utils.AppConfig, m monitoring.MetricsI) (*Authe
 	return &Authenticator{
 		verifier: verifier,
 		ctx:      ctx,
-		met:      m,
+		metrics:  m,
 	}, nil
 }
 
@@ -79,8 +79,8 @@ func (a *Authenticator) VerifyToken() echo.MiddlewareFunc {
 			token, err := a.verifier.Verify(a.ctx, rawToken)
 			elapsed := float64(time.Since(start)) / float64(time.Second)
 
-			a.met.RecordEgressRequestCnt(egressTarget)
-			a.met.RecordEgressRequestDur(egressTarget, elapsed)
+			a.metrics.RecordEgressRequestCnt(egressTarget)
+			a.metrics.RecordEgressRequestDur(egressTarget, elapsed)
 
 			if err != nil {
 				return c.JSON(http.StatusForbidden, utils.NewError(err))

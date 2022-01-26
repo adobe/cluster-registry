@@ -25,6 +25,9 @@ import (
 
 func TestDeleteMessage(t *testing.T) {
 	test := assert.New(t)
+
+	t.Log("Test deleting messages from sqs queue.")
+
 	tcs := []struct {
 		name          string
 		sqsMessages   []*sqs.Message
@@ -40,6 +43,7 @@ func TestDeleteMessage(t *testing.T) {
 		}}
 
 	for _, tc := range tcs {
+		m := monitoring.NewMetrics("cluster_registry_api_sqs_test", nil, true)
 		c := &consumer{
 			sqs:             &mockSQS{messages: tc.sqsMessages},
 			db:              &mockDatabase{clusters: nil},
@@ -48,8 +52,10 @@ func TestDeleteMessage(t *testing.T) {
 			maxMessages:     1,
 			pollWaitSeconds: 1,
 			retrySeconds:    5,
-			met:             monitoring.NewMetrics("cluster_registry_api_sqs_test", nil, true),
+			metrics:         m,
 		}
+
+		t.Logf("\tTest %s:\tWhen deleting a message from sqs queue.", tc.name)
 
 		err := c.delete(tc.sqsMessages[0])
 		if tc.expectedError != nil {
@@ -73,6 +79,9 @@ func TestDeleteMessage(t *testing.T) {
 
 func TestProcessMessage(t *testing.T) {
 	test := assert.New(t)
+
+	t.Log("Test processing messages from sqs queue.")
+
 	tcs := []struct {
 		name             string
 		dbClusters       []registryv1.Cluster
@@ -226,8 +235,10 @@ func TestProcessMessage(t *testing.T) {
 			maxMessages:     1,
 			pollWaitSeconds: 1,
 			retrySeconds:    5,
-			met:             monitoring.NewMetrics("cluster_registry_api_sqs_test", nil, true),
+			metrics:         monitoring.NewMetrics("cluster_registry_api_sqs_test", nil, true),
 		}
+
+		t.Logf("\tTest %s:\tWhen processing a message from sqs queue.", tc.name)
 
 		err := c.processMessage(tc.sqsMessages[0])
 		if tc.expectedError != nil {

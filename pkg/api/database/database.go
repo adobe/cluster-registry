@@ -55,12 +55,12 @@ type dbTable struct {
 
 // ClusterDb encapsulates the Cluster CRD
 type ClusterDb struct {
-	TablePartitionKey string              `json:"name,string"`
-	IndexPartitionKey string              `json:"kind,string"`
-	Region            string              `json:"region,string"`
-	Environment       string              `json:"environment,string"`
-	Status            string              `json:"status,string"`
-	Cluster           *registryv1.Cluster `json:"crd,hash"`
+	TablePartitionKey string              `json:"name"`
+	IndexPartitionKey string              `json:"kind"`
+	Region            string              `json:"region"`
+	Environment       string              `json:"environment"`
+	Status            string              `json:"status"`
+	Cluster           *registryv1.Cluster `json:"crd"`
 }
 
 // NewDb func

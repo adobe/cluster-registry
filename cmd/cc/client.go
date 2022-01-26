@@ -120,7 +120,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	appConfig := utils.LoadClientConfig()
+	appConfig, err := utils.LoadClientConfig()
+
+	if err != nil {
+		setupLog.Error(err, "failed to load client configuration")
+		os.Exit(1)
+	}
+
 	sqsProducer := sqs.NewProducer(appConfig, m)
 
 	if err = (&controllers.ClusterReconciler{

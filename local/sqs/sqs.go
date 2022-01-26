@@ -17,10 +17,11 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"os"
+	"log"
 	"time"
 
 	"github.com/adobe/cluster-registry/pkg/api/sqs"
+	"github.com/adobe/cluster-registry/pkg/api/utils"
 	registryv1 "github.com/adobe/cluster-registry/pkg/cc/api/registry/v1"
 	"github.com/adobe/cluster-registry/pkg/cc/monitoring"
 	"gopkg.in/yaml.v2"
@@ -34,25 +35,30 @@ func main() {
 
 	m := monitoring.NewMetrics()
 	m.Init(false)
+	appConfig, err := utils.LoadApiConfig()
+	if err != nil {
+		log.Fatalf("Cannot load the api configuration: '%v'", err.Error())
+	}
 
-	p := sqs.NewProducer(m)
+	p := sqs.NewProducer(appConfig, m)
 	input_file := flag.String("input-file", "../db/dummy-data.yaml", "yaml file path")
 	flag.Parse()
 
 	data, err := ioutil.ReadFile(*input_file)
 	if err != nil {
-		fmt.Print(err.Error())
-		os.Exit(1)
+		log.Panicf("Error while trying to read file: %v", err.Error())
 	}
 
 	err = yaml.Unmarshal([]byte(data), &clusters)
 	if err != nil {
-		fmt.Print(err.Error())
-		os.Exit(1)
+		log.Panicf("Error while trying to unmarshal data: %v", err.Error())
 	}
 
 	for _, cluster := range clusters {
-		p.Send(ctx, &cluster)
+		err = p.Send(ctx, &cluster)
+		if err != nil {
+			log.Panicf("Error sending message to sqs: %v", err.Error())
+		}
 	}
 
 	fmt.Println("Data successfully added into the queue.")

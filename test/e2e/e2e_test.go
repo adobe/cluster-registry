@@ -65,32 +65,35 @@ func (s *e2eTestSuite) TearDownTest() {
 func (s *e2eTestSuite) Test_EndToEnd_GetClusters() {
 
 	var clusters clusterList
-	appConfig := utils.LoadApiConfig()
+	appConfig, err := utils.LoadApiConfig()
+	if err != nil {
+		s.T().Fatalf("Cannot load the api configuration: '%v'", err.Error())
+	}
+
 	jwtToken := jwt.GenerateDefaultSignedToken(appConfig)
 	bearer := "Bearer " + jwtToken
 
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/api/v1/clusters", s.apiPort), nil)
 	if err != nil {
-		log.Fatal(err)
+		s.T().Fatalf("Cannot build http request: %v", err.Error())
 	}
 
 	req.Header.Add("Authorization", bearer)
-	// Send req using http Client
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		s.T().Fatalf("Cannot make http request: %v", err.Error())
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		s.T().Fatalf("Cannot read response body: %v", err.Error())
 	}
 
 	err = json.Unmarshal([]byte(body), &clusters)
 	if err != nil {
-		log.Fatal(err)
+		s.T().Fatalf("Failed to unmarshal data: %v", err.Error())
 	}
 
 	s.Assert().Equal(3, clusters.ItemsCount)
@@ -101,26 +104,25 @@ func (s *e2eTestSuite) Test_EndToEnd_CreateCluster() {
 	var inputCluster registryv1.Cluster
 	var outputCluster registryv1.ClusterSpec
 
-	appConfig := utils.LoadApiConfig()
 	input_file := "../testdata/cluster05-prod-useast1.json"
 	data, err := ioutil.ReadFile(input_file)
 	if err != nil {
-		log.Fatal(err.Error())
+		s.T().Fatalf("Failed to read data from file %s.", input_file)
 	}
 
 	err = json.Unmarshal([]byte(data), &inputCluster)
 	if err != nil {
-		log.Fatal(err.Error())
+		s.T().Fatalf("Failed to unmarshal data: %v", err.Error())
 	}
 
 	config, err := clientcmd.BuildConfigFromFlags("", "../../kubeconfig")
 	if err != nil {
-		log.Fatal(err.Error())
+		s.T().Fatalf("Failed to build K8s config: %v", err.Error())
 	}
 
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		log.Fatal(err.Error())
+		s.T().Fatalf("Failed to build K8s clientset: %v", err.Error())
 	}
 
 	_, err = clientset.CoreV1().RESTClient().
@@ -131,17 +133,23 @@ func (s *e2eTestSuite) Test_EndToEnd_CreateCluster() {
 		DoRaw(context.TODO())
 
 	if err != nil {
-		log.Fatal(err)
+		s.T().Fatalf("Failed to create object %s on the k8s api: %v", inputCluster.Name, err.Error())
 	}
-	fmt.Printf("Successfully created Cluster %s\n", inputCluster.Spec.Name)
+	s.T().Logf("Successfully created cluster %s.", inputCluster.Spec.Name)
 
 	time.Sleep(20 * time.Second)
+
+	appConfig, err := utils.LoadApiConfig()
+	if err != nil {
+		s.T().Fatalf("Cannot load the api configuration: '%v'", err.Error())
+	}
 
 	jwtToken := jwt.GenerateDefaultSignedToken(appConfig)
 	bearer := "Bearer " + jwtToken
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/api/v1/clusters/%s", s.apiPort, inputCluster.Spec.Name), nil)
+
 	if err != nil {
-		log.Fatal(err)
+		s.T().Fatalf("Failed to build request object: %v", err.Error())
 	}
 
 	req.Header.Add("Authorization", bearer)
@@ -150,13 +158,13 @@ func (s *e2eTestSuite) Test_EndToEnd_CreateCluster() {
 	resp, err := client.Do(req)
 
 	if err != nil {
-		log.Fatal(err)
+		s.T().Fatalf("Failed to query clusters from cluster-registry-api: %v", err.Error())
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		s.T().Fatalf("Failed read response body: %v", err.Error())
 	}
 
 	err = json.Unmarshal([]byte(body), &outputCluster)
@@ -180,11 +188,16 @@ func (s *e2eTestSuite) Test_EndToEnd_CreateCluster() {
 				DoRaw(context.TODO())
 
 			if err != nil {
-				fmt.Printf("Cannot delete Cluster %s\nErr:\n%s", inputCluster.Spec.Name, err.Error())
+				s.T().Fatalf("Cannot delete cluster %s: %v", inputCluster.Spec.Name, err.Error())
 			}
+			s.T().Logf("Successfully delete cluster %s from k8s api.", inputCluster.Spec.Name)
 
 			d := database.NewDb(appConfig, m)
-			d.DeleteCluster(inputCluster.Spec.Name)
+			err := d.DeleteCluster(inputCluster.Spec.Name)
+			if err != nil {
+				s.T().Fatalf("Error wihle trying to delete the cluster from database: %v", err.Error())
+			}
+			s.T().Logf("Successfully delete cluster %s from database.", inputCluster.Spec.Name)
 		})
 }
 
@@ -194,7 +207,11 @@ func (s *e2eTestSuite) TBD_Test_EndToEnd_UpdateCluster() {
 	var inputCluster registryv1.Cluster
 	var outputCluster registryv1.ClusterSpec
 
-	appConfig := utils.LoadApiConfig()
+	appConfig, err := utils.LoadApiConfig()
+	if err != nil {
+		s.T().Fatalf("Cannot load the api configuration: '%v'", err.Error())
+	}
+
 	input_file := "../testdata/cluster05-prod-useast1-update.json"
 	data, err := ioutil.ReadFile(input_file)
 	if err != nil {
@@ -226,10 +243,10 @@ func (s *e2eTestSuite) TBD_Test_EndToEnd_UpdateCluster() {
 		DoRaw(context.TODO())
 
 	if err != nil {
-		fmt.Println(err.Error())
-		log.Fatal(err)
+		s.T().Fatalf("Falied to create object %s into k8s api.", inputCluster.Spec.Name)
 	}
-	fmt.Printf("Successfully created Cluster %s\n", inputCluster.ClusterName)
+
+	s.T().Logf("Successfully created cluster %s.", inputCluster.ClusterName)
 
 	time.Sleep(10 * time.Second)
 

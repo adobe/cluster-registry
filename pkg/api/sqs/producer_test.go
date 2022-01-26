@@ -15,6 +15,7 @@ package sqs
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"testing"
 
 	registryv1 "github.com/adobe/cluster-registry/pkg/cc/api/registry/v1"
@@ -26,6 +27,9 @@ import (
 
 func TestSendMessage(t *testing.T) {
 	test := assert.New(t)
+
+	t.Log("Test sending a messages to sqs queue.")
+
 	tcs := []struct {
 		name          string
 		cluster       registryv1.Cluster
@@ -51,10 +55,15 @@ func TestSendMessage(t *testing.T) {
 		p := producer{
 			sqs:      &mockSQS{},
 			queueURL: "mock-queue",
-			met:      m,
+			metrics:  m,
 		}
 
-		p.Send(context.TODO(), &tc.cluster)
+		t.Logf("\tTest %s:\tWhen sending a message to sqs queue.", tc.name)
+
+		err := p.Send(context.TODO(), &tc.cluster)
+		if err != nil {
+			log.Panicf("Error sending message to sqs: %v", err.Error())
+		}
 
 		output, err := p.sqs.ReceiveMessage((&sqs.ReceiveMessageInput{
 			QueueUrl:            &p.queueURL,
