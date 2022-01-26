@@ -115,8 +115,12 @@ func TestGetCluster(t *testing.T) {
 		name            string
 		clusterName     string
 		dbClusters      map[string]*ClusterDb
+		offset          int
+		limit           int
 		expectedCluster *registryv1.Cluster
 		expectedError   error
+		expectedCount   int
+		expectedMore    bool
 	}{
 		{
 			name:        "existing cluster",
@@ -135,6 +139,8 @@ func TestGetCluster(t *testing.T) {
 						},
 					},
 				}},
+			offset: 0,
+			limit:  200,
 			expectedCluster: &registryv1.Cluster{
 				Spec: registryv1.ClusterSpec{
 					Name:         "cluster1",
@@ -144,6 +150,8 @@ func TestGetCluster(t *testing.T) {
 					Phase:        "Running",
 					Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
 				}},
+			expectedCount: 2,
+			expectedMore:  false,
 			expectedError: nil,
 		},
 		{
