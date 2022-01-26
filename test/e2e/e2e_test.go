@@ -104,7 +104,6 @@ func (s *e2eTestSuite) Test_EndToEnd_CreateCluster() {
 	var inputCluster registryv1.Cluster
 	var outputCluster registryv1.ClusterSpec
 
-	appConfig := utils.LoadApiConfig()
 	input_file := "../testdata/cluster05-prod-useast1.json"
 	data, err := ioutil.ReadFile(input_file)
 	if err != nil {
