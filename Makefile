@@ -33,7 +33,7 @@ CC_PKGS = $(shell go list ./pkg/cc/...)
 CC_PKGS += $(shell go list ./cmd/cc/...)
 
 .PHONY: all
-all: format generate build test
+all: format generate build test test-e2e
 
 .PHONY: clean
 clean:
@@ -117,7 +117,7 @@ golangci-lint:
 	}
 
 go-sec: ## Inspects source code for security problems
-	@if ! command -v gosec >/dev/null 2>&1 ; then echo >&2 "gosec is required but it's not installed. Run 'go get github.com/securego/gosec/v2/cmd/gosec' to install it. Aborting..."; exit 1; fi
+	@if ! command -v gosec >/dev/null 2>&1 ; then go get github.com/securego/gosec/v2/cmd/gosec; exit 1; fi
 	@echo 'Checking source code for security problems...'
 	@gosec  ./pkg/...
 	@echo 'No security problems found in go codebase!'
