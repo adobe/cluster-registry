@@ -32,11 +32,9 @@ const (
 	dummySigningKeyFile = "../testdata/dummyRsaPrivateKey.pem"
 	dummySigningKeyType = "RSA PRIVATE KEY"
 
-	tokenLookup = "Authorization"
 	authScheme  = "Bearer"
 	dummyOid    = "00000000-0000-0000-0000-000000000000"
 	expiredDate = "2021-03-11T00:00:00Z"
-	validDate   = "2099-03-11T00:00:00Z"
 )
 
 type Claim struct {
@@ -72,7 +70,7 @@ func GenerateSignedToken(appConfig *utils.AppConfig, expiredToken bool, signingK
 
 	dt := newDummyToken(appConfig, signingKeyFile, signingKeyType)
 
-	if expiredToken == true {
+	if expiredToken {
 		expiration, _ := time.Parse(time.RFC3339Nano, expiredDate)
 		dt.setExpiration(expiration)
 	}

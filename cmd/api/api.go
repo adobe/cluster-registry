@@ -19,6 +19,7 @@ import (
 	"github.com/adobe/cluster-registry/pkg/api/monitoring"
 	"github.com/adobe/cluster-registry/pkg/api/sqs"
 	"github.com/adobe/cluster-registry/pkg/api/utils"
+	"github.com/labstack/gommon/log"
 	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
@@ -39,7 +40,11 @@ import (
 // @name Authorization
 func main() {
 
-	appConfig := utils.LoadApiConfig()
+	appConfig, err := utils.LoadApiConfig()
+	if err != nil {
+		log.Fatalf("Cannot load the api configuration: '%v'", err.Error())
+	}
+
 	a := api.NewRouter()
 
 	a.GET("/api/swagger/*", echoSwagger.WrapHandler)

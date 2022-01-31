@@ -94,6 +94,8 @@ func (m *mockDynamoDBClient) Query(input *dynamodb.QueryInput) (*dynamodb.QueryO
 func TestNewDb(t *testing.T) {
 	test := assert.New(t)
 
+	t.Log("Test initializing the database.")
+
 	appConfig := &utils.AppConfig{
 		DbEndpoint:  "dummy-url",
 		DbAwsRegion: "dummy-region",
@@ -104,8 +106,95 @@ func TestNewDb(t *testing.T) {
 	test.NotNil(d)
 }
 
+func TestGetCluster(t *testing.T) {
+	test := assert.New(t)
+
+	t.Log("Test getting a single cluster from the database.")
+
+	tcs := []struct {
+		name            string
+		clusterName     string
+		dbClusters      map[string]*ClusterDb
+		expectedCluster *registryv1.Cluster
+		expectedError   error
+	}{
+		{
+			name:        "existing cluster",
+			clusterName: "cluster1",
+			dbClusters: map[string]*ClusterDb{
+				"cluster1": {
+					TablePartitionKey: "cluster1",
+					Cluster: &registryv1.Cluster{
+						Spec: registryv1.ClusterSpec{
+							Name:         "cluster1",
+							LastUpdated:  "2020-02-13T06:15:32Z",
+							RegisteredAt: "2019-02-13T06:15:32Z",
+							Status:       "Active",
+							Phase:        "Running",
+							Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
+						},
+					},
+				}},
+			expectedCluster: &registryv1.Cluster{
+				Spec: registryv1.ClusterSpec{
+					Name:         "cluster1",
+					LastUpdated:  "2020-02-13T06:15:32Z",
+					RegisteredAt: "2019-02-13T06:15:32Z",
+					Status:       "Active",
+					Phase:        "Running",
+					Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
+				}},
+			expectedError: nil,
+		},
+		{
+			name:        "non existing cluster",
+			clusterName: "cluster2",
+			dbClusters: map[string]*ClusterDb{
+				"cluster1": {
+					TablePartitionKey: "cluster1",
+					Cluster: &registryv1.Cluster{
+						Spec: registryv1.ClusterSpec{
+							Name:         "cluster1",
+							LastUpdated:  "2020-02-13T06:15:32Z",
+							RegisteredAt: "2019-02-13T06:15:32Z",
+							Status:       "Active",
+							Phase:        "Running",
+							Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
+						},
+					},
+				}},
+			expectedError: nil,
+		},
+	}
+
+	for _, tc := range tcs {
+
+		db := &db{
+			dbAPI:   &mockDynamoDBClient{clusters: tc.dbClusters},
+			table:   dbTable{name: "cluster-registry-test", partitionKey: "name", searchKey: ""},
+			index:   dbTable{name: "cluster-registry-search-test", partitionKey: "kind", searchKey: "name"},
+			metrics: monitoring.NewMetrics("cluster_registry_api_database_test", nil, true),
+		}
+
+		t.Logf("\tTest %s:\tWhen getting cluster %s", tc.name, tc.clusterName)
+
+		c, err := db.GetCluster(tc.clusterName)
+
+		if tc.expectedError != nil {
+			test.Error(err, "there should be an error processing the message")
+			test.Contains(fmt.Sprintf("%v", err), fmt.Sprintf("%v", tc.expectedError), "the error message should be as expected")
+		} else {
+			test.NoError(err)
+		}
+		test.Equal(tc.expectedCluster, c)
+	}
+}
+
 func TestPutCluster(t *testing.T) {
 	test := assert.New(t)
+
+	t.Log("Test create or update a single cluster into the database.")
+
 	tcs := []struct {
 		name             string
 		dbClusters       map[string]*ClusterDb
@@ -196,6 +285,8 @@ func TestPutCluster(t *testing.T) {
 			index:   dbTable{name: "cluster-registry-search-test", partitionKey: "kind", searchKey: "name"},
 			metrics: monitoring.NewMetrics("cluster_registry_api_database_test", nil, true),
 		}
+
+		t.Logf("\tTest %s:\tWhen creating or updating a cluster %s; nr. of items %d", tc.name, tc.newCluster.ClusterName, tc.expectedCount)
 
 		err := db.PutCluster(tc.newCluster)
 
@@ -314,101 +405,12 @@ func TestDeleteCluster(t *testing.T) {
 	}
 }
 
-func TestGetCluster(t *testing.T) {
-	test := assert.New(t)
-	tcs := []struct {
-		name            string
-		clusterName     string
-		dbClusters      map[string]*ClusterDb
-		offset          int
-		limit           int
-		expectedCluster *registryv1.Cluster
-		expectedError   error
-		expectedCount   int
-		expectedMore    bool
-	}{
-		{
-			name:        "existing cluster",
-			clusterName: "cluster1",
-			dbClusters: map[string]*ClusterDb{
-				"cluster1": {
-					TablePartitionKey: "cluster1",
-					Cluster: &registryv1.Cluster{
-						Spec: registryv1.ClusterSpec{
-							Name:         "cluster1",
-							LastUpdated:  "2020-02-13T06:15:32Z",
-							RegisteredAt: "2019-02-13T06:15:32Z",
-							Status:       "Active",
-							Phase:        "Running",
-							Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
-						},
-					},
-				}},
-			offset: 0,
-			limit:  200,
-			expectedCluster: &registryv1.Cluster{
-				Spec: registryv1.ClusterSpec{
-					Name:         "cluster1",
-					LastUpdated:  "2020-02-13T06:15:32Z",
-					RegisteredAt: "2019-02-13T06:15:32Z",
-					Status:       "Active",
-					Phase:        "Running",
-					Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
-				}},
-			expectedCount: 2,
-			expectedMore:  false,
-			expectedError: nil,
-		},
-		{
-			name:        "non existing cluster",
-			clusterName: "cluster2",
-			dbClusters: map[string]*ClusterDb{
-				"cluster1": {
-					TablePartitionKey: "cluster1",
-					Cluster: &registryv1.Cluster{
-						Spec: registryv1.ClusterSpec{
-							Name:         "cluster1",
-							LastUpdated:  "2020-02-13T06:15:32Z",
-							RegisteredAt: "2019-02-13T06:15:32Z",
-							Status:       "Active",
-							Phase:        "Running",
-							Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
-						},
-					},
-				}},
-			offset:          0,
-			limit:           200,
-			expectedCluster: nil,
-			expectedCount:   2,
-			expectedMore:    false,
-			expectedError:   nil,
-		},
-	}
-
-	for _, tc := range tcs {
-
-		db := &db{
-			dbAPI:   &mockDynamoDBClient{clusters: tc.dbClusters},
-			table:   dbTable{name: "cluster-registry-test", partitionKey: "name", searchKey: ""},
-			index:   dbTable{name: "cluster-registry-search-test", partitionKey: "kind", searchKey: "name"},
-			metrics: monitoring.NewMetrics("cluster_registry_api_database_test", nil, true),
-		}
-
-		c, err := db.GetCluster(tc.clusterName)
-
-		if tc.expectedError != nil {
-			test.Error(err, "there should be an error processing the message")
-			test.Contains(fmt.Sprintf("%v", err), fmt.Sprintf("%v", tc.expectedError), "the error message should be as expected")
-		} else {
-			test.NoError(err)
-		}
-		test.Equal(tc.expectedCluster, c)
-	}
-}
-
 // TODO: add tests for filtering
 func TestListClusters(t *testing.T) {
 	test := assert.New(t)
+
+	t.Log("Test getting all clusters from the database.")
+
 	tcs := []struct {
 		name             string
 		queryParams      map[string]string
@@ -487,6 +489,9 @@ func TestListClusters(t *testing.T) {
 			index:   dbTable{name: "cluster-registry-search-test", partitionKey: "kind", searchKey: "name"},
 			metrics: monitoring.NewMetrics("cluster_registry_api_database_test", nil, true),
 		}
+
+		t.Logf("\tTest %s:\tWhen getting all clusters with region:%s, environment:%s, status:%s, offset:%d, limit:%d, error:%v",
+			tc.name, tc.queryParams["region"], tc.queryParams["environment"], tc.queryParams["status"], tc.offset, tc.limit, tc.expectedError)
 
 		clusters, count, more, err := db.ListClusters(
 			tc.offset,

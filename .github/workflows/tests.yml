@@ -17,6 +17,8 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: '${{ env.golang-version }}'
+      - name: Run code format check
+        run: make format
       - name: Run unit tests
         run: make test
       - name: Run e2e tests

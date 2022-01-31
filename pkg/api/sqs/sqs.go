@@ -20,8 +20,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
 )
 
-var sqsEndpoint string
-
 // NewSQS - create new SQS instance
 func NewSQS(appConfig *utils.AppConfig) sqsiface.SQSAPI {
 

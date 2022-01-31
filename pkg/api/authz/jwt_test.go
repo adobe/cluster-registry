@@ -58,52 +58,55 @@ func TestToken(t *testing.T) {
 		OidcIssuerUrl: "https://accounts.google.com",
 	}
 	test := assert.New(t)
+
+	t.Log("Test oidc token authentication.")
+
 	tcs := []struct {
 		name           string
-		code           int
+		expectedStatus int
 		authHeader     string
 		signingKeyFile string
 	}{
 		{
 			name:           "valid token",
 			authHeader:     jwt.BuildAuthHeader(appConfig, false, dummySigningKeyFile, signingKeyPrivate, jwt.Claim{}),
-			code:           http.StatusOK,
+			expectedStatus: http.StatusOK,
 			signingKeyFile: dummySigningKeyFile,
 		},
 		{
 			name:           "no authorization header",
 			authHeader:     "",
-			code:           http.StatusBadRequest,
+			expectedStatus: http.StatusBadRequest,
 			signingKeyFile: dummySigningKeyFile,
 		},
 		{
 			name:           "no bearer token",
 			authHeader:     "test: test",
-			code:           http.StatusBadRequest,
+			expectedStatus: http.StatusBadRequest,
 			signingKeyFile: dummySigningKeyFile,
 		},
 		{
 			name:           "no signature",
 			authHeader:     "Bearer " + noSignatureToken,
-			code:           http.StatusForbidden,
+			expectedStatus: http.StatusForbidden,
 			signingKeyFile: dummySigningKeyFile,
 		},
 		{
 			name:           "invalid signature",
 			authHeader:     jwt.BuildAuthHeader(appConfig, false, dummySigningKeyFile, signingKeyPrivate, jwt.Claim{}),
-			code:           http.StatusForbidden,
+			expectedStatus: http.StatusForbidden,
 			signingKeyFile: invalidDummySigningKeyFile,
 		},
 		{
 			name:           "expired token",
 			authHeader:     jwt.BuildAuthHeader(appConfig, true, dummySigningKeyFile, signingKeyPrivate, jwt.Claim{}),
-			code:           http.StatusForbidden,
+			expectedStatus: http.StatusForbidden,
 			signingKeyFile: dummySigningKeyFile,
 		},
 		{
 			name:           "invalid aud",
 			authHeader:     jwt.BuildAuthHeader(appConfig, false, dummySigningKeyFile, signingKeyPrivate, jwt.Claim{Key: "aud", Value: "test"}),
-			code:           http.StatusForbidden,
+			expectedStatus: http.StatusForbidden,
 			signingKeyFile: dummySigningKeyFile,
 		},
 	}
@@ -114,6 +117,9 @@ func TestToken(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
+
+		t.Logf("\tTest %s:\tWhen checking for http status code %d", tc.name, tc.expectedStatus)
+
 		req := httptest.NewRequest(echo.GET, "http://localhost/api/v1/clusters", nil)
 		if tc.authHeader != "" {
 			req.Header.Set(echo.HeaderAuthorization, tc.authHeader)
@@ -136,6 +142,6 @@ func TestToken(t *testing.T) {
 
 		h := auth.VerifyToken()(handler)
 		test.NoError(h(c))
-		assert.Equal(t, tc.code, c.Response().Status)
+		assert.Equal(t, tc.expectedStatus, c.Response().Status)
 	}
 }

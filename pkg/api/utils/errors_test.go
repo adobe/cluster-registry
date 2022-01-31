@@ -23,36 +23,24 @@ import (
 
 func TestNewError(t *testing.T) {
 	test := assert.New(t)
-	tcs := []struct {
-		name          string
-		inputError    error
-		expectedError Error
-	}{
-		{
-			name:          "simple error",
-			inputError:    fmt.Errorf("Validation failed"),
-			expectedError: Error{Errors: map[string]interface{}{"body": "Validation failed"}},
-		},
-		{
-			name:          "http error",
-			inputError:    echo.NewHTTPError(http.StatusBadGateway, "Bad gateway"),
-			expectedError: Error{Errors: map[string]interface{}{"body": "Bad gateway"}},
-		},
-	}
 
-	for _, tc := range tcs {
-		err := NewError(tc.inputError)
-		test.Contains(fmt.Sprintf("%v", err), fmt.Sprintf("%v", tc.expectedError), "the error message should be as expected")
-	}
-}
+	t.Log("Test creating new error.")
 
-func TestNotFound(t *testing.T) {
-	test := assert.New(t)
 	tcs := []struct {
 		name          string
 		inputError    Error
 		expectedError Error
 	}{
+		{
+			name:          "simple error",
+			inputError:    NewError(fmt.Errorf("Validation failed")),
+			expectedError: Error{Errors: map[string]interface{}{"body": "Validation failed"}},
+		},
+		{
+			name:          "http error",
+			inputError:    NewError(echo.NewHTTPError(http.StatusBadGateway, "Bad gateway")),
+			expectedError: Error{Errors: map[string]interface{}{"body": "Bad gateway"}},
+		},
 		{
 			name:          "simple error",
 			inputError:    NotFound(),
@@ -61,6 +49,8 @@ func TestNotFound(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
+		t.Logf("\tTest %s:\tWhen creating new error with input: %v", tc.name, tc.inputError)
+
 		test.Contains(fmt.Sprintf("%v", tc.inputError), fmt.Sprintf("%v", tc.expectedError), "the error message should be as expected")
 	}
 }

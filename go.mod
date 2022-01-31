@@ -24,15 +24,16 @@ require (
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.17.0
 	github.com/prometheus/client_golang v1.11.0
+	github.com/securego/gosec/v2 v2.9.6 // indirect
 	github.com/stretchr/testify v1.7.0
 	github.com/swaggo/echo-swagger v1.0.0
 	github.com/swaggo/swag v1.7.0
-	golang.org/x/crypto v0.0.0-20211202192323-5770296d904e // indirect
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2
 	golang.org/x/tools v0.1.8 // indirect
 	gopkg.in/go-playground/validator.v9 v9.28.0
 	gopkg.in/square/go-jose.v2 v2.5.1
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	k8s.io/api v0.21.2
 	k8s.io/apimachinery v0.21.2
 	k8s.io/client-go v0.21.2

@@ -144,6 +144,8 @@ func getQueueDepth(s sqsiface.SQSAPI) (int, error) {
 func TestNewSqs(t *testing.T) {
 	test := assert.New(t)
 
+	t.Log("Test initializing the sqs.")
+
 	appConfig := &utils.AppConfig{
 		SqsEndpoint:  "dummy-url",
 		SqsAwsRegion: "dummy-region",

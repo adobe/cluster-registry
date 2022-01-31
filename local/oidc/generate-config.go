@@ -25,6 +25,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
+	"log"
 
 	"gopkg.in/square/go-jose.v2"
 )
@@ -44,16 +45,20 @@ type Keys struct {
 	Keys []JWKS `json:"keys,omitempty"`
 }
 
-var certificate *x509.Certificate
-
 func main() {
 
 	data, err := ioutil.ReadFile("../../test/testdata/dummycertificate.pem")
+
 	if err != nil {
-		panic("Failed to read file.")
+		log.Panicf("Failed to read file: %v", err.Error())
 	}
+
 	block, _ := pem.Decode(data)
 	cert, err := x509.ParseCertificate(block.Bytes)
+
+	if err != nil {
+		log.Panicf("Failed to parse certificate: %v", err.Error())
+	}
 
 	x5c := []string{base64.StdEncoding.EncodeToString(cert.Raw)}
 
@@ -70,10 +75,15 @@ func main() {
 
 	jwKey := jose.JSONWebKey{Key: rsaPublicKey, Use: "sig", Algorithm: string(jose.RS256)}
 	thumbprint, err := jwKey.Thumbprint(crypto.SHA256)
+
+	if err != nil {
+		log.Panicf("Failed to generate thumbprint: %v", err.Error())
+	}
+
 	kid := hex.EncodeToString(thumbprint)
 
 	jwks := []JWKS{
-		JWKS{
+		{
 			Alg:     "RS256",
 			Use:     "sig",
 			Kty:     "RSA",
@@ -91,7 +101,7 @@ func main() {
 
 	jwksKeysJson, err := json.Marshal(&jwksKeys)
 	if err != nil {
-		panic("Failed to marshal struct.")
+		log.Panicf("Failed to marshal struct: %v", err.Error())
 	}
 
 	fmt.Println(string(jwksKeysJson))
