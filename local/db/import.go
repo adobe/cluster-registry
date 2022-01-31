@@ -17,7 +17,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"os"
 
 	"github.com/adobe/cluster-registry/pkg/api/database"
 	"github.com/adobe/cluster-registry/pkg/api/monitoring"
@@ -42,21 +41,18 @@ func main() {
 
 	data, err := ioutil.ReadFile(*input_file)
 	if err != nil {
-		fmt.Print(err.Error())
-		os.Exit(1)
+		log.Fatalf("Unable to read input file %s: '%v'", *input_file, err.Error())
 	}
 
 	err = yaml.Unmarshal([]byte(data), &clusters)
 	if err != nil {
-		fmt.Print(err.Error())
-		os.Exit(1)
+		log.Fatalf("Failed to unmarshal data: '%v'", err.Error())
 	}
 
 	for _, cluster := range clusters {
 		err = d.PutCluster(&cluster)
 		if err != nil {
-			fmt.Print(err.Error())
-			os.Exit(1)
+			log.Fatalf("Failed to add or update the cluster %s: '%v'", cluster.Name, err.Error())
 		}
 	}
 

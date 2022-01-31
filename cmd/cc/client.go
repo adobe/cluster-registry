@@ -14,6 +14,7 @@ package main
 
 import (
 	"flag"
+	"log"
 	"os"
 
 	"github.com/adobe/cluster-registry/pkg/api/sqs"
@@ -98,16 +99,14 @@ func main() {
 	if configFile != "" {
 		options, err = options.AndFrom(ctrl.ConfigFile().AtPath(configFile).OfKind(&clientConfig))
 		if err != nil {
-			setupLog.Error(err, "unable to load the config file")
-			os.Exit(1)
+			log.Fatalf("Unable to load the config file: '%v'", err.Error())
 		}
 	}
 	setupLog.Info("using client configuration", "config", clientConfig)
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), options)
 	if err != nil {
-		setupLog.Error(err, "unable to start cluster-registry-client")
-		os.Exit(1)
+		log.Fatalf("Unable to start cluster-registry-client: '%v'", err.Error())
 	}
 
 	m := monitoring.NewMetrics()
@@ -116,15 +115,13 @@ func main() {
 	// InClusterConfiguration doesn't initialize the CAData field by default
 	// for some reason, so we're doing this manually by calling LoadTLSFiles
 	if err = rest.LoadTLSFiles(mgr.GetConfig()); err != nil {
-		setupLog.Error(err, "failed to load TLS files")
-		os.Exit(1)
+		log.Fatalf("Failed to load TLS files: '%v'", err.Error())
 	}
 
 	appConfig, err := utils.LoadClientConfig()
 
 	if err != nil {
-		setupLog.Error(err, "failed to load client configuration")
-		os.Exit(1)
+		log.Fatalf("Cannot load the client configuration: '%v'", err.Error())
 	}
 
 	sqsProducer := sqs.NewProducer(appConfig, m)
@@ -141,17 +138,14 @@ func main() {
 	}
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up health check")
-		os.Exit(1)
+		log.Fatalf("Unable to set up health check: '%v'", err.Error())
 	}
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up ready check")
-		os.Exit(1)
+		log.Fatalf("Unable to set up ready check: '%v'", err.Error())
 	}
 
 	if err := mgr.AddMetricsExtraHandler("/metrics/extra", promhttp.Handler()); err != nil {
-		setupLog.Error(err, "unable to set up extra metrics handler")
-		os.Exit(1)
+		log.Fatalf("Unable to set up extra metrics handler: '%v'", err.Error())
 	}
 
 	go func() {
@@ -164,14 +158,12 @@ func main() {
 			Metrics:     m,
 			AlertMap:    clientConfig.AlertmanagerWebhook.AlertMap,
 		}).Start(); err != nil {
-			setupLog.Error(err, "unable to start alertmanager webhook server")
-			os.Exit(1)
+			log.Fatalf("Unable to start alertmanager webhook server: '%v'", err.Error())
 		}
 	}()
 
 	setupLog.Info("starting cluster-registry-client")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		setupLog.Error(err, "problem running cluster-registry-client")
-		os.Exit(1)
+		log.Fatalf("Unable to start cluster-registry-client: '%v'", err.Error())
 	}
 }
