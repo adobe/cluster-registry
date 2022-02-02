@@ -1,3 +1,11 @@
+# 0.1.5
+
+## cluster-registry-api
+- Add dynamodb global secondary index support
+
+## cluster-registry-client
+- N/A
+
 # 0.1.3
 
 ## cluster-registry-api
