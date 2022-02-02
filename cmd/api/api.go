@@ -54,12 +54,21 @@ func main() {
 	m := monitoring.NewMetrics("cluster_registry_api", nil, false)
 	m.Use(a)
 
-	d := database.NewDb(appConfig, m)
-	h := api.NewHandler(appConfig, d, m)
+	dbHandler := database.NewDb(appConfig, m)
+
+	h := api.NewHandler(appConfig, dbHandler, m)
 	h.Register(v1)
 
-	c := sqs.NewConsumer(appConfig, d, m)
+	sqsHandler := sqs.NewSQS(appConfig)
+	c := sqs.NewConsumer(sqsHandler, appConfig, dbHandler, m)
 	go c.Consume()
+
+	status := api.StatusSessions{
+		Db:        dbHandler,
+		Sqs:       sqsHandler,
+		AppConfig: appConfig,
+	}
+	a.GET("/status", status.ServiceStatus)
 
 	a.Logger.Fatal(a.Start(":8080"))
 }

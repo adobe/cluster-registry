@@ -53,8 +53,7 @@ type consumer struct {
 }
 
 // NewConsumer - creates new message queue consumer
-func NewConsumer(appConfig *utils.AppConfig, d database.Db, m monitoring.MetricsI) Consumer {
-	sqsSvc := NewSQS(appConfig)
+func NewConsumer(sqsSvc sqsiface.SQSAPI, appConfig *utils.AppConfig, d database.Db, m monitoring.MetricsI) Consumer {
 
 	urlResult, err := sqsSvc.GetQueueUrl(&sqs.GetQueueUrlInput{
 		QueueName: &appConfig.SqsQueueName,
