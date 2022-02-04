@@ -35,6 +35,7 @@ const (
 // Consumer interface
 type Consumer interface {
 	Consume()
+	Status(*utils.AppConfig, monitoring.MetricsI) error
 	worker(int)
 	processMessage(*sqs.Message) error
 	delete(m *sqs.Message) error
@@ -72,6 +73,20 @@ func NewConsumer(sqsSvc sqsiface.SQSAPI, appConfig *utils.AppConfig, d database.
 		retrySeconds:    5,
 		metrics:         m,
 	}
+}
+
+// Status verifies the status/connectivity of the sqs service
+func (c *consumer) Status(appConfig *utils.AppConfig, m monitoring.MetricsI) error {
+	_, err := c.sqs.GetQueueUrl(&sqs.GetQueueUrlInput{
+		QueueName: &appConfig.SqsQueueName,
+	})
+
+	if err != nil {
+		c.metrics.RecordSqsStatusErrorCnt(egressTarget)
+		log.Error(err.Error())
+	}
+
+	return err
 }
 
 // Consume - long pooling

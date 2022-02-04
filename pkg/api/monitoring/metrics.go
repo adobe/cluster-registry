@@ -71,6 +71,27 @@ var egressMetrics = []*Metric{
 	egressReqDur,
 }
 
+var databaseStatusErrCnt = &Metric{
+	ID:          "DatabaseStatusErrCnt",
+	Name:        "database_status_error_count",
+	Description: "The total number of errors returned from the database for every /livez check",
+	Type:        "counter_vec",
+	Args:        []string{"target"},
+}
+
+var sqsStatusErrCnt = &Metric{
+	ID:          "SqsStatusErrCnt",
+	Name:        "sqs_status_error_count",
+	Description: "The total number of errors returned from the sqs for every /livez check",
+	Type:        "counter_vec",
+	Args:        []string{"target"},
+}
+
+var statusMetrics = []*Metric{
+	databaseStatusErrCnt,
+	sqsStatusErrCnt,
+}
+
 /*
 RequestCounterLabelMappingFunc is a function which can be supplied to the middleware to control
 the cardinality of the request counter's "url" label, which might be required in some contexts.
@@ -94,7 +115,7 @@ It can also be applied for the "Host" label
 type requestCounterLabelMappingFunc func(c echo.Context) string
 
 // Metric is a definition for the name, description, type, ID, and
-// prometheus.Collector type (i.e. CounterVec, HistrogramVec, etc) of each metric
+// prometheus.Collector type (i.e. CounterVec, HistogramVec, etc) of each metric
 type Metric struct {
 	MetricCollector prometheus.Collector
 	ID              string
@@ -110,13 +131,16 @@ type MetricsI interface {
 	RecordEgressRequestDur(target string, elapsed float64)
 	RecordIngressRequestCnt(code, method, url string)
 	RecordIngressRequestDur(code, method, url string, elapsed float64)
+	RecordDatabaseStatusErrorCnt(target string)
+	RecordSqsStatusErrorCnt(target string)
 	Use(e *echo.Echo)
 }
 
 // Metrics contains the metrics gathered by the instance and its path
 type Metrics struct {
-	ingressReqCnt, egressReqCnt *prometheus.CounterVec
-	ingressReqDur, egressReqDur *prometheus.HistogramVec
+	ingressReqCnt, egressReqCnt           *prometheus.CounterVec
+	ingressReqDur, egressReqDur           *prometheus.HistogramVec
+	databaseStatusErrCnt, sqsStatusErrCnt *prometheus.CounterVec
 
 	metricsList []*Metric
 	metricsPath string
@@ -139,6 +163,7 @@ func NewMetrics(subsystem string, skipper middleware.Skipper, isUnitTest bool) *
 
 	metricsList = append(metricsList, ingressMetrics...)
 	metricsList = append(metricsList, egressMetrics...)
+	metricsList = append(metricsList, statusMetrics...)
 
 	m := &Metrics{
 		metricsList: metricsList,
@@ -205,6 +230,10 @@ func (m *Metrics) registerMetrics(subsystem string) {
 			m.egressReqCnt = metric.(*prometheus.CounterVec)
 		case egressReqDur:
 			m.egressReqDur = metric.(*prometheus.HistogramVec)
+		case databaseStatusErrCnt:
+			m.databaseStatusErrCnt = metric.(*prometheus.CounterVec)
+		case sqsStatusErrCnt:
+			m.sqsStatusErrCnt = metric.(*prometheus.CounterVec)
 		}
 		metricDef.MetricCollector = metric
 	}
@@ -259,22 +288,32 @@ func (m *Metrics) handlerFunc(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
-// RecordEgressRequestCnt increases the Egress counter for a taget
+// RecordDatabaseStatusErrorCnt increases the error counter for every /livez call
+func (m *Metrics) RecordDatabaseStatusErrorCnt(target string) {
+	m.databaseStatusErrCnt.WithLabelValues(target).Inc()
+}
+
+// RecordSqsStatusErrorCnt increases the error counter for every /livez call
+func (m *Metrics) RecordSqsStatusErrorCnt(target string) {
+	m.sqsStatusErrCnt.WithLabelValues(target).Inc()
+}
+
+// RecordEgressRequestCnt increases the Egress counter for a target
 func (m *Metrics) RecordEgressRequestCnt(target string) {
 	m.egressReqCnt.WithLabelValues(target).Inc()
 }
 
-// RecordEgressRequestDur registers the Egress duration for a taget
+// RecordEgressRequestDur registers the Egress duration for a target
 func (m *Metrics) RecordEgressRequestDur(target string, elapsed float64) {
 	m.egressReqDur.WithLabelValues(target).Observe(elapsed)
 }
 
-// RecordIngressRequestCnt increases the Ingress counter for a taget
+// RecordIngressRequestCnt increases the Ingress counter for a target
 func (m *Metrics) RecordIngressRequestCnt(code, method, url string) {
 	m.ingressReqCnt.WithLabelValues(code, method, url).Inc()
 }
 
-// RecordIngressRequestDur registers the Egress duration for a taget
+// RecordIngressRequestDur registers the Egress duration for a target
 func (m *Metrics) RecordIngressRequestDur(code, method, url string, elapsed float64) {
 	m.ingressReqDur.WithLabelValues(code, method, url).Observe(elapsed)
 }

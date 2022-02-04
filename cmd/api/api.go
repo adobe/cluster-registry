@@ -65,7 +65,7 @@ func main() {
 
 	status := api.StatusSessions{
 		Db:        dbHandler,
-		Sqs:       sqsHandler,
+		Consumer:  c,
 		AppConfig: appConfig,
 	}
 	a.GET("/status", status.ServiceStatus)
