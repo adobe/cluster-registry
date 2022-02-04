@@ -108,14 +108,16 @@ func TestStatusHealthCheck(t *testing.T) {
 		appConfig := &utils.AppConfig{
 			SqsQueueName: tc.sqsQueueName,
 		}
+		m := monitoring.NewMetrics("err_count_sqs_test", nil, true)
 		c := &consumer{
-			sqs: &mockSQS{},
-			db:  &mockDatabase{clusters: nil},
+			sqs:     &mockSQS{},
+			db:      &mockDatabase{clusters: nil},
+			metrics: m,
 		}
 
 		t.Logf("\tTest %s", tc.name)
 
-		err = c.Status(appConfig, &monitoring.Metrics{})
+		err = c.Status(appConfig, m)
 		test.Equal(fmt.Sprintf("%v", err), fmt.Sprintf("%v", tc.expectedError))
 
 	}

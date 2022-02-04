@@ -24,7 +24,7 @@ import (
 
 const (
 	egressTarget              = "testing_egress"
-	expectedMetricsRegistered = 4
+	expectedMetricsRegistered = 6
 	ingressCode               = "200"
 	ingressMethod             = "GET"
 	ingressURL                = "/api/v1/clusters/:name"
