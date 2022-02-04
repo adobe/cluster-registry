@@ -48,7 +48,6 @@ func main() {
 	a := api.NewRouter()
 
 	a.GET("/api/swagger/*", echoSwagger.WrapHandler)
-	a.GET("/livez", monitoring.Livez)
 
 	v1 := a.Group("/api/v1")
 	m := monitoring.NewMetrics("cluster_registry_api", nil, false)
@@ -68,7 +67,7 @@ func main() {
 		Consumer:  c,
 		AppConfig: appConfig,
 	}
-	a.GET("/status", status.ServiceStatus)
+	a.GET("/livez", status.ServiceStatus)
 
 	a.Logger.Fatal(a.Start(":8080"))
 }
