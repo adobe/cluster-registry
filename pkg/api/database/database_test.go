@@ -34,6 +34,9 @@ type mockDynamoDBClient struct {
 
 func (m *mockDynamoDBClient) DescribeTable(input *dynamodb.DescribeTableInput) (*dynamodb.DescribeTableOutput, error) {
 
+	if *input.TableName == "mock-clusters" {
+		return &dynamodb.DescribeTableOutput{}, nil
+	}
 	return &dynamodb.DescribeTableOutput{}, errors.New("No sqs found with the name " + *input.TableName)
 }
 
@@ -123,7 +126,12 @@ func TestStatusHealthCheck(t *testing.T) {
 		{
 			name:          "unhealthy hatabase test",
 			tableName:     "mock-clusters",
-			expectedError: errors.New("No sqs found with the name mock-clusters"),
+			expectedError: nil,
+		},
+		{
+			name:          "unhealthy hatabase test",
+			tableName:     "missing-mock-clusters",
+			expectedError: errors.New("No sqs found with the name missing-mock-clusters"),
 		},
 	}
 
@@ -137,7 +145,6 @@ func TestStatusHealthCheck(t *testing.T) {
 
 		err := db.Status()
 		test.Equal(fmt.Sprintf("%v", err), fmt.Sprintf("%v", tc.expectedError))
-
 	}
 }
 

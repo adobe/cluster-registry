@@ -24,7 +24,7 @@ import (
 
 const (
 	egressTarget              = "testing_egress"
-	expectedMetricsRegistered = 6
+	expectedMetricsRegistered = 5
 	ingressCode               = "200"
 	ingressMethod             = "GET"
 	ingressURL                = "/api/v1/clusters/:name"
@@ -46,24 +46,14 @@ func TestMetricsRegistered(t *testing.T) {
 	test.Equal(len(m.metricsList), expectedMetricsRegistered)
 }
 
-func TestRecordDatabaseStatusErrorCnt(t *testing.T) {
+func TestRecordStatusErrorCnt(t *testing.T) {
 	test := assert.New(t)
 	m := NewMetrics(subsystem, nil, true)
 
-	m.RecordDatabaseStatusErrorCnt(egressTarget)
+	m.RecordErrorCnt(egressTarget)
 
-	test.Equal(1, testutil.CollectAndCount(*m.databaseStatusErrCnt))
-	test.Equal(float64(1), testutil.ToFloat64((*m.databaseStatusErrCnt).WithLabelValues(egressTarget)))
-}
-
-func TestRecordSqsStatusErrorCnt(t *testing.T) {
-	test := assert.New(t)
-	m := NewMetrics(subsystem, nil, true)
-
-	m.RecordSqsStatusErrorCnt(egressTarget)
-
-	test.Equal(1, testutil.CollectAndCount(*m.sqsStatusErrCnt))
-	test.Equal(float64(1), testutil.ToFloat64((*m.sqsStatusErrCnt).WithLabelValues(egressTarget)))
+	test.Equal(1, testutil.CollectAndCount(*m.errCnt))
+	test.Equal(float64(1), testutil.ToFloat64((*m.errCnt).WithLabelValues(egressTarget)))
 }
 
 func TestRecordEgressRequestCnt(t *testing.T) {

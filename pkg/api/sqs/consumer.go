@@ -82,7 +82,7 @@ func (c *consumer) Status(appConfig *utils.AppConfig, m monitoring.MetricsI) err
 	})
 
 	if err != nil {
-		c.metrics.RecordSqsStatusErrorCnt(egressTarget)
+		c.metrics.RecordErrorCnt(egressTarget)
 		log.Error(err.Error())
 	}
 

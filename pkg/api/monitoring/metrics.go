@@ -71,25 +71,17 @@ var egressMetrics = []*Metric{
 	egressReqDur,
 }
 
-var databaseStatusErrCnt = &Metric{
-	ID:          "DatabaseStatusErrCnt",
-	Name:        "database_status_error_count",
-	Description: "The total number of errors returned from the database for every /livez check",
-	Type:        "counter_vec",
-	Args:        []string{"target"},
-}
-
-var sqsStatusErrCnt = &Metric{
-	ID:          "SqsStatusErrCnt",
-	Name:        "sqs_status_error_count",
-	Description: "The total number of errors returned from the sqs for every /livez check",
+// Generalize
+var errCnt = &Metric{
+	ID:          "ErrCnt",
+	Name:        "error_count",
+	Description: "The total number of errors, partitioned by target.",
 	Type:        "counter_vec",
 	Args:        []string{"target"},
 }
 
 var statusMetrics = []*Metric{
-	databaseStatusErrCnt,
-	sqsStatusErrCnt,
+	errCnt,
 }
 
 /*
@@ -131,16 +123,15 @@ type MetricsI interface {
 	RecordEgressRequestDur(target string, elapsed float64)
 	RecordIngressRequestCnt(code, method, url string)
 	RecordIngressRequestDur(code, method, url string, elapsed float64)
-	RecordDatabaseStatusErrorCnt(target string)
-	RecordSqsStatusErrorCnt(target string)
+	RecordErrorCnt(target string)
 	Use(e *echo.Echo)
 }
 
 // Metrics contains the metrics gathered by the instance and its path
 type Metrics struct {
-	ingressReqCnt, egressReqCnt           *prometheus.CounterVec
-	ingressReqDur, egressReqDur           *prometheus.HistogramVec
-	databaseStatusErrCnt, sqsStatusErrCnt *prometheus.CounterVec
+	ingressReqCnt, egressReqCnt *prometheus.CounterVec
+	ingressReqDur, egressReqDur *prometheus.HistogramVec
+	errCnt                      *prometheus.CounterVec
 
 	metricsList []*Metric
 	metricsPath string
@@ -230,10 +221,8 @@ func (m *Metrics) registerMetrics(subsystem string) {
 			m.egressReqCnt = metric.(*prometheus.CounterVec)
 		case egressReqDur:
 			m.egressReqDur = metric.(*prometheus.HistogramVec)
-		case databaseStatusErrCnt:
-			m.databaseStatusErrCnt = metric.(*prometheus.CounterVec)
-		case sqsStatusErrCnt:
-			m.sqsStatusErrCnt = metric.(*prometheus.CounterVec)
+		case errCnt:
+			m.errCnt = metric.(*prometheus.CounterVec)
 		}
 		metricDef.MetricCollector = metric
 	}
@@ -288,14 +277,9 @@ func (m *Metrics) handlerFunc(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
-// RecordDatabaseStatusErrorCnt increases the error counter for every /livez call
-func (m *Metrics) RecordDatabaseStatusErrorCnt(target string) {
-	m.databaseStatusErrCnt.WithLabelValues(target).Inc()
-}
-
-// RecordSqsStatusErrorCnt increases the error counter for every /livez call
-func (m *Metrics) RecordSqsStatusErrorCnt(target string) {
-	m.sqsStatusErrCnt.WithLabelValues(target).Inc()
+// RecordErrorCnt increases the error counter for a target
+func (m *Metrics) RecordErrorCnt(target string) {
+	m.errCnt.WithLabelValues(target).Inc()
 }
 
 // RecordEgressRequestCnt increases the Egress counter for a target

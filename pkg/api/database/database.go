@@ -103,7 +103,7 @@ func (d *db) Status() error {
 
 	_, err := d.dbAPI.DescribeTable(params)
 	if err != nil {
-		d.metrics.RecordDatabaseStatusErrorCnt(egressTarget)
+		d.metrics.RecordErrorCnt(egressTarget)
 		log.Errorf("Connectivity check using DescribeTable failed. Error: '%v'", err.Error())
 		return err
 	}
