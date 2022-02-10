@@ -71,17 +71,12 @@ var egressMetrics = []*Metric{
 	egressReqDur,
 }
 
-// Generalize
 var errCnt = &Metric{
 	ID:          "ErrCnt",
 	Name:        "error_count",
 	Description: "The total number of errors, partitioned by target.",
 	Type:        "counter_vec",
 	Args:        []string{"target"},
-}
-
-var statusMetrics = []*Metric{
-	errCnt,
 }
 
 /*
@@ -154,7 +149,7 @@ func NewMetrics(subsystem string, skipper middleware.Skipper, isUnitTest bool) *
 
 	metricsList = append(metricsList, ingressMetrics...)
 	metricsList = append(metricsList, egressMetrics...)
-	metricsList = append(metricsList, statusMetrics...)
+	metricsList = append(metricsList, errCnt)
 
 	m := &Metrics{
 		metricsList: metricsList,
