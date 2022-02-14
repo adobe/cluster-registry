@@ -81,7 +81,7 @@ var _ = Describe("Webhook Server", func() {
 	var server *Server
 
 	const (
-		timeout  = time.Second * 10
+		timeout  = time.Second * 30
 		interval = time.Millisecond * 250
 	)
 

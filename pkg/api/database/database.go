@@ -37,6 +37,7 @@ type Db interface {
 	ListClusters(offset int, limit int, environment string, region string, status string) ([]registryv1.Cluster, int, bool, error)
 	PutCluster(cluster *registryv1.Cluster) error
 	DeleteCluster(name string) error
+	Status() error
 }
 
 // db struct
@@ -92,6 +93,22 @@ func NewDb(appConfig *utils.AppConfig, m monitoring.MetricsI) Db {
 	}
 
 	return dbInst
+}
+
+// Status a single cluster
+func (d *db) Status() error {
+	params := &dynamodb.DescribeTableInput{
+		TableName: &d.table.name,
+	}
+
+	_, err := d.dbAPI.DescribeTable(params)
+	if err != nil {
+		d.metrics.RecordErrorCnt(egressTarget)
+		log.Errorf("Connectivity check using DescribeTable failed. Error: '%v'", err.Error())
+		return err
+	}
+
+	return nil
 }
 
 // GetCluster a single cluster

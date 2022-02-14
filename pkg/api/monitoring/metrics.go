@@ -71,6 +71,14 @@ var egressMetrics = []*Metric{
 	egressReqDur,
 }
 
+var errCnt = &Metric{
+	ID:          "ErrCnt",
+	Name:        "error_count",
+	Description: "The total number of errors, partitioned by target.",
+	Type:        "counter_vec",
+	Args:        []string{"target"},
+}
+
 /*
 RequestCounterLabelMappingFunc is a function which can be supplied to the middleware to control
 the cardinality of the request counter's "url" label, which might be required in some contexts.
@@ -94,7 +102,7 @@ It can also be applied for the "Host" label
 type requestCounterLabelMappingFunc func(c echo.Context) string
 
 // Metric is a definition for the name, description, type, ID, and
-// prometheus.Collector type (i.e. CounterVec, HistrogramVec, etc) of each metric
+// prometheus.Collector type (i.e. CounterVec, HistogramVec, etc) of each metric
 type Metric struct {
 	MetricCollector prometheus.Collector
 	ID              string
@@ -110,6 +118,7 @@ type MetricsI interface {
 	RecordEgressRequestDur(target string, elapsed float64)
 	RecordIngressRequestCnt(code, method, url string)
 	RecordIngressRequestDur(code, method, url string, elapsed float64)
+	RecordErrorCnt(target string)
 	Use(e *echo.Echo)
 }
 
@@ -117,6 +126,7 @@ type MetricsI interface {
 type Metrics struct {
 	ingressReqCnt, egressReqCnt *prometheus.CounterVec
 	ingressReqDur, egressReqDur *prometheus.HistogramVec
+	errCnt                      *prometheus.CounterVec
 
 	metricsList []*Metric
 	metricsPath string
@@ -139,6 +149,7 @@ func NewMetrics(subsystem string, skipper middleware.Skipper, isUnitTest bool) *
 
 	metricsList = append(metricsList, ingressMetrics...)
 	metricsList = append(metricsList, egressMetrics...)
+	metricsList = append(metricsList, errCnt)
 
 	m := &Metrics{
 		metricsList: metricsList,
@@ -205,6 +216,8 @@ func (m *Metrics) registerMetrics(subsystem string) {
 			m.egressReqCnt = metric.(*prometheus.CounterVec)
 		case egressReqDur:
 			m.egressReqDur = metric.(*prometheus.HistogramVec)
+		case errCnt:
+			m.errCnt = metric.(*prometheus.CounterVec)
 		}
 		metricDef.MetricCollector = metric
 	}
@@ -259,22 +272,27 @@ func (m *Metrics) handlerFunc(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
-// RecordEgressRequestCnt increases the Egress counter for a taget
+// RecordErrorCnt increases the error counter for a target
+func (m *Metrics) RecordErrorCnt(target string) {
+	m.errCnt.WithLabelValues(target).Inc()
+}
+
+// RecordEgressRequestCnt increases the Egress counter for a target
 func (m *Metrics) RecordEgressRequestCnt(target string) {
 	m.egressReqCnt.WithLabelValues(target).Inc()
 }
 
-// RecordEgressRequestDur registers the Egress duration for a taget
+// RecordEgressRequestDur registers the Egress duration for a target
 func (m *Metrics) RecordEgressRequestDur(target string, elapsed float64) {
 	m.egressReqDur.WithLabelValues(target).Observe(elapsed)
 }
 
-// RecordIngressRequestCnt increases the Ingress counter for a taget
+// RecordIngressRequestCnt increases the Ingress counter for a target
 func (m *Metrics) RecordIngressRequestCnt(code, method, url string) {
 	m.ingressReqCnt.WithLabelValues(code, method, url).Inc()
 }
 
-// RecordIngressRequestDur registers the Egress duration for a taget
+// RecordIngressRequestDur registers the Egress duration for a target
 func (m *Metrics) RecordIngressRequestDur(code, method, url string, elapsed float64) {
 	m.ingressReqDur.WithLabelValues(code, method, url).Observe(elapsed)
 }

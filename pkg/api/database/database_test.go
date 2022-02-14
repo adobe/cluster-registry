@@ -32,6 +32,14 @@ type mockDynamoDBClient struct {
 	clusters map[string]*ClusterDb
 }
 
+func (m *mockDynamoDBClient) DescribeTable(input *dynamodb.DescribeTableInput) (*dynamodb.DescribeTableOutput, error) {
+
+	if *input.TableName == "mock-clusters" {
+		return &dynamodb.DescribeTableOutput{}, nil
+	}
+	return &dynamodb.DescribeTableOutput{}, errors.New("No sqs found with the name " + *input.TableName)
+}
+
 func (m *mockDynamoDBClient) GetItem(input *dynamodb.GetItemInput) (*dynamodb.GetItemOutput, error) {
 
 	resp, err := dynamodbattribute.MarshalMap(
@@ -104,6 +112,40 @@ func TestNewDb(t *testing.T) {
 	m := monitoring.NewMetrics("cluster_registry_api_database_test", nil, true)
 	d := NewDb(appConfig, m)
 	test.NotNil(d)
+}
+
+func TestStatusHealthCheck(t *testing.T) {
+	test := assert.New(t)
+	t.Log("Test the health check for the database")
+
+	tcs := []struct {
+		name          string
+		tableName     string
+		expectedError error
+	}{
+		{
+			name:          "unhealthy hatabase test",
+			tableName:     "mock-clusters",
+			expectedError: nil,
+		},
+		{
+			name:          "unhealthy hatabase test",
+			tableName:     "missing-mock-clusters",
+			expectedError: errors.New("No sqs found with the name missing-mock-clusters"),
+		},
+	}
+
+	for _, tc := range tcs {
+
+		db := &db{
+			dbAPI:   &mockDynamoDBClient{},
+			table:   dbTable{name: tc.tableName},
+			metrics: monitoring.NewMetrics("cluster_registry_api_database_test", nil, true),
+		}
+
+		err := db.Status()
+		test.Equal(fmt.Sprintf("%v", err), fmt.Sprintf("%v", tc.expectedError))
+	}
 }
 
 func TestGetCluster(t *testing.T) {

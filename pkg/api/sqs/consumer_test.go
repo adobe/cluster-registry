@@ -17,6 +17,7 @@ import (
 	"testing"
 
 	"github.com/adobe/cluster-registry/pkg/api/monitoring"
+	"github.com/adobe/cluster-registry/pkg/api/utils"
 	registryv1 "github.com/adobe/cluster-registry/pkg/cc/api/registry/v1"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/sqs"
@@ -74,6 +75,51 @@ func TestDeleteMessage(t *testing.T) {
 
 		queueDepth, _ = getQueueDepth(c.sqs)
 		test.Equal(queueDepth, 0)
+	}
+}
+
+func TestStatusHealthCheck(t *testing.T) {
+	test := assert.New(t)
+
+	t.Log("Test checking the health of the sqs")
+
+	tcs := []struct {
+		name          string
+		sqsQueueName  string
+		queueURL      string
+		expectedError error
+	}{
+		{
+			name:          "successful health check",
+			sqsQueueName:  "dummy-que-name",
+			queueURL:      "https://dummy-que-name.com",
+			expectedError: nil,
+		},
+		{
+			name:          "unsuccessful health check",
+			sqsQueueName:  "missing-dummy-que-name",
+			queueURL:      "",
+			expectedError: fmt.Errorf("No sqs found with the name missing-dummy-que-name"),
+		},
+	}
+
+	var err error
+	for _, tc := range tcs {
+		appConfig := &utils.AppConfig{
+			SqsQueueName: tc.sqsQueueName,
+		}
+		m := monitoring.NewMetrics("err_count_sqs_test", nil, true)
+		c := &consumer{
+			sqs:     &mockSQS{},
+			db:      &mockDatabase{clusters: nil},
+			metrics: m,
+		}
+
+		t.Logf("\tTest %s", tc.name)
+
+		err = c.Status(appConfig, m)
+		test.Equal(fmt.Sprintf("%v", err), fmt.Sprintf("%v", tc.expectedError))
+
 	}
 }
 

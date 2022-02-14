@@ -24,7 +24,7 @@ import (
 
 const (
 	egressTarget              = "testing_egress"
-	expectedMetricsRegistered = 4
+	expectedMetricsRegistered = 5
 	ingressCode               = "200"
 	ingressMethod             = "GET"
 	ingressURL                = "/api/v1/clusters/:name"
@@ -44,6 +44,16 @@ func TestMetricsRegistered(t *testing.T) {
 	m := NewMetrics(subsystem, nil, true)
 
 	test.Equal(len(m.metricsList), expectedMetricsRegistered)
+}
+
+func TestRecordStatusErrorCnt(t *testing.T) {
+	test := assert.New(t)
+	m := NewMetrics(subsystem, nil, true)
+
+	m.RecordErrorCnt(egressTarget)
+
+	test.Equal(1, testutil.CollectAndCount(*m.errCnt))
+	test.Equal(float64(1), testutil.ToFloat64((*m.errCnt).WithLabelValues(egressTarget)))
 }
 
 func TestRecordEgressRequestCnt(t *testing.T) {

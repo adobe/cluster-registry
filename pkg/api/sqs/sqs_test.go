@@ -77,6 +77,19 @@ type mockSQS struct {
 	messages []*sqs.Message
 }
 
+func (m *mockSQS) GetQueueUrl(in *sqs.GetQueueUrlInput) (*sqs.GetQueueUrlOutput, error) {
+
+	switch {
+	case *in.QueueName == "dummy-que-name":
+		queryUrl := "https://dummy-que-name.com"
+		return &sqs.GetQueueUrlOutput{
+			QueueUrl: &queryUrl,
+		}, nil
+	}
+
+	return &sqs.GetQueueUrlOutput{}, errors.New("No sqs found with the name " + *in.QueueName)
+}
+
 func (m *mockSQS) SendMessageWithContext(ctx aws.Context, in *sqs.SendMessageInput, r ...request.Option) (*sqs.SendMessageOutput, error) {
 	m.messages = append(m.messages, &sqs.Message{
 		Body: in.MessageBody,
