@@ -23,10 +23,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/adobe/cluster-registry/pkg/api/database"
-	"github.com/adobe/cluster-registry/pkg/api/monitoring"
-	"github.com/adobe/cluster-registry/pkg/api/utils"
-	registryv1 "github.com/adobe/cluster-registry/pkg/cc/api/registry/v1"
+	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
+	"github.com/adobe/cluster-registry/pkg/config"
+	"github.com/adobe/cluster-registry/pkg/database"
+	monitoring "github.com/adobe/cluster-registry/pkg/monitoring/apiserver"
 	"github.com/adobe/cluster-registry/test/jwt"
 	"github.com/stretchr/testify/suite"
 	"k8s.io/apimachinery/pkg/types"
@@ -65,7 +65,7 @@ func (s *e2eTestSuite) TearDownTest() {
 func (s *e2eTestSuite) Test_EndToEnd_GetClusters() {
 
 	var clusters clusterList
-	appConfig, err := utils.LoadApiConfig()
+	appConfig, err := config.LoadApiConfig()
 	if err != nil {
 		s.T().Fatalf("Cannot load the api configuration: '%v'", err.Error())
 	}
@@ -85,6 +85,10 @@ func (s *e2eTestSuite) Test_EndToEnd_GetClusters() {
 		s.T().Fatalf("Cannot make http request: %v", err.Error())
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		s.T().Fatalf("Cannot list clusters: %s", resp.Status)
+	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -115,12 +119,12 @@ func (s *e2eTestSuite) Test_EndToEnd_CreateCluster() {
 		s.T().Fatalf("Failed to unmarshal data: %v", err.Error())
 	}
 
-	config, err := clientcmd.BuildConfigFromFlags("", "../../kubeconfig")
+	clientConfig, err := clientcmd.BuildConfigFromFlags("", "../../kubeconfig")
 	if err != nil {
 		s.T().Fatalf("Failed to build K8s config: %v", err.Error())
 	}
 
-	clientset, err := kubernetes.NewForConfig(config)
+	clientset, err := kubernetes.NewForConfig(clientConfig)
 	if err != nil {
 		s.T().Fatalf("Failed to build K8s clientset: %v", err.Error())
 	}
@@ -139,7 +143,7 @@ func (s *e2eTestSuite) Test_EndToEnd_CreateCluster() {
 
 	time.Sleep(20 * time.Second)
 
-	appConfig, err := utils.LoadApiConfig()
+	appConfig, err := config.LoadApiConfig()
 	if err != nil {
 		s.T().Fatalf("Cannot load the api configuration: '%v'", err.Error())
 	}
@@ -162,6 +166,10 @@ func (s *e2eTestSuite) Test_EndToEnd_CreateCluster() {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != 200 {
+		s.T().Fatalf("Cannot list clusters: %s", resp.Status)
+	}
+
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		s.T().Fatalf("Failed read response body: %v", err.Error())
@@ -171,7 +179,7 @@ func (s *e2eTestSuite) Test_EndToEnd_CreateCluster() {
 
 	s.Assert().Equal(http.StatusOK, resp.StatusCode)
 
-	inputCluster.Spec.APIServer.CertificateAuthorityData = base64.StdEncoding.EncodeToString(config.CAData)
+	inputCluster.Spec.APIServer.CertificateAuthorityData = base64.StdEncoding.EncodeToString(clientConfig.CAData)
 	inputCluster.Spec.LastUpdated = outputCluster.LastUpdated
 	s.Assert().Equal(inputCluster.Spec, outputCluster)
 
@@ -207,7 +215,7 @@ func (s *e2eTestSuite) TBD_Test_EndToEnd_UpdateCluster() {
 	var inputCluster registryv1.Cluster
 	var outputCluster registryv1.ClusterSpec
 
-	appConfig, err := utils.LoadApiConfig()
+	appConfig, err := config.LoadApiConfig()
 	if err != nil {
 		s.T().Fatalf("Cannot load the api configuration: '%v'", err.Error())
 	}
@@ -223,12 +231,12 @@ func (s *e2eTestSuite) TBD_Test_EndToEnd_UpdateCluster() {
 		log.Fatal(err.Error())
 	}
 
-	config, err := clientcmd.BuildConfigFromFlags("", "../../kubeconfig")
+	clientConfig, err := clientcmd.BuildConfigFromFlags("", "../../kubeconfig")
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
-	clientset, err := kubernetes.NewForConfig(config)
+	clientset, err := kubernetes.NewForConfig(clientConfig)
 	if err != nil {
 		log.Fatal(err.Error())
 	}

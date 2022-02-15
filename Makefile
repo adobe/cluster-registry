@@ -27,10 +27,10 @@ GO_BUILD_RECIPE=\
 	CGO_ENABLED=0 \
 	go build -ldflags="$(GO_BUILD_LDFLAGS)"
 
-API_PKGS = $(shell go list ./pkg/api/...)
-API_PKGS += $(shell go list ./cmd/api/...)
-CC_PKGS = $(shell go list ./pkg/cc/...)
-CC_PKGS += $(shell go list ./cmd/cc/...)
+APISERVER_PKGS = $(shell go list ./pkg/apiserver/...)
+APISERVER_PKGS += $(shell go list ./cmd/apiserver/...)
+CLIENT_PKGS = $(shell go list ./pkg/client/...)
+CLIENT_PKGS += $(shell go list ./cmd/client/...)
 
 .PHONY: all
 all: format generate build test test-e2e
@@ -46,15 +46,15 @@ clean:
 ############
 
 .PHONY: build
-build: build-api build-cc
+build: build-apiserver build-client
 
-.PHONY: build-api
-build-api:
-	$(GO_BUILD_RECIPE) -o cluster-registry-api cmd/api/api.go
+.PHONY: build-apiserver
+build-apiserver:
+	$(GO_BUILD_RECIPE) -o cluster-registry-apiserver cmd/apiserver/apiserver.go
 
-.PHONY: build-cc
-build-cc:
-	$(GO_BUILD_RECIPE) -o cluster-registry-client cmd/cc/client.go
+.PHONY: build-client
+build-client:
+	$(GO_BUILD_RECIPE) -o cluster-registry-client cmd/client/client.go
 
 .PHONY: release
 release:
@@ -62,14 +62,14 @@ release:
 
 .PHONY: image 
 image: GOOS := linux
-image: .hack-api-image .hack-cc-image
+image: .hack-apiserver-image .hack-client-image
 
-.hack-api-image: cmd/api/Dockerfile build-api
-	docker build -t $(IMAGE_API):$(TAG) -f cmd/api/Dockerfile .
+.hack-apiserver-image: cmd/apiserver/Dockerfile build-apiserver
+	docker build -t $(IMAGE_APISERVER):$(TAG) -f cmd/apiserver/Dockerfile .
 	touch $@
 
-.hack-cc-image: cmd/cc/Dockerfile build-cc
-	docker build -t $(IMAGE_CC):$(TAG) -f cmd/cc/Dockerfile .
+.hack-client-image: cmd/client/Dockerfile build-client
+	docker build -t $(IMAGE_CLIENT):$(TAG) -f cmd/client/Dockerfile .
 	touch $@
 
 .PHONY: update-go-deps
@@ -125,7 +125,7 @@ go-sec: ## Inspects source code for security problems
 
 go-vet: ## Identifying subtle source code issues
 	@echo 'Vetting go code...'
-	@go vet $(shell pwd)/pkg/api/...
+	@go vet $(shell pwd)/pkg/apiserver/...
 	@echo 'Not issues found in go codebase!'
 
 
@@ -136,17 +136,17 @@ go-vet: ## Identifying subtle source code issues
 ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
 
 .PHONY: test
-test: test-api test-cc
+test: test-apiserver test-client
 
-.PHONY: test-api
-test-api:
-	go test -race $(TEST_RUN_ARGS) -short $(API_PKGS) -count=1 -v
+.PHONY: test-apiserver
+test-apiserver:
+	go test -race $(TEST_RUN_ARGS) -short $(APISERVER_PKGS) -count=1 -v
 
-.PHONY: test-cc
-test-cc:
+.PHONY: test-client
+test-client:
 	mkdir -p ${ENVTEST_ASSETS_DIR}
 	test -f ${ENVTEST_ASSETS_DIR}/setup-envtest.sh || curl -sSLo ${ENVTEST_ASSETS_DIR}/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.7.2/hack/setup-envtest.sh
-	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); go test -race $(TEST_RUN_ARGS) -short $(CC_PKGS) -count=1 -v
+	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); go test -race $(TEST_RUN_ARGS) -short $(CLIENT_PKGS) -count=1 -v
 
 .PHONY: test-e2e
 test-e2e:
@@ -172,10 +172,10 @@ kustomize: ## Download kustomize locally if necessary.
 	$(call go-get-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v3@v3.8.7)
 
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=$(MANAGER_ROLE) webhook paths="$(shell pwd)/pkg/cc/..." output:crd:artifacts:config=$(shell pwd)/config/crd/bases output:rbac:artifacts:config=$(shell pwd)/config/rbac
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=$(MANAGER_ROLE) webhook paths="$(shell pwd)/pkg/client/..." output:crd:artifacts:config=$(shell pwd)/config/crd/bases output:rbac:artifacts:config=$(shell pwd)/config/rbac
 
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
-	$(CONTROLLER_GEN) object:headerFile="$(shell pwd)/hack/boilerplate.go.txt" paths="$(shell pwd)/pkg/cc/..."
+	$(CONTROLLER_GEN) object:headerFile="$(shell pwd)/hack/boilerplate.go.txt" paths="$(shell pwd)/pkg/client/..."
 
 # go-get-tool will 'go get' any package $2 and install it to $1.
 define go-get-tool
@@ -194,4 +194,4 @@ endef
 # DOCUMENTATION
 # -------------
 swagger:
-	swag init --parseDependency --parseInternal --parseDepth 2 -g cmd/api/api.go --output pkg/api/docs/	
+	swag init --parseDependency --parseInternal --parseDepth 2 -g cmd/apiserver/apiserver.go --output pkg/apiserver/docs/	

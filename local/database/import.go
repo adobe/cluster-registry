@@ -13,53 +13,48 @@ governing permissions and limitations under the License.
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
-	"time"
 
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
 	"github.com/adobe/cluster-registry/pkg/config"
-	monitoring "github.com/adobe/cluster-registry/pkg/monitoring/client"
-	"github.com/adobe/cluster-registry/pkg/sqs"
+	"github.com/adobe/cluster-registry/pkg/database"
+	monitoring "github.com/adobe/cluster-registry/pkg/monitoring/apiserver"
 	"gopkg.in/yaml.v2"
 )
 
 func main() {
 	var clusters []registryv1.Cluster
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	m := monitoring.NewMetrics()
-	m.Init(false)
+	m := monitoring.NewMetrics("cluster_registry_api_local", nil, false)
 	appConfig, err := config.LoadApiConfig()
 	if err != nil {
 		log.Fatalf("Cannot load the api configuration: '%v'", err.Error())
 	}
 
-	p := sqs.NewProducer(appConfig, m)
-	input_file := flag.String("input-file", "../db/dummy-data.yaml", "yaml file path")
+	d := database.NewDb(appConfig, m)
+
+	input_file := flag.String("input-file", "dummy-data.yaml", "yaml file path")
 	flag.Parse()
 
 	data, err := ioutil.ReadFile(*input_file)
 	if err != nil {
-		log.Panicf("Error while trying to read file: %v", err.Error())
+		log.Fatalf("Unable to read input file %s: '%v'", *input_file, err.Error())
 	}
 
 	err = yaml.Unmarshal([]byte(data), &clusters)
 	if err != nil {
-		log.Panicf("Error while trying to unmarshal data: %v", err.Error())
+		log.Fatalf("Failed to unmarshal data: '%v'", err.Error())
 	}
 
 	for _, cluster := range clusters {
-		err = p.Send(ctx, &cluster)
+		err = d.PutCluster(&cluster)
 		if err != nil {
-			log.Panicf("Error sending message to sqs: %v", err.Error())
+			log.Fatalf("Failed to add or update the cluster %s: '%v'", cluster.Name, err.Error())
 		}
 	}
 
-	fmt.Println("Data successfully added into the queue.")
+	fmt.Println("Import successfully.")
 }

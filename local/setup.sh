@@ -4,9 +4,9 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# by default run the api and cc
-RUN_API="${1:-1}"
-RUN_CC="${2:-1}"
+# by default run the apiserver and client
+RUN_APISERVER="${1:-1}"
+RUN_CLIENT="${2:-1}"
 
 ROOT_DIR="$(cd "$(dirname "$0")/.."; pwd)"
 
@@ -31,10 +31,10 @@ sleep 3
 
 echo 'Create dynamodb schema...'
 aws dynamodb delete-table --table-name ${DB_TABLE_NAME} --endpoint-url $DB_ENDPOINT > /dev/null 2>&1 || true
-aws dynamodb create-table --cli-input-json file://${ROOT_DIR}/local/db/schema.json --endpoint-url $DB_ENDPOINT > /dev/null
+aws dynamodb create-table --cli-input-json file://${ROOT_DIR}/local/database/schema.json --endpoint-url $DB_ENDPOINT > /dev/null
 
 echo 'Populate database with dummy data..'
-go run ${ROOT_DIR}/local/db/import.go --input-file ${ROOT_DIR}/local/db/dummy-data.yaml
+go run ${ROOT_DIR}/local/database/import.go --input-file ${ROOT_DIR}/local/database/dummy-data.yaml
 
 echo 'Run a local sqs...'
 docker run -d \
@@ -76,7 +76,7 @@ kubectl --kubeconfig="${ROOT_DIR}/kubeconfig" apply -f ${ROOT_DIR}/config/crd/ba
 echo 'Building docker images'
 make --always-make image TAG="${TAG}"
 
-if [[ "${RUN_API}" == 1 ]]; then
+if [[ "${RUN_APISERVER}" == 1 ]]; then
 	echo 'Running cluster-registry api'
 	docker run -d \
 		--name ${CONTAINER_API} \
@@ -94,13 +94,13 @@ if [[ "${RUN_API}" == 1 ]]; then
 		-e SQS_ENDPOINT=http://${CONTAINER_SQS}:9324 \
 		-e SQS_QUEUE_NAME=${SQS_QUEUE_NAME} \
 		--network ${NETWORK} \
-		${IMAGE_API}:${TAG}
+		${IMAGE_APISERVER}:${TAG}
 fi
 
-if [[ "${RUN_CC}" == 1 ]]; then
-	echo 'Running cluster-registry cc'
+if [[ "${RUN_CLIENT}" == 1 ]]; then
+	echo 'Running cluster-registry-client'
 	docker run -d \
-		--name ${CONTAINER_CC} \
+		--name ${CONTAINER_CLIENT} \
 		-v "${ROOT_DIR}/kubeconfig_client":/kubeconfig \
 		-e AWS_ACCESS_KEY_ID \
 		-e AWS_SECRET_ACCESS_KEY \
@@ -109,7 +109,7 @@ if [[ "${RUN_CC}" == 1 ]]; then
 		-e SQS_ENDPOINT=http://${CONTAINER_SQS}:9324 \
 		-e SQS_QUEUE_NAME=${SQS_QUEUE_NAME} \
 		--network ${NETWORK} \
-		${IMAGE_CC}:${TAG}
+		${IMAGE_CLIENT}:${TAG}
 fi
 
 echo 'Local stack was set up successfully.'
