@@ -1,6 +1,6 @@
 FROM alpine
 RUN apk add --update --no-cache ca-certificates
-ADD cluster-registry-api /bin/api
+ADD cluster-registry-apiserver /bin/apiserver
 USER nobody
 EXPOSE 8080
-ENTRYPOINT ["/bin/api"]
+ENTRYPOINT ["/bin/apiserver"]
