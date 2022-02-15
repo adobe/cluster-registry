@@ -68,7 +68,7 @@ func main() {
 		Consumer:  c,
 		AppConfig: appConfig,
 	}
-	a.GET("/status", status.ServiceStatus)
+	a.GET("/readiz", status.ServiceStatus)
 
 	a.Logger.Fatal(a.Start(":8080"))
 }

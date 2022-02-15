@@ -59,5 +59,10 @@ func (s *StatusSessions) ServiceStatus(c echo.Context) error {
 		Sqs:      s.checkSqsStatus(),
 	}
 
+	// If one of them is false
+	if !statusResponse.Database || !statusResponse.Sqs {
+		return c.JSON(http.StatusInternalServerError, statusResponse)
+	}
+
 	return c.JSON(http.StatusOK, statusResponse)
 }
