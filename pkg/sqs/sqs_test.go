@@ -72,6 +72,10 @@ func (m *mockDatabase) DeleteCluster(name string) error {
 	return nil
 }
 
+func (m *mockDatabase) Status() error {
+	return nil
+}
+
 type mockSQS struct {
 	sqsiface.SQSAPI
 	messages []*sqs.Message
