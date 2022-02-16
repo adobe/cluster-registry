@@ -12,6 +12,6 @@ source $ROOT_DIR/local/.env.local
 
 echo 'Tearing down local dev...'
 kind delete cluster --name $KIND_CLUSTERNAME
-docker rm -f ${CONTAINER_API} ${CONTAINER_CC} ${CONTAINER_DB} ${CONTAINER_SQS} ${CONTAINER_OIDC}
+docker rm -f ${CONTAINER_API} ${CONTAINER_CLIENT} ${CONTAINER_DB} ${CONTAINER_SQS} ${CONTAINER_OIDC}
 docker network rm ${NETWORK}
 docker volume prune -f

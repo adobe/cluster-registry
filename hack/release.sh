@@ -6,8 +6,8 @@ set -o pipefail
 
 REGISTRY="ghcr.io"
 
-export IMAGE_API="${IMAGE_API:-"adobe/cluster-registry-api"}"
-export IMAGE_CC="${IMAGE_CC:-"adobe/cluster-registry-client"}"
+export IMAGE_APISERVER="${IMAGE_APISERVER:-"adobe/cluster-registry-api"}"
+export IMAGE_CLIENT="${IMAGE_CLIENT:-"adobe/cluster-registry-client"}"
 export TAG="${GITHUB_REF##*/}"
 
 IMAGE_SUFFIX="-dev"
@@ -18,17 +18,17 @@ else
 	TAG="v$(cat "$(git rev-parse --show-toplevel)/VERSION")-$(git rev-parse --short HEAD)"
 fi
 
-API="${REGISTRY}/${IMAGE_API}${IMAGE_SUFFIX}"
-CC="${REGISTRY}/${IMAGE_CC}${IMAGE_SUFFIX}"
+APISERVER="${REGISTRY}/${IMAGE_APISERVER}${IMAGE_SUFFIX}"
+CLIENT="${REGISTRY}/${IMAGE_CLIENT}${IMAGE_SUFFIX}"
 
-for img in ${API} ${CC}; do
+for img in ${APISERVER} ${CLIENT}; do
 	echo "Building image: $img:$TAG"
 done
 
 make --always-make image TAG="${TAG}"
 
-docker tag "${IMAGE_API}:${TAG}" "${API}:${TAG}"
-docker tag "${IMAGE_CC}:${TAG}" "${CC}:${TAG}"
+docker tag "${IMAGE_APISERVER}:${TAG}" "${APISERVER}:${TAG}"
+docker tag "${IMAGE_CLIENT}:${TAG}" "${CLIENT}:${TAG}"
 
-docker push "${API}:${TAG}"
-docker push "${CC}:${TAG}"
+docker push "${APISERVER}:${TAG}"
+docker push "${CLIENT}:${TAG}"

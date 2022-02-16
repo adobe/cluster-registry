@@ -22,7 +22,7 @@ import (
 	"io/ioutil"
 	"time"
 
-	"github.com/adobe/cluster-registry/pkg/api/utils"
+	"github.com/adobe/cluster-registry/pkg/config"
 	"gopkg.in/square/go-jose.v2"
 )
 
@@ -43,17 +43,17 @@ type Claim struct {
 }
 
 // BuildAuthHeader builds the authorization header with a JWT bearer token
-func BuildAuthHeader(appConfig *utils.AppConfig, expiredToken bool, signingKeyFile string, signingKeyType string, c Claim) string {
+func BuildAuthHeader(appConfig *config.AppConfig, expiredToken bool, signingKeyFile string, signingKeyType string, c Claim) string {
 	signedToken := GenerateSignedToken(appConfig, expiredToken, signingKeyFile, signingKeyType, c)
 	return authScheme + " " + signedToken
 }
 
-func GenerateDefaultSignedToken(appConfig *utils.AppConfig) string {
+func GenerateDefaultSignedToken(appConfig *config.AppConfig) string {
 	return GenerateSignedToken(appConfig, false, "", "", Claim{})
 }
 
 // GenerateSignedToken generates and sign a jwt token
-func GenerateSignedToken(appConfig *utils.AppConfig, expiredToken bool, signingKeyFile string, signingKeyType string, c Claim) string {
+func GenerateSignedToken(appConfig *config.AppConfig, expiredToken bool, signingKeyFile string, signingKeyType string, c Claim) string {
 
 	if signingKeyFile == "" {
 		signingKeyFile = dummySigningKeyFile
@@ -126,7 +126,7 @@ type dummyToken struct {
 }
 
 // newDummyToken
-func newDummyToken(appConfig *utils.AppConfig, signingKeyFile string, signingKeyType string) *dummyToken {
+func newDummyToken(appConfig *config.AppConfig, signingKeyFile string, signingKeyType string) *dummyToken {
 	claims := make(map[string]string)
 	claims["exp"] = fmt.Sprint(time.Now().Add(1 * time.Hour).Unix())
 	claims["iat"] = fmt.Sprint(time.Now().Unix())
