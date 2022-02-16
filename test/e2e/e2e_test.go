@@ -185,7 +185,7 @@ func (s *e2eTestSuite) Test_EndToEnd_CreateCluster() {
 
 	s.T().Cleanup(
 		func() {
-			m := monitoring.NewMetrics("cluster_registry_api_e2e_test", nil, true)
+			m := monitoring.NewMetrics("cluster_registry_api_e2e_test", true)
 
 			_, err = clientset.CoreV1().RESTClient().
 				Delete().

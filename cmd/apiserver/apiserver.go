@@ -47,7 +47,7 @@ func main() {
 		log.Fatalf("Cannot load the api configuration: '%v'", err.Error())
 	}
 
-	m := monitoring.NewMetrics("cluster_registry_api", nil, false)
+	m := monitoring.NewMetrics("cluster_registry_api", false)
 	db := database.NewDb(appConfig, m)
 	s := sqs.NewSQS(appConfig)
 	c := sqs.NewConsumer(s, appConfig, db, m)
@@ -61,8 +61,7 @@ func main() {
 	a.GET("/api/swagger/*", echoSwagger.WrapHandler)
 	a.GET("/livez", web.Livez)
 	a.GET("/readyz", status.Readyz)
-
-	m.Use(a)
+	a.GET("/metrics", web.Metrics())
 
 	v1 := a.Group("/api/v1")
 	hv1 := apiv1.NewHandler(appConfig, db, m)
@@ -70,5 +69,6 @@ func main() {
 
 	go c.Consume()
 
+	m.Use(a)
 	a.Logger.Fatal(a.Start(":8080"))
 }

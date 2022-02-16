@@ -13,22 +13,9 @@ governing permissions and limitations under the License.
 package monitoring
 
 import (
-	"errors"
-	"net/http"
-	"strconv"
-	"time"
-
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-)
-
-const (
-	defaultMetricPath = "/metrics"
-	defaultSubsystem  = "echo"
 )
 
 // Ingress metrics
@@ -79,28 +66,6 @@ var errCnt = &Metric{
 	Args:        []string{"target"},
 }
 
-/*
-RequestCounterLabelMappingFunc is a function which can be supplied to the middleware to control
-the cardinality of the request counter's "url" label, which might be required in some contexts.
-For instance, if for a "/customer/:name" route you don't want to generate a time series for every
-possible customer name, you could use this function:
-
-func(c echo.Context) string {
-	url := c.Request.URL.Path
-	for _, p := range c.Params {
-		if p.Key == "name" {
-			url = strings.Replace(url, p.Value, ":name", 1)
-			break
-		}
-	}
-	return url
-}
-
-which would map "/customer/alice" and "/customer/bob" to their template "/customer/:name".
-It can also be applied for the "Host" label
-*/
-type requestCounterLabelMappingFunc func(c echo.Context) string
-
 // Metric is a definition for the name, description, type, ID, and
 // prometheus.Collector type (i.e. CounterVec, HistogramVec, etc) of each metric
 type Metric struct {
@@ -124,28 +89,23 @@ type MetricsI interface {
 
 // Metrics contains the metrics gathered by the instance and its path
 type Metrics struct {
-	ingressReqCnt, egressReqCnt *prometheus.CounterVec
-	ingressReqDur, egressReqDur *prometheus.HistogramVec
-	errCnt                      *prometheus.CounterVec
+	ingressReqCnt *prometheus.CounterVec
+	egressReqCnt  *prometheus.CounterVec
+	ingressReqDur *prometheus.HistogramVec
+	egressReqDur  *prometheus.HistogramVec
+	errCnt        *prometheus.CounterVec
 
 	metricsList []*Metric
-	metricsPath string
 	subsystem   string
-	skipper     middleware.Skipper
 	isUnitTest  bool
 
-	requestCounterURLLabelMappingFunc requestCounterLabelMappingFunc
-
 	// Context string to use as a prometheus URL label
-	urlLabelFromContext string
+	URLLabelFromContext string
 }
 
 // NewMetrics generates a new set of metrics with a certain subsystem name
-func NewMetrics(subsystem string, skipper middleware.Skipper, isUnitTest bool) *Metrics {
+func NewMetrics(subsystem string, isUnitTest bool) *Metrics {
 	var metricsList []*Metric
-	if skipper == nil {
-		skipper = middleware.DefaultSkipper
-	}
 
 	metricsList = append(metricsList, ingressMetrics...)
 	metricsList = append(metricsList, egressMetrics...)
@@ -153,26 +113,13 @@ func NewMetrics(subsystem string, skipper middleware.Skipper, isUnitTest bool) *
 
 	m := &Metrics{
 		metricsList: metricsList,
-		metricsPath: defaultMetricPath,
-		subsystem:   defaultSubsystem,
-		skipper:     skipper,
+		subsystem:   subsystem,
 		isUnitTest:  isUnitTest,
-		requestCounterURLLabelMappingFunc: func(c echo.Context) string {
-			return c.Path() // i.e. by default do nothing, i.e. return URL as is
-		},
 	}
 
 	m.registerMetrics(subsystem)
 
 	return m
-}
-
-func prometheusHandler() echo.HandlerFunc {
-	h := promhttp.Handler()
-	return func(c echo.Context) error {
-		h.ServeHTTP(c.Response(), c.Request())
-		return nil
-	}
 }
 
 func (m *Metrics) registerMetrics(subsystem string) {
@@ -220,55 +167,6 @@ func (m *Metrics) registerMetrics(subsystem string) {
 			m.errCnt = metric.(*prometheus.CounterVec)
 		}
 		metricDef.MetricCollector = metric
-	}
-}
-
-// Use adds the middleware to the Echo engine.
-func (m *Metrics) Use(e *echo.Echo) {
-	e.Use(m.handlerFunc)
-	e.GET(m.metricsPath, prometheusHandler())
-}
-
-// HandlerFunc defines handler function for middleware
-func (m *Metrics) handlerFunc(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		if c.Path() == m.metricsPath {
-			return next(c)
-		}
-		if m.skipper(c) {
-			return next(c)
-		}
-
-		start := time.Now()
-		err := next(c)
-		elapsed := float64(time.Since(start)) / float64(time.Second)
-
-		method := c.Request().Method
-		status := c.Response().Status
-		if err != nil {
-			var httpError *echo.HTTPError
-			if errors.As(err, &httpError) {
-				status = httpError.Code
-			}
-			if status == 0 || status == http.StatusOK {
-				status = http.StatusInternalServerError
-			}
-		}
-
-		url := m.requestCounterURLLabelMappingFunc(c)
-		if len(m.urlLabelFromContext) > 0 {
-			u := c.Get(m.urlLabelFromContext)
-			if u == nil {
-				u = "unknown"
-			}
-			url = u.(string)
-		}
-
-		statusStr := strconv.Itoa(status)
-		m.RecordIngressRequestCnt(statusStr, method, url)
-		m.RecordIngressRequestDur(statusStr, method, url, elapsed)
-
-		return err
 	}
 }
 

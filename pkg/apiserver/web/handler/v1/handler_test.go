@@ -51,7 +51,7 @@ func TestNewHandler(t *testing.T) {
 	test := assert.New(t)
 	appConfig := &config.AppConfig{}
 	d := mockDatabase{}
-	m := monitoring.NewMetrics("cluster_registry_api_handler_test", nil, true)
+	m := monitoring.NewMetrics("cluster_registry_api_handler_test", true)
 	h := NewHandler(appConfig, d, m)
 	test.NotNil(h)
 }
@@ -101,7 +101,7 @@ func TestGetCluster(t *testing.T) {
 	for _, tc := range tcs {
 
 		d := mockDatabase{clusters: tc.clusters}
-		m := monitoring.NewMetrics("cluster_registry_api_handler_test", nil, true)
+		m := monitoring.NewMetrics("cluster_registry_api_handler_test", true)
 		r := web.NewRouter()
 		h := NewHandler(appConfig, d, m)
 
@@ -168,7 +168,7 @@ func TestListClusters(t *testing.T) {
 	for _, tc := range tcs {
 
 		d := mockDatabase{clusters: tc.clusters}
-		m := monitoring.NewMetrics("cluster_registry_api_handler_test", nil, true)
+		m := monitoring.NewMetrics("cluster_registry_api_handler_test", true)
 		r := web.NewRouter()
 		h := NewHandler(appConfig, d, m)
 

@@ -35,20 +35,20 @@ const (
 
 func TestNewMetrics(t *testing.T) {
 	test := assert.New(t)
-	m := NewMetrics(subsystem, nil, true)
+	m := NewMetrics(subsystem, true)
 	test.NotNil(m)
 }
 
 func TestMetricsRegistered(t *testing.T) {
 	test := assert.New(t)
-	m := NewMetrics(subsystem, nil, true)
+	m := NewMetrics(subsystem, true)
 
 	test.Equal(len(m.metricsList), expectedMetricsRegistered)
 }
 
 func TestRecordStatusErrorCnt(t *testing.T) {
 	test := assert.New(t)
-	m := NewMetrics(subsystem, nil, true)
+	m := NewMetrics(subsystem, true)
 
 	m.RecordErrorCnt(egressTarget)
 
@@ -58,7 +58,7 @@ func TestRecordStatusErrorCnt(t *testing.T) {
 
 func TestRecordEgressRequestCnt(t *testing.T) {
 	test := assert.New(t)
-	m := NewMetrics(subsystem, nil, true)
+	m := NewMetrics(subsystem, true)
 
 	m.RecordEgressRequestCnt(egressTarget)
 
@@ -72,7 +72,7 @@ func generateFloatRand(min, max float64) float64 {
 }
 
 func TestRecordEgressRequestDur(t *testing.T) {
-	m := NewMetrics(subsystem, nil, true)
+	m := NewMetrics(subsystem, true)
 
 	randomFloat := generateFloatRand(minRand, maxRand)
 	m.RecordEgressRequestDur(egressTarget, randomFloat)
@@ -106,7 +106,7 @@ func TestRecordEgressRequestDur(t *testing.T) {
 
 func TestRecordIngressRequestCnt(t *testing.T) {
 	test := assert.New(t)
-	m := NewMetrics(subsystem, nil, true)
+	m := NewMetrics(subsystem, true)
 
 	m.RecordIngressRequestCnt(ingressCode, ingressMethod, ingressURL)
 
@@ -115,7 +115,7 @@ func TestRecordIngressRequestCnt(t *testing.T) {
 }
 
 func TestRecordIngressRequestDur(t *testing.T) {
-	m := NewMetrics(subsystem, nil, true)
+	m := NewMetrics(subsystem, true)
 
 	randomFloat := generateFloatRand(minRand, maxRand)
 	m.RecordIngressRequestDur(ingressCode, ingressMethod, ingressURL, randomFloat)

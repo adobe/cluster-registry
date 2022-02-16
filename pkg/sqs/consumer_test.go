@@ -44,7 +44,7 @@ func TestDeleteMessage(t *testing.T) {
 		}}
 
 	for _, tc := range tcs {
-		m := monitoring.NewMetrics("cluster_registry_api_sqs_test", nil, true)
+		m := monitoring.NewMetrics("cluster_registry_api_sqs_test", true)
 		c := &consumer{
 			sqs:             &mockSQS{messages: tc.sqsMessages},
 			db:              &mockDatabase{clusters: nil},
@@ -108,7 +108,7 @@ func TestStatusHealthCheck(t *testing.T) {
 		appConfig := &utils.AppConfig{
 			SqsQueueName: tc.sqsQueueName,
 		}
-		m := monitoring.NewMetrics("err_count_sqs_test", nil, true)
+		m := monitoring.NewMetrics("err_count_sqs_test", true)
 		c := &consumer{
 			sqs:     &mockSQS{},
 			db:      &mockDatabase{clusters: nil},
@@ -281,7 +281,7 @@ func TestProcessMessage(t *testing.T) {
 			maxMessages:     1,
 			pollWaitSeconds: 1,
 			retrySeconds:    5,
-			metrics:         monitoring.NewMetrics("cluster_registry_api_sqs_test", nil, true),
+			metrics:         monitoring.NewMetrics("cluster_registry_api_sqs_test", true),
 		}
 
 		t.Logf("\tTest %s:\tWhen processing a message from sqs queue.", tc.name)

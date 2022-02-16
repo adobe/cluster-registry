@@ -127,7 +127,7 @@ func TestToken(t *testing.T) {
 
 		res := httptest.NewRecorder()
 		c := e.NewContext(req, res)
-		m := monitoring.NewMetrics("cluster_registry_api_authz_test", nil, true)
+		m := monitoring.NewMetrics("cluster_registry_api_authz_test", true)
 		auth, err := NewAuthenticator(appConfig, m)
 		pubKeys := []*jose.JSONWebKey{jwt.GetSigningKey(tc.signingKeyFile, signingKeyPublic)}
 

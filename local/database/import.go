@@ -28,7 +28,7 @@ import (
 func main() {
 	var clusters []registryv1.Cluster
 
-	m := monitoring.NewMetrics("cluster_registry_api_local", nil, false)
+	m := monitoring.NewMetrics("cluster_registry_api_local", false)
 	appConfig, err := config.LoadApiConfig()
 	if err != nil {
 		log.Fatalf("Cannot load the api configuration: '%v'", err.Error())

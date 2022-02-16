@@ -140,13 +140,13 @@ test: test-apiserver test-client
 
 .PHONY: test-apiserver
 test-apiserver:
-	go test -race $(TEST_RUN_ARGS) -short $(APISERVER_PKGS) -count=1 -v
+	go test -race $(TEST_RUN_ARGS) -short $(APISERVER_PKGS) -count=1 -cover -v
 
 .PHONY: test-client
 test-client:
 	mkdir -p ${ENVTEST_ASSETS_DIR}
 	test -f ${ENVTEST_ASSETS_DIR}/setup-envtest.sh || curl -sSLo ${ENVTEST_ASSETS_DIR}/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.7.2/hack/setup-envtest.sh
-	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); go test -race $(TEST_RUN_ARGS) -short $(CLIENT_PKGS) -count=1 -v
+	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); go test -race $(TEST_RUN_ARGS) -short $(CLIENT_PKGS) -count=1 -cover -v
 
 .PHONY: test-e2e
 test-e2e:

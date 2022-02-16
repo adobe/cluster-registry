@@ -109,7 +109,7 @@ func TestNewDb(t *testing.T) {
 		DbAwsRegion: "dummy-region",
 	}
 
-	m := monitoring.NewMetrics("cluster_registry_api_database_test", nil, true)
+	m := monitoring.NewMetrics("cluster_registry_api_database_test", true)
 	d := NewDb(appConfig, m)
 	test.NotNil(d)
 }
@@ -140,7 +140,7 @@ func TestStatusHealthCheck(t *testing.T) {
 		db := &db{
 			dbAPI:   &mockDynamoDBClient{},
 			table:   dbTable{name: tc.tableName},
-			metrics: monitoring.NewMetrics("cluster_registry_api_database_test", nil, true),
+			metrics: monitoring.NewMetrics("cluster_registry_api_database_test", true),
 		}
 
 		err := db.Status()
@@ -215,7 +215,7 @@ func TestGetCluster(t *testing.T) {
 			dbAPI:   &mockDynamoDBClient{clusters: tc.dbClusters},
 			table:   dbTable{name: "cluster-registry-test", partitionKey: "name", searchKey: ""},
 			index:   dbTable{name: "cluster-registry-search-test", partitionKey: "kind", searchKey: "name"},
-			metrics: monitoring.NewMetrics("cluster_registry_api_database_test", nil, true),
+			metrics: monitoring.NewMetrics("cluster_registry_api_database_test", true),
 		}
 
 		t.Logf("\tTest %s:\tWhen getting cluster %s", tc.name, tc.clusterName)
@@ -325,7 +325,7 @@ func TestPutCluster(t *testing.T) {
 			dbAPI:   &mockDynamoDBClient{clusters: tc.dbClusters},
 			table:   dbTable{name: "cluster-registry-test", partitionKey: "name", searchKey: ""},
 			index:   dbTable{name: "cluster-registry-search-test", partitionKey: "kind", searchKey: "name"},
-			metrics: monitoring.NewMetrics("cluster_registry_api_database_test", nil, true),
+			metrics: monitoring.NewMetrics("cluster_registry_api_database_test", true),
 		}
 
 		t.Logf("\tTest %s:\tWhen creating or updating a cluster %s; nr. of items %d", tc.name, tc.newCluster.ClusterName, tc.expectedCount)
@@ -426,7 +426,7 @@ func TestDeleteCluster(t *testing.T) {
 			dbAPI:   &mockDynamoDBClient{clusters: tc.dbClusters},
 			table:   dbTable{name: "cluster-registry-test", partitionKey: "name", searchKey: ""},
 			index:   dbTable{name: "cluster-registry-search-test", partitionKey: "kind", searchKey: "name"},
-			metrics: monitoring.NewMetrics("cluster_registry_api_database_test", nil, true),
+			metrics: monitoring.NewMetrics("cluster_registry_api_database_test", true),
 		}
 
 		err := db.DeleteCluster(tc.clusterName)
@@ -529,7 +529,7 @@ func TestListClusters(t *testing.T) {
 			dbAPI:   &mockDynamoDBClient{clusters: tc.dbClusters},
 			table:   dbTable{name: "cluster-registry-test", partitionKey: "name", searchKey: ""},
 			index:   dbTable{name: "cluster-registry-search-test", partitionKey: "kind", searchKey: "name"},
-			metrics: monitoring.NewMetrics("cluster_registry_api_database_test", nil, true),
+			metrics: monitoring.NewMetrics("cluster_registry_api_database_test", true),
 		}
 
 		t.Logf("\tTest %s:\tWhen getting all clusters with region:%s, environment:%s, status:%s, offset:%d, limit:%d, error:%v",
