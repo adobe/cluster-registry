@@ -13,14 +13,16 @@ governing permissions and limitations under the License.
 package database
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sort"
 	"testing"
 
-	"github.com/adobe/cluster-registry/pkg/api/monitoring"
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
-	"github.com/adobe/cluster-registry/pkg/api/utils"
+	"github.com/adobe/cluster-registry/pkg/config"
+	monitoring "github.com/adobe/cluster-registry/pkg/monitoring/apiserver"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
@@ -32,7 +34,7 @@ type mockDynamoDBClient struct {
 	clusters map[string]*ClusterDb
 }
 
-func (m *mockDynamoDBClient) DescribeTable(input *dynamodb.DescribeTableInput) (*dynamodb.DescribeTableOutput, error) {
+func (m *mockDynamoDBClient) DescribeTableWithContext(_ context.Context, input *dynamodb.DescribeTableInput, _ ...request.Option) (*dynamodb.DescribeTableOutput, error) {
 
 	if *input.TableName == "mock-clusters" {
 		return &dynamodb.DescribeTableOutput{}, nil
@@ -104,7 +106,7 @@ func TestNewDb(t *testing.T) {
 
 	t.Log("Test initializing the database.")
 
-	appConfig := &utils.AppConfig{
+	appConfig := &config.AppConfig{
 		DbEndpoint:  "dummy-url",
 		DbAwsRegion: "dummy-region",
 	}

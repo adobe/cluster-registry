@@ -13,6 +13,7 @@ governing permissions and limitations under the License.
 package database
 
 import (
+	"context"
 	"time"
 
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
@@ -95,13 +96,16 @@ func NewDb(appConfig *config.AppConfig, m monitoring.MetricsI) Db {
 	return dbInst
 }
 
-// Status a single cluster
+// Status checks if the database is reachable with a 5 sec timeout
 func (d *db) Status() error {
 	params := &dynamodb.DescribeTableInput{
 		TableName: &d.table.name,
 	}
 
-	_, err := d.dbAPI.DescribeTable(params)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err := d.dbAPI.DescribeTableWithContext(ctx, params)
 	if err != nil {
 		d.metrics.RecordErrorCnt(egressTarget)
 		log.Errorf("Connectivity check using DescribeTable failed. Error: '%v'", err.Error())
