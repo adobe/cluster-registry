@@ -59,5 +59,10 @@ func (s *StatusSessions) Readyz(c echo.Context) error {
 		Sqs:      s.checkSqsStatus(),
 	}
 
+	// If one of them is false
+	if !readyResponse.Database || !readyResponse.Sqs {
+		return c.JSON(http.StatusInternalServerError, readyResponse)
+	}
+
 	return c.JSON(http.StatusOK, readyResponse)
 }
