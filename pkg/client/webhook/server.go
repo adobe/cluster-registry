@@ -83,7 +83,7 @@ func (s *Server) process(alert Alert) error {
 
 	for _, a := range s.AlertMap {
 
-		// accept only alerts pre-configured
+		// accept only preconfigured alerts
 		if a.AlertName != alert.CommonLabels.Alertname {
 			continue
 		}
@@ -107,14 +107,14 @@ func (s *Server) process(alert Alert) error {
 		}
 
 		for i := range clusterList.Items {
+
+			var excludedTagsAnnotation string
+			var excludedTags []string
 			cluster := &clusterList.Items[i]
+
 			if cluster.Spec.Tags == nil {
 				cluster.Spec.Tags = make(map[string]string)
 			}
-
-			// skip for tags which are in excluded-tags list
-			var excludedTagsAnnotation string
-			var excludedTags []string
 
 			excludedTagsAnnotation = cluster.Annotations["clusters.registry.ethos.adobe.com/excluded-tags"]
 
@@ -122,6 +122,7 @@ func (s *Server) process(alert Alert) error {
 				excludedTags = strings.Split(excludedTagsAnnotation, ",")
 			}
 
+			// skip processing tags which are in excluded-tags list
 			for key, value := range tag {
 				if contains(key, excludedTags) {
 					continue
