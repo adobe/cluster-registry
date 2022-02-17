@@ -42,6 +42,7 @@ const (
 	DeadMansSwitchAlertName = "CRCDeadMansSwitch"
 )
 
+<<<<<<< HEAD:pkg/client/webhook/webhook.go
 // Start starts the webhook server
 func (s *Server) Start() error {
 	http.HandleFunc("/webhook", s.webhookHandler)
@@ -52,6 +53,8 @@ func (s *Server) Start() error {
 	return nil
 }
 
+=======
+>>>>>>> 19a0be7 (use annotation mechanism to change controller behavior):pkg/client/webhook/server.go
 func (s *Server) webhookHandler(w http.ResponseWriter, r *http.Request) {
 	var alert Alert
 
@@ -125,13 +128,23 @@ func (s *Server) process(alert Alert) error {
 				cluster.Spec.Tags = make(map[string]string)
 			}
 
+<<<<<<< HEAD:pkg/client/webhook/webhook.go
+=======
+			// skip for tags which are in excluded-tags list
+			var excludedTagsAnnotation string
+			var excludedTags []string
+
+>>>>>>> 19a0be7 (use annotation mechanism to change controller behavior):pkg/client/webhook/server.go
 			excludedTagsAnnotation = cluster.Annotations["clusters.registry.ethos.adobe.com/excluded-tags"]
 
 			if excludedTagsAnnotation != "" {
 				excludedTags = strings.Split(excludedTagsAnnotation, ",")
 			}
 
+<<<<<<< HEAD:pkg/client/webhook/webhook.go
 			// skip processing tags which are in excluded-tags list
+=======
+>>>>>>> 19a0be7 (use annotation mechanism to change controller behavior):pkg/client/webhook/server.go
 			for key, value := range tag {
 				if contains(key, excludedTags) {
 					continue
@@ -139,7 +152,11 @@ func (s *Server) process(alert Alert) error {
 				cluster.Spec.Tags[key] = value
 			}
 
+<<<<<<< HEAD:pkg/client/webhook/webhook.go
 			if err := s.Client.Update(context.TODO(), &clusterList.Items[i], &client.UpdateOptions{}); err != nil {
+=======
+			if err := s.Client.Update(context.TODO(), &clusterList.Items[i]); err != nil {
+>>>>>>> 19a0be7 (use annotation mechanism to change controller behavior):pkg/client/webhook/server.go
 				return err
 			}
 		}
