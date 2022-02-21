@@ -28,6 +28,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/swaggo/echo-swagger v1.0.0
 	github.com/swaggo/swag v1.7.0
+	github.com/testcontainers/testcontainers-go v0.12.0 // indirect
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2
 	golang.org/x/tools v0.1.8 // indirect

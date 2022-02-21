@@ -16,9 +16,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/adobe/cluster-registry/pkg/api/monitoring"
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
-	"github.com/adobe/cluster-registry/pkg/api/utils"
+	"github.com/adobe/cluster-registry/pkg/config"
+	monitoring "github.com/adobe/cluster-registry/pkg/monitoring/apiserver"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/stretchr/testify/assert"
@@ -105,7 +105,7 @@ func TestStatusHealthCheck(t *testing.T) {
 
 	var err error
 	for _, tc := range tcs {
-		appConfig := &utils.AppConfig{
+		appConfig := &config.AppConfig{
 			SqsQueueName: tc.sqsQueueName,
 		}
 		m := monitoring.NewMetrics("err_count_sqs_test", true)
