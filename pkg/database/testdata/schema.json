@@ -1,0 +1,45 @@
+{
+    "TableName": "cluster-registry-local",
+    "AttributeDefinitions": [
+      {
+        "AttributeName": "name",
+        "AttributeType": "S"
+      },
+      {
+        "AttributeName": "kind",
+        "AttributeType": "S"
+      }
+    ],
+    "ProvisionedThroughput": {
+      "WriteCapacityUnits": 5,
+      "ReadCapacityUnits": 5
+    },
+    "KeySchema": [
+      {
+        "KeyType": "HASH",
+        "AttributeName": "name"
+      }
+    ],
+    "GlobalSecondaryIndexes": [
+      {
+          "IndexName": "search-index-local",
+          "KeySchema": [
+            {
+              "AttributeName": "kind",
+              "KeyType": "HASH"
+            },
+            {
+              "AttributeName": "name",
+              "KeyType": "RANGE"
+            }
+          ],
+          "Projection": {
+            "ProjectionType": "ALL"
+          },
+          "ProvisionedThroughput": {
+            "ReadCapacityUnits": 5,
+            "WriteCapacityUnits": 5
+          }
+        }
+    ]
+  }

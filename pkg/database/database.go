@@ -13,7 +13,6 @@ governing permissions and limitations under the License.
 package database
 
 import (
-	"context"
 	"time"
 
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
@@ -96,16 +95,13 @@ func NewDb(appConfig *config.AppConfig, m monitoring.MetricsI) Db {
 	return dbInst
 }
 
-// Status checks if the database is reachable with a 5 sec timeout
+// Status a single cluster
 func (d *db) Status() error {
 	params := &dynamodb.DescribeTableInput{
 		TableName: &d.table.name,
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	_, err := d.dbAPI.DescribeTableWithContext(ctx, params)
+	_, err := d.dbAPI.DescribeTable(params)
 	if err != nil {
 		d.metrics.RecordErrorCnt(egressTarget)
 		log.Errorf("Connectivity check using DescribeTable failed. Error: '%v'", err.Error())
@@ -265,11 +261,11 @@ func (d *db) PutCluster(cluster *registryv1.Cluster) error {
 	d.metrics.RecordEgressRequestDur(egressTarget, elapsed)
 
 	if err != nil {
-		log.Errorf("Cluster '%s' cannot be updated or created in the database. Error: '%v'", cluster.Name, err.Error())
+		log.Errorf("Cluster '%s' cannot be updated or created in the database. Error: '%v'", cluster.Spec.Name, err.Error())
 		return err
 	}
 
-	log.Infof("Cluster '%s' updated successfully.", cluster.Name)
+	log.Infof("Cluster '%s' updated successfully.", cluster.Spec.Name)
 
 	return err
 }

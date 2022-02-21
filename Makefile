@@ -185,4 +185,4 @@ endef
 # DOCUMENTATION
 # -------------
 swagger:
-	swag init --parseDependency --parseInternal --parseDepth 2 -g cmd/apiserver/apiserver.go --output pkg/apiserver/docs/	
+	swag init --parseDependency --parseInternal --parseDepth 2 -g cmd/apiserver/apiserver.go --output pkg/apiserver/docs/

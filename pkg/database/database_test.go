@@ -13,550 +13,474 @@ governing permissions and limitations under the License.
 package database
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"sort"
-	"testing"
 
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
 	"github.com/adobe/cluster-registry/pkg/config"
 	monitoring "github.com/adobe/cluster-registry/pkg/monitoring/apiserver"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
-	"github.com/stretchr/testify/assert"
+	"github.com/labstack/gommon/log"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
-type mockDynamoDBClient struct {
-	dynamodbiface.DynamoDBAPI
-	clusters map[string]*ClusterDb
-}
+var _ = Describe("Database Suite", func() {
+	var db Db
+	var appConfig *config.AppConfig
+	var m *monitoring.Metrics
 
-func (m *mockDynamoDBClient) DescribeTableWithContext(_ context.Context, input *dynamodb.DescribeTableInput, _ ...request.Option) (*dynamodb.DescribeTableOutput, error) {
+	BeforeEach(func() {
+		appConfig = &config.AppConfig{
+			AwsRegion:   dbTestConfig["AWS_REGION"],
+			DbEndpoint:  dbContainer.Endpoint,
+			DbTableName: dbTestConfig["DB_TABLE_NAME"],
+			DbIndexName: dbTestConfig["DB_INDEX_NAME"],
+		}
+		m = monitoring.NewMetrics("cluster_registry_api_database_test", true)
+		db = NewDb(appConfig, m)
 
-	if *input.TableName == "mock-clusters" {
-		return &dynamodb.DescribeTableOutput{}, nil
-	}
-	return &dynamodb.DescribeTableOutput{}, errors.New("No sqs found with the name " + *input.TableName)
-}
-
-func (m *mockDynamoDBClient) GetItem(input *dynamodb.GetItemInput) (*dynamodb.GetItemOutput, error) {
-
-	resp, err := dynamodbattribute.MarshalMap(
-		m.clusters[*input.Key["name"].S],
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	output := &dynamodb.GetItemOutput{
-		Item: resp,
-	}
-	return output, nil
-}
-
-func (m *mockDynamoDBClient) DeleteItem(input *dynamodb.DeleteItemInput) (*dynamodb.DeleteItemOutput, error) {
-
-	clusterName := *input.Key["name"].S
-
-	if c, exist := m.clusters[clusterName]; exist {
-		delete(m.clusters, c.TablePartitionKey)
-	} else {
-		return nil, errors.New("cluster not found")
-	}
-
-	output := &dynamodb.DeleteItemOutput{}
-	return output, nil
-}
-
-func (m *mockDynamoDBClient) PutItem(input *dynamodb.PutItemInput) (*dynamodb.PutItemOutput, error) {
-	var cluster ClusterDb
-	err := dynamodbattribute.UnmarshalMap(input.Item, &cluster)
-	if err != nil {
-		return nil, err
-	}
-
-	m.clusters[cluster.TablePartitionKey] = &cluster
-	return &dynamodb.PutItemOutput{}, err
-}
-
-func (m *mockDynamoDBClient) Query(input *dynamodb.QueryInput) (*dynamodb.QueryOutput, error) {
-	var resp []map[string]*dynamodb.AttributeValue
-
-	for _, c := range m.clusters {
-		attr, err := dynamodbattribute.MarshalMap(
-			c,
-		)
+		err := createTable(dbContainer.Endpoint)
 		if err != nil {
-			return nil, err
-		}
-		resp = append(resp, attr)
-	}
-
-	output := &dynamodb.QueryOutput{
-		Items: resp,
-	}
-	return output, nil
-}
-
-func TestNewDb(t *testing.T) {
-	test := assert.New(t)
-
-	t.Log("Test initializing the database.")
-
-	appConfig := &config.AppConfig{
-		DbEndpoint:  "dummy-url",
-		DbAwsRegion: "dummy-region",
-	}
-
-	m := monitoring.NewMetrics("cluster_registry_api_database_test", true)
-	d := NewDb(appConfig, m)
-	test.NotNil(d)
-}
-
-func TestStatusHealthCheck(t *testing.T) {
-	test := assert.New(t)
-	t.Log("Test the health check for the database")
-
-	tcs := []struct {
-		name          string
-		tableName     string
-		expectedError error
-	}{
-		{
-			name:          "unhealthy hatabase test",
-			tableName:     "mock-clusters",
-			expectedError: nil,
-		},
-		{
-			name:          "unhealthy hatabase test",
-			tableName:     "missing-mock-clusters",
-			expectedError: errors.New("No sqs found with the name missing-mock-clusters"),
-		},
-	}
-
-	for _, tc := range tcs {
-
-		db := &db{
-			dbAPI:   &mockDynamoDBClient{},
-			table:   dbTable{name: tc.tableName},
-			metrics: monitoring.NewMetrics("cluster_registry_api_database_test", true),
+			log.Fatalf("Error while creating table: %v", err.Error())
 		}
 
-		err := db.Status()
-		test.Equal(fmt.Sprintf("%v", err), fmt.Sprintf("%v", tc.expectedError))
-	}
-}
+		err = importData(db)
+		if err != nil {
+			log.Fatalf("Error while populating database: %v", err.Error())
+		}
+	})
 
-func TestGetCluster(t *testing.T) {
-	test := assert.New(t)
+	AfterEach(func() {
+		err := deleteTable(dbContainer.Endpoint, appConfig.DbTableName)
+		if err != nil {
+			log.Fatalf("Error while deleting table: %v", err.Error())
+		}
+	})
 
-	t.Log("Test getting a single cluster from the database.")
+	Context("Database tests", func() {
 
-	tcs := []struct {
-		name            string
-		clusterName     string
-		dbClusters      map[string]*ClusterDb
-		expectedCluster *registryv1.Cluster
-		expectedError   error
-	}{
-		{
-			name:        "existing cluster",
-			clusterName: "cluster1",
-			dbClusters: map[string]*ClusterDb{
-				"cluster1": {
-					TablePartitionKey: "cluster1",
-					Cluster: &registryv1.Cluster{
+		It("Should handle DB status OK", func() {
+			err := db.Status()
+			Expect(err).To(BeNil())
+		})
+
+		It("Should handle DB status not OK", func() {
+			appConfig := &config.AppConfig{
+				AwsRegion:   appConfig.AwsRegion,
+				DbEndpoint:  dbContainer.Endpoint,
+				DbTableName: "wrong-table-names",
+				DbIndexName: appConfig.DbIndexName,
+			}
+			newM := monitoring.NewMetrics("cluster_registry_api_database_test_new", true)
+			newDb := NewDb(appConfig, newM)
+			err := newDb.Status()
+			Expect(err.Error()).To(ContainSubstring("Cannot do operations on a non-existent table"))
+		})
+
+		It("Should handle DB Get cluster", func() {
+			tcs := []struct {
+				name            string
+				clusterName     string
+				expectedCluster *registryv1.Cluster
+			}{
+				{
+					name:        "existing cluster",
+					clusterName: "cluster01-prod-useast1",
+					expectedCluster: &registryv1.Cluster{
 						Spec: registryv1.ClusterSpec{
-							Name:         "cluster1",
-							LastUpdated:  "2020-02-13T06:15:32Z",
-							RegisteredAt: "2019-02-13T06:15:32Z",
+							Name:        "cluster01-prod-useast1",
+							Region:      "useast1",
+							Environment: "Prod",
+							Offering:    []registryv1.Offering{"caas", "paas"},
+							Tiers: []registryv1.Tier{
+								{
+									Name:              "worker",
+									MinCapacity:       0,
+									MaxCapacity:       0,
+									EnableKataSupport: false,
+								},
+								{
+									Name:        "workerMemoryOptimized",
+									MinCapacity: 0,
+									MaxCapacity: 0,
+									Labels: map[string]string{
+										"node.kubernetes.io/workload.memory-optimized": "true",
+									},
+									Taints: []string{
+										"workload=memory-optimized:NoSchedule",
+									},
+									EnableKataSupport: false,
+								},
+							},
+							Status:       "Deprecated",
+							Phase:        "Running",
+							Type:         "Shared",
+							Capabilities: []string{"vpc-peering", "gpu-compute"},
+							Tags:         map[string]string{"onboarding": "off", "scaling": "off"},
+						},
+					},
+				},
+				{
+					name:            "non existing cluster",
+					clusterName:     "cluster100-prod-useast1",
+					expectedCluster: nil,
+				},
+			}
+
+			for _, tc := range tcs {
+				By(fmt.Sprintf("TestCase %s:\t When getting cluster %s", tc.name, tc.clusterName))
+				c, err := db.GetCluster(tc.clusterName)
+
+				Expect(err).To(BeNil())
+				if tc.expectedCluster == nil {
+					Expect(c).To(BeNil())
+				} else {
+					Expect(c.Spec).To(Equal(tc.expectedCluster.Spec))
+				}
+			}
+		})
+
+		It("Should handle DB Put cluster", func() {
+			tcs := []struct {
+				name            string
+				clusterName     string
+				newCluster      *registryv1.Cluster
+				expectedCluster *registryv1.Cluster
+			}{
+				{
+					name:        "update existing cluster",
+					clusterName: "cluster01-prod-useast1",
+					newCluster: &registryv1.Cluster{
+						Spec: registryv1.ClusterSpec{
+							Name:        "cluster01-prod-useast1",
+							Region:      "useast1",
+							Environment: "Prod",
+							Offering:    []registryv1.Offering{"caas", "paas"},
+							Tiers: []registryv1.Tier{
+								{
+									Name:              "worker",
+									MinCapacity:       0,
+									MaxCapacity:       0,
+									EnableKataSupport: false,
+								},
+								{
+									Name:        "workerMemoryOptimized",
+									MinCapacity: 0,
+									MaxCapacity: 0,
+									Labels: map[string]string{
+										"node.kubernetes.io/workload.memory-optimized": "true",
+									},
+									Taints: []string{
+										"workload=memory-optimized:NoSchedule",
+									},
+									EnableKataSupport: false,
+								},
+							},
 							Status:       "Active",
 							Phase:        "Running",
+							Type:         "Restricted",
+							Capabilities: []string{"gpu-compute"},
 							Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
 						},
 					},
-				}},
-			expectedCluster: &registryv1.Cluster{
-				Spec: registryv1.ClusterSpec{
-					Name:         "cluster1",
-					LastUpdated:  "2020-02-13T06:15:32Z",
-					RegisteredAt: "2019-02-13T06:15:32Z",
-					Status:       "Active",
-					Phase:        "Running",
-					Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
-				}},
-			expectedError: nil,
-		},
-		{
-			name:        "non existing cluster",
-			clusterName: "cluster2",
-			dbClusters: map[string]*ClusterDb{
-				"cluster1": {
-					TablePartitionKey: "cluster1",
-					Cluster: &registryv1.Cluster{
+					expectedCluster: &registryv1.Cluster{
 						Spec: registryv1.ClusterSpec{
-							Name:         "cluster1",
-							LastUpdated:  "2020-02-13T06:15:32Z",
-							RegisteredAt: "2019-02-13T06:15:32Z",
+							Name:        "cluster01-prod-useast1",
+							Region:      "useast1",
+							Environment: "Prod",
+							Offering:    []registryv1.Offering{"caas", "paas"},
+							Tiers: []registryv1.Tier{
+								{
+									Name:              "worker",
+									MinCapacity:       0,
+									MaxCapacity:       0,
+									EnableKataSupport: false,
+								},
+								{
+									Name:        "workerMemoryOptimized",
+									MinCapacity: 0,
+									MaxCapacity: 0,
+									Labels: map[string]string{
+										"node.kubernetes.io/workload.memory-optimized": "true",
+									},
+									Taints: []string{
+										"workload=memory-optimized:NoSchedule",
+									},
+									EnableKataSupport: false,
+								},
+							},
 							Status:       "Active",
 							Phase:        "Running",
-							Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
-						},
-					},
-				}},
-			expectedError: nil,
-		},
-	}
-
-	for _, tc := range tcs {
-
-		db := &db{
-			dbAPI:   &mockDynamoDBClient{clusters: tc.dbClusters},
-			table:   dbTable{name: "cluster-registry-test", partitionKey: "name", searchKey: ""},
-			index:   dbTable{name: "cluster-registry-search-test", partitionKey: "kind", searchKey: "name"},
-			metrics: monitoring.NewMetrics("cluster_registry_api_database_test", true),
-		}
-
-		t.Logf("\tTest %s:\tWhen getting cluster %s", tc.name, tc.clusterName)
-
-		c, err := db.GetCluster(tc.clusterName)
-
-		if tc.expectedError != nil {
-			test.Error(err, "there should be an error processing the message")
-			test.Contains(fmt.Sprintf("%v", err), fmt.Sprintf("%v", tc.expectedError), "the error message should be as expected")
-		} else {
-			test.NoError(err)
-		}
-		test.Equal(tc.expectedCluster, c)
-	}
-}
-
-func TestPutCluster(t *testing.T) {
-	test := assert.New(t)
-
-	t.Log("Test create or update a single cluster into the database.")
-
-	tcs := []struct {
-		name             string
-		dbClusters       map[string]*ClusterDb
-		newCluster       *registryv1.Cluster
-		offset           int
-		limit            int
-		expectedClusters []registryv1.Cluster
-		expectedCount    int
-		expectedMore     bool
-		expectedError    error
-	}{
-		{
-			name:       "new cluster",
-			dbClusters: map[string]*ClusterDb{},
-			offset:     0,
-			limit:      10,
-			newCluster: &registryv1.Cluster{
-				Spec: registryv1.ClusterSpec{
-					Name:         "cluster2",
-					LastUpdated:  "2020-02-14T06:15:32Z",
-					RegisteredAt: "2019-02-14T06:15:32Z",
-					Status:       "Active",
-					Phase:        "Running",
-					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
-				}},
-			expectedClusters: []registryv1.Cluster{{
-				Spec: registryv1.ClusterSpec{
-					Name:         "cluster2",
-					LastUpdated:  "2020-02-14T06:15:32Z",
-					RegisteredAt: "2019-02-14T06:15:32Z",
-					Status:       "Active",
-					Phase:        "Running",
-					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
-				}},
-			},
-			expectedCount: 1,
-			expectedMore:  false,
-			expectedError: nil,
-		},
-		{
-			name: "existing cluster",
-			dbClusters: map[string]*ClusterDb{
-				"cluster1": {
-					TablePartitionKey: "cluster1",
-					Cluster: &registryv1.Cluster{
-						Spec: registryv1.ClusterSpec{
-							Name:         "cluster1",
-							LastUpdated:  "2020-02-13T06:15:32Z",
-							RegisteredAt: "2019-02-13T06:15:32Z",
-							Status:       "Active",
-							Phase:        "Running",
-							Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
-						},
-					},
-				}},
-			newCluster: &registryv1.Cluster{
-				Spec: registryv1.ClusterSpec{
-					Name:         "cluster1",
-					LastUpdated:  "2020-02-14T06:15:32Z",
-					RegisteredAt: "2019-02-13T06:15:32Z",
-					Status:       "Active",
-					Phase:        "Running",
-					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
-				}},
-			offset: 0,
-			limit:  10,
-			expectedClusters: []registryv1.Cluster{{
-				Spec: registryv1.ClusterSpec{
-					Name:         "cluster1",
-					LastUpdated:  "2020-02-14T06:15:32Z",
-					RegisteredAt: "2019-02-13T06:15:32Z",
-					Status:       "Active",
-					Phase:        "Running",
-					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
-				}},
-			},
-			expectedCount: 1,
-			expectedMore:  false,
-			expectedError: nil,
-		},
-	}
-
-	for _, tc := range tcs {
-
-		db := &db{
-			dbAPI:   &mockDynamoDBClient{clusters: tc.dbClusters},
-			table:   dbTable{name: "cluster-registry-test", partitionKey: "name", searchKey: ""},
-			index:   dbTable{name: "cluster-registry-search-test", partitionKey: "kind", searchKey: "name"},
-			metrics: monitoring.NewMetrics("cluster_registry_api_database_test", true),
-		}
-
-		t.Logf("\tTest %s:\tWhen creating or updating a cluster %s; nr. of items %d", tc.name, tc.newCluster.ClusterName, tc.expectedCount)
-
-		err := db.PutCluster(tc.newCluster)
-
-		if tc.expectedError != nil {
-			test.Error(err, "there should be an error processing the message")
-			test.Contains(fmt.Sprintf("%v", err), fmt.Sprintf("%v", tc.expectedError), "the error message should be as expected")
-		} else {
-			test.NoError(err)
-		}
-
-		clusters, count, more, err := db.ListClusters(tc.offset, tc.limit, "", "", "")
-
-		test.NoError(err)
-		test.Equal(tc.expectedClusters, clusters)
-		test.Equal(tc.expectedCount, count)
-		test.Equal(tc.expectedMore, more)
-	}
-}
-
-func TestDeleteCluster(t *testing.T) {
-	test := assert.New(t)
-	tcs := []struct {
-		name             string
-		clusterName      string
-		dbClusters       map[string]*ClusterDb
-		offset           int
-		limit            int
-		expectedClusters []registryv1.Cluster
-		expectedError    error
-		expectedCount    int
-		expectedMore     bool
-	}{
-		{
-			name:        "existing cluster",
-			clusterName: "cluster1",
-			dbClusters: map[string]*ClusterDb{
-				"cluster1": {
-					TablePartitionKey: "cluster1",
-					Cluster: &registryv1.Cluster{
-						Spec: registryv1.ClusterSpec{
-							Name:         "cluster1",
-							LastUpdated:  "2020-02-13T06:15:32Z",
-							RegisteredAt: "2019-02-13T06:15:32Z",
-							Status:       "Active",
-							Phase:        "Running",
-							Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
-						},
-					},
-				}},
-			offset:           0,
-			limit:            10,
-			expectedClusters: []registryv1.Cluster{},
-			expectedCount:    0,
-			expectedMore:     false,
-			expectedError:    nil,
-		},
-		{
-			name:        "non existing cluster",
-			clusterName: "cluster2",
-			dbClusters: map[string]*ClusterDb{
-				"cluster1": {
-					TablePartitionKey: "cluster1",
-					Cluster: &registryv1.Cluster{
-						Spec: registryv1.ClusterSpec{
-							Name:         "cluster1",
-							LastUpdated:  "2020-02-13T06:15:32Z",
-							RegisteredAt: "2019-02-13T06:15:32Z",
-							Status:       "Active",
-							Phase:        "Running",
-							Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
-						},
-					},
-				}},
-			offset: 0,
-			limit:  10,
-			expectedClusters: []registryv1.Cluster{{
-				Spec: registryv1.ClusterSpec{
-					Name:         "cluster1",
-					LastUpdated:  "2020-02-13T06:15:32Z",
-					RegisteredAt: "2019-02-13T06:15:32Z",
-					Status:       "Active",
-					Phase:        "Running",
-					Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
-				}},
-			},
-			expectedCount: 1,
-			expectedMore:  false,
-			expectedError: fmt.Errorf("cluster not found"),
-		},
-	}
-
-	for _, tc := range tcs {
-
-		db := &db{
-			dbAPI:   &mockDynamoDBClient{clusters: tc.dbClusters},
-			table:   dbTable{name: "cluster-registry-test", partitionKey: "name", searchKey: ""},
-			index:   dbTable{name: "cluster-registry-search-test", partitionKey: "kind", searchKey: "name"},
-			metrics: monitoring.NewMetrics("cluster_registry_api_database_test", true),
-		}
-
-		err := db.DeleteCluster(tc.clusterName)
-
-		if tc.expectedError != nil {
-			test.Error(err, "there should be an error processing the message")
-			test.Contains(fmt.Sprintf("%v", err), fmt.Sprintf("%v", tc.expectedError), "the error message should be as expected")
-		} else {
-			test.NoError(err)
-		}
-
-		clusters, count, more, err := db.ListClusters(tc.offset, tc.limit, "", "", "")
-
-		test.NoError(err)
-		test.Equal(tc.expectedClusters, clusters)
-		test.Equal(tc.expectedCount, count)
-		test.Equal(tc.expectedMore, more)
-	}
-}
-
-// TODO: add tests for filtering
-func TestListClusters(t *testing.T) {
-	test := assert.New(t)
-
-	t.Log("Test getting all clusters from the database.")
-
-	tcs := []struct {
-		name             string
-		queryParams      map[string]string
-		dbClusters       map[string]*ClusterDb
-		offset           int
-		limit            int
-		expectedClusters []registryv1.Cluster
-		expectedError    error
-		expectedCount    int
-		expectedMore     bool
-	}{
-		{
-			name: "all clusters",
-			queryParams: map[string]string{
-				"region":      "",
-				"environment": "",
-				"status":      "",
-			},
-			dbClusters: map[string]*ClusterDb{
-				"cluster1": {
-					TablePartitionKey: "cluster1",
-					Cluster: &registryv1.Cluster{
-						Spec: registryv1.ClusterSpec{
-							Name:         "cluster1",
-							LastUpdated:  "2020-02-13T06:15:32Z",
-							RegisteredAt: "2019-02-13T06:15:32Z",
-							Status:       "Active",
-							Phase:        "Running",
+							Type:         "Restricted",
+							Capabilities: []string{"gpu-compute"},
 							Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
 						},
 					},
 				},
-				"cluster2": {
-					TablePartitionKey: "cluster2",
-					Cluster: &registryv1.Cluster{
+				{
+					name:        "update existing cluster",
+					clusterName: "cluster101-prod-useast1",
+					newCluster: &registryv1.Cluster{
 						Spec: registryv1.ClusterSpec{
-							Name:         "cluster2",
-							LastUpdated:  "2020-02-14T06:15:32Z",
-							RegisteredAt: "2019-02-14T06:15:32Z",
+							Name:        "cluster101-prod-useast1",
+							Region:      "useast1",
+							Environment: "Prod",
+							Offering:    []registryv1.Offering{"caas", "paas"},
+							Tiers: []registryv1.Tier{
+								{
+									Name:              "worker",
+									MinCapacity:       0,
+									MaxCapacity:       0,
+									EnableKataSupport: false,
+								},
+								{
+									Name:        "workerMemoryOptimized",
+									MinCapacity: 0,
+									MaxCapacity: 0,
+									Labels: map[string]string{
+										"node.kubernetes.io/workload.memory-optimized": "true",
+									},
+									Taints: []string{
+										"workload=memory-optimized:NoSchedule",
+									},
+									EnableKataSupport: false,
+								},
+							},
 							Status:       "Active",
 							Phase:        "Running",
-							Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
+							Type:         "Restricted",
+							Capabilities: []string{"gpu-compute"},
+							Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
 						},
 					},
-				}},
-			offset: 0,
-			limit:  200,
-			expectedClusters: []registryv1.Cluster{{
-				Spec: registryv1.ClusterSpec{
-					Name:         "cluster1",
-					LastUpdated:  "2020-02-13T06:15:32Z",
-					RegisteredAt: "2019-02-13T06:15:32Z",
-					Status:       "Active",
-					Phase:        "Running",
-					Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
-				}}, {
-				Spec: registryv1.ClusterSpec{
-					Name:         "cluster2",
-					LastUpdated:  "2020-02-14T06:15:32Z",
-					RegisteredAt: "2019-02-14T06:15:32Z",
-					Status:       "Active",
-					Phase:        "Running",
-					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
-				}},
-			},
-			expectedCount: 2,
-			expectedMore:  false,
-			expectedError: nil,
-		},
-	}
+					expectedCluster: &registryv1.Cluster{
+						Spec: registryv1.ClusterSpec{
+							Name:        "cluster101-prod-useast1",
+							Region:      "useast1",
+							Environment: "Prod",
+							Offering:    []registryv1.Offering{"caas", "paas"},
+							Tiers: []registryv1.Tier{
+								{
+									Name:              "worker",
+									MinCapacity:       0,
+									MaxCapacity:       0,
+									EnableKataSupport: false,
+								},
+								{
+									Name:        "workerMemoryOptimized",
+									MinCapacity: 0,
+									MaxCapacity: 0,
+									Labels: map[string]string{
+										"node.kubernetes.io/workload.memory-optimized": "true",
+									},
+									Taints: []string{
+										"workload=memory-optimized:NoSchedule",
+									},
+									EnableKataSupport: false,
+								},
+							},
+							Status:       "Active",
+							Phase:        "Running",
+							Type:         "Restricted",
+							Capabilities: []string{"gpu-compute"},
+							Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
+						},
+					},
+				},
+			}
 
-	for _, tc := range tcs {
-		db := &db{
-			dbAPI:   &mockDynamoDBClient{clusters: tc.dbClusters},
-			table:   dbTable{name: "cluster-registry-test", partitionKey: "name", searchKey: ""},
-			index:   dbTable{name: "cluster-registry-search-test", partitionKey: "kind", searchKey: "name"},
-			metrics: monitoring.NewMetrics("cluster_registry_api_database_test", true),
-		}
+			for _, tc := range tcs {
+				By(fmt.Sprintf("TestCase %s:\t When put cluster %s", tc.name, tc.clusterName))
 
-		t.Logf("\tTest %s:\tWhen getting all clusters with region:%s, environment:%s, status:%s, offset:%d, limit:%d, error:%v",
-			tc.name, tc.queryParams["region"], tc.queryParams["environment"], tc.queryParams["status"], tc.offset, tc.limit, tc.expectedError)
+				err := db.PutCluster(tc.newCluster)
+				Expect(err).To(BeNil())
 
-		clusters, count, more, err := db.ListClusters(
-			tc.offset,
-			tc.limit,
-			tc.queryParams["region"],
-			tc.queryParams["environment"],
-			tc.queryParams["status"])
+				c, err := db.GetCluster(tc.clusterName)
+				Expect(err).To(BeNil())
 
-		if tc.expectedError != nil {
-			test.Error(err, "there should be an error processing the message")
-			test.Contains(fmt.Sprintf("%v", err), fmt.Sprintf("%v", tc.expectedError), "the error message should be as expected")
-		} else {
-			test.NoError(err)
-		}
-
-		sort.Slice(clusters, func(i, j int) bool {
-			return clusters[i].Spec.Name < clusters[j].Spec.Name
+				Expect(c.Spec).To(Equal(tc.expectedCluster.Spec))
+			}
 		})
 
-		test.Equal(tc.expectedClusters, clusters)
-		test.Equal(tc.expectedCount, count)
-		test.Equal(tc.expectedMore, more)
-	}
-}
+		It("Should handle DB Delete cluster", func() {
+			tcs := []struct {
+				name          string
+				clusterName   string
+				expectedError error
+			}{
+				{
+					name:          "existing cluster",
+					clusterName:   "cluster01-prod-useast1",
+					expectedError: nil,
+				},
+				{
+					name:          "non existing cluster",
+					clusterName:   "cluster102-prod-useast1",
+					expectedError: fmt.Errorf("cluster not found"),
+				},
+			}
+
+			for _, tc := range tcs {
+				By(fmt.Sprintf("TestCase %s:\t When deleting cluster %s", tc.name, tc.clusterName))
+
+				err := db.DeleteCluster(tc.clusterName)
+				Expect(err).To(BeNil())
+
+				c, err := db.GetCluster(tc.clusterName)
+				Expect(err).To(BeNil())
+				Expect(c).To(BeNil())
+			}
+		})
+
+		It("Should handle DB List clusters", func() {
+			tcs := []struct {
+				name             string
+				queryParams      map[string]string
+				offset           int
+				limit            int
+				expectedCount    int
+				expectedMore     bool
+				expectedClusters []registryv1.Cluster
+			}{
+				{
+					name: "all clusters",
+					queryParams: map[string]string{
+						"region":      "",
+						"environment": "",
+						"status":      "",
+					},
+					offset:        0,
+					limit:         10,
+					expectedCount: 3,
+					expectedMore:  false,
+					expectedClusters: []registryv1.Cluster{
+						{
+							Spec: registryv1.ClusterSpec{
+								Name:        "cluster01-prod-useast1",
+								Region:      "useast1",
+								Environment: "Prod",
+								Offering:    []registryv1.Offering{"caas", "paas"},
+								Tiers: []registryv1.Tier{
+									{
+										Name:              "worker",
+										MinCapacity:       0,
+										MaxCapacity:       0,
+										EnableKataSupport: false,
+									},
+									{
+										Name:        "workerMemoryOptimized",
+										MinCapacity: 0,
+										MaxCapacity: 0,
+										Labels: map[string]string{
+											"node.kubernetes.io/workload.memory-optimized": "true",
+										},
+										Taints: []string{
+											"workload=memory-optimized:NoSchedule",
+										},
+										EnableKataSupport: false,
+									},
+								},
+								Status:       "Deprecated",
+								Phase:        "Running",
+								Type:         "Shared",
+								Capabilities: []string{"vpc-peering", "gpu-compute"},
+								Tags:         map[string]string{"onboarding": "off", "scaling": "off"},
+							},
+						},
+						{
+							Spec: registryv1.ClusterSpec{
+								Name:        "cluster02-prod-euwest1",
+								Region:      "euwest1",
+								Environment: "Prod",
+								Offering:    []registryv1.Offering{"caas", "paas"},
+								Tiers: []registryv1.Tier{
+									{
+										Name:              "worker",
+										MinCapacity:       0,
+										MaxCapacity:       0,
+										EnableKataSupport: false,
+									},
+									{
+										Name:        "workerMemoryOptimized",
+										MinCapacity: 0,
+										MaxCapacity: 0,
+										Labels: map[string]string{
+											"node.kubernetes.io/workload.memory-optimized": "true",
+										},
+										Taints: []string{
+											"workload=memory-optimized:NoSchedule",
+										},
+										EnableKataSupport: false,
+									},
+								},
+								Status:       "Active",
+								Phase:        "Upgrading",
+								Type:         "Dedicated",
+								Capabilities: []string{"mct-support"},
+								Tags:         map[string]string{"onboarding": "off", "scaling": "on"},
+							},
+						},
+						{
+							Spec: registryv1.ClusterSpec{
+								Name:        "cluster03-prod-uswest1",
+								Region:      "uswest1",
+								Environment: "Prod",
+								Offering:    []registryv1.Offering{"paas"},
+								Tiers: []registryv1.Tier{
+									{
+										Name:              "proxy",
+										InstanceType:      "",
+										ContainerRuntime:  "",
+										MinCapacity:       0,
+										MaxCapacity:       0,
+										EnableKataSupport: false,
+									},
+									{
+										Name:        "worker",
+										MinCapacity: 0,
+										MaxCapacity: 0,
+										Labels: map[string]string{
+											"node.kubernetes.io/workload.memory-optimized": "true",
+										},
+										EnableKataSupport: false,
+									},
+								},
+								Status:       "Active",
+								Phase:        "Running",
+								Type:         "Dedicated",
+								Capabilities: []string{"gpu-compute"},
+								Tags:         map[string]string{"scaling": "on", "onboarding": "on"},
+							},
+						},
+					},
+				},
+			}
+
+			for _, tc := range tcs {
+
+				By(fmt.Sprintf("\tTest %s:\tWhen getting all clusters with region:%s, environment:%s, status:%s, offset:%d, limit:%d",
+					tc.name, tc.queryParams["region"], tc.queryParams["environment"], tc.queryParams["status"], tc.offset, tc.limit))
+
+				clusters, count, more, err := db.ListClusters(
+					tc.offset,
+					tc.limit,
+					tc.queryParams["region"],
+					tc.queryParams["environment"],
+					tc.queryParams["status"])
+
+				Expect(err).To(BeNil())
+
+				sort.Slice(clusters, func(i, j int) bool {
+					return clusters[i].Spec.Name < clusters[j].Spec.Name
+				})
+
+				Expect(count, tc.expectedCount)
+				Expect(more, tc.expectedMore)
+
+				for i := 0; i < tc.expectedCount; i++ {
+					Expect(clusters[i].Spec).To(Equal(tc.expectedClusters[i].Spec))
+				}
+			}
+		})
+	})
+})
