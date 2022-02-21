@@ -42,6 +42,16 @@ const (
 	DeadMansSwitchAlertName = "CRCDeadMansSwitch"
 )
 
+// Start starts the webhook server
+func (s *Server) Start() error {
+	http.HandleFunc("/webhook", s.webhookHandler)
+	if err := http.ListenAndServe(s.BindAddress, nil); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *Server) webhookHandler(w http.ResponseWriter, r *http.Request) {
 	var alert Alert
 
@@ -107,7 +117,6 @@ func (s *Server) process(alert Alert) error {
 		}
 
 		for i := range clusterList.Items {
-
 			var excludedTagsAnnotation string
 			var excludedTags []string
 			cluster := &clusterList.Items[i]
@@ -130,7 +139,7 @@ func (s *Server) process(alert Alert) error {
 				cluster.Spec.Tags[key] = value
 			}
 
-			if err := s.Client.Update(context.TODO(), &clusterList.Items[i]); err != nil {
+			if err := s.Client.Update(context.TODO(), &clusterList.Items[i], &client.UpdateOptions{}); err != nil {
 				return err
 			}
 		}
@@ -139,12 +148,11 @@ func (s *Server) process(alert Alert) error {
 	return fmt.Errorf("unmapped alert received via webhook")
 }
 
-// Start starts the webhook server
-func (s *Server) Start() error {
-	http.HandleFunc("/webhook", s.webhookHandler)
-	if err := http.ListenAndServe(s.BindAddress, nil); err != nil {
-		return err
+func contains(item string, slice []string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
 	}
-
-	return nil
+	return false
 }

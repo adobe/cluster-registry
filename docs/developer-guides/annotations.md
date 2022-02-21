@@ -1,6 +1,6 @@
 # Annotations
 
-You can add these Kubernetes annotations to cluster objects to customize CRD attributes update behavior.
+You can add these Kubernetes annotations to cluster objects to customize Cluster Registry Client behavior.
 
 Annotation keys and values can only be strings.
 
@@ -11,7 +11,7 @@ Annotation keys and values can only be strings.
 
 ## Excluded tags
 
-The annotation `clusters.registry.ethos.adobe.com/excluded-tags` defines the behavior of the cluster-registry-client regarding to dynamic tags. If Alertmanager sends a signal for a specific tag, it will be ignore and value from `tags` remains unchanged.
+The annotation `clusters.registry.ethos.adobe.com/excluded-tags` defines the behavior of the cluster-registry-client regarding to dynamic tags. If Alertmanager sends a signal for a specific tag, it will be ignored by Cluster Registry Client.
 
 Example:
     `clusters.registry.ethos.adobe.com/excluded-tags: "onboarding,scaling"`
