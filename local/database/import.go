@@ -13,6 +13,7 @@ governing permissions and limitations under the License.
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -22,7 +23,7 @@ import (
 	"github.com/adobe/cluster-registry/pkg/config"
 	"github.com/adobe/cluster-registry/pkg/database"
 	monitoring "github.com/adobe/cluster-registry/pkg/monitoring/apiserver"
-	"gopkg.in/yaml.v2"
+	"sigs.k8s.io/yaml"
 )
 
 func main() {
@@ -44,9 +45,14 @@ func main() {
 		log.Fatalf("Unable to read input file %s: '%v'", *input_file, err.Error())
 	}
 
-	err = yaml.Unmarshal([]byte(data), &clusters)
+	dataJson, err := yaml.YAMLToJSON(data)
 	if err != nil {
-		log.Fatalf("Failed to unmarshal data: '%v'", err.Error())
+		log.Fatalf("Unable to unmarshal data: '%v'", err.Error())
+	}
+
+	err = json.Unmarshal(dataJson, &clusters)
+	if err != nil {
+		log.Fatalf("Unable to unmarshal data: '%v'", err.Error())
 	}
 
 	for _, cluster := range clusters {

@@ -43,7 +43,7 @@ func (m mockDatabase) GetCluster(name string) (*registryv1.Cluster, error) {
 	return nil, nil
 }
 
-func (m mockDatabase) ListClusters(offset int, limit int, environment string, region string, status string) ([]registryv1.Cluster, int, bool, error) {
+func (m mockDatabase) ListClusters(offset int, limit int, environment string, region string, status string, lastUpdated string) ([]registryv1.Cluster, int, bool, error) {
 	return m.clusters, len(m.clusters), false, nil
 }
 

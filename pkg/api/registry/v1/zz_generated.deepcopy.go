@@ -223,16 +223,31 @@ func (in *Extra) DeepCopyInto(out *Extra) {
 	}
 	if in.EcrIamArns != nil {
 		in, out := &in.EcrIamArns, &out.EcrIamArns
-		*out = make(map[string]string, len(*in))
-		for key, val := range *in {
-			(*out)[key] = val
+		*out = make(map[string][]string, len(*in))
+		for i := range *in {
+			var outVal []string
+			if (*in)[i] == nil {
+				(*out)[i] = nil
+			} else {
+				val := (*in)[i]
+				in, out := &val, &outVal
+				*out = make([]string, len(*in))
+				copy(*out, *in)
+			}
+			(*out)[i] = outVal
 		}
 	}
 	if in.NFSInfo != nil {
 		in, out := &in.NFSInfo, &out.NFSInfo
-		*out = make(map[string]string, len(*in))
-		for key, val := range *in {
-			(*out)[key] = val
+		*out = make([]map[string]string, len(*in))
+		for i := range *in {
+			if (*in)[i] != nil {
+				in, out := &(*in)[i], &(*out)[i]
+				*out = make(map[string]string, len(*in))
+				for key, val := range *in {
+					(*out)[key] = val
+				}
+			}
 		}
 	}
 }

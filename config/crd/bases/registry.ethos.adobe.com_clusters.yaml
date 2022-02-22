@@ -98,7 +98,9 @@ spec:
                     type: string
                   ecrIamArns:
                     additionalProperties:
-                      type: string
+                      items:
+                        type: string
+                      type: array
                     description: List of IAM Arns
                     type: object
                   egressPorts:
@@ -117,10 +119,12 @@ spec:
                       type: object
                     type: array
                   nfsInfo:
-                    additionalProperties:
-                      type: string
                     description: NFS information
-                    type: object
+                    items:
+                      additionalProperties:
+                        type: string
+                      type: object
+                    type: array
                 required:
                 - domainName
                 - lbEndpoints
@@ -288,6 +292,7 @@ spec:
             - cloudType
             - environment
             - k8sInfraRelease
+            - lastUpdated
             - name
             - offering
             - phase
