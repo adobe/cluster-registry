@@ -30,7 +30,7 @@ var doc = `{
                         "bearerAuth": []
                     }
                 ],
-                "description": "List all clusters. Use query parameters to filter results. Auth is required",
+                "description": "List all clusters. Use query parametricsers to filter results. Auth is required",
                 "consumes": [
                     "application/json"
                 ],
@@ -57,26 +57,20 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "Filter by businessUnit",
-                        "name": "businessUnit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
                         "description": "Filter by status",
                         "name": "status",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "Limit number of clusters returned (default is 10)",
-                        "name": "limit",
+                        "description": "Offset to start pagination search results (default is 0)",
+                        "name": "offset",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "Offset/skip number of clusters (default is 0)",
-                        "name": "offset",
+                        "description": "The number of results per page (default is 200)",
+                        "name": "limit",
                         "in": "query"
                     }
                 ],
@@ -84,13 +78,13 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg_api_api.clusterList"
+                            "$ref": "#/definitions/github.com_adobe_cluster-registry_pkg_apiserver_web_handler_v1.clusterList"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/utils.Error"
+                            "$ref": "#/definitions/errors.Error"
                         }
                     }
                 }
@@ -134,13 +128,13 @@ var doc = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/utils.Error"
+                            "$ref": "#/definitions/errors.Error"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/utils.Error"
+                            "$ref": "#/definitions/errors.Error"
                         }
                     }
                 }
@@ -148,40 +142,60 @@ var doc = `{
         }
     },
     "definitions": {
-        "github.com_adobe_cluster-registry_pkg_api_api.clusterList": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.ClusterSpec"
-                    }
-                },
-                "itemsCount": {
-                    "type": "integer"
-                }
-            }
-        },
-        "pkg_api_api.clusterList": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.ClusterSpec"
-                    }
-                },
-                "itemsCount": {
-                    "type": "integer"
-                }
-            }
-        },
-        "utils.Error": {
+        "errors.Error": {
             "type": "object",
             "properties": {
                 "errors": {
                     "type": "object",
                     "additionalProperties": true
+                }
+            }
+        },
+        "github.com_adobe_cluster-registry_pkg_apiserver_web_handler_v1.clusterList": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ClusterSpec"
+                    }
+                },
+                "itemsCount": {
+                    "description": "TODO: should be rename to total",
+                    "type": "integer"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "more": {
+                    "type": "boolean"
+                },
+                "offset": {
+                    "type": "integer"
+                }
+            }
+        },
+        "pkg_apiserver_web_handler_v1.clusterList": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ClusterSpec"
+                    }
+                },
+                "itemsCount": {
+                    "description": "TODO: should be rename to total",
+                    "type": "integer"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "more": {
+                    "type": "boolean"
+                },
+                "offset": {
+                    "type": "integer"
                 }
             }
         },
@@ -240,7 +254,7 @@ var doc = `{
                     "$ref": "#/definitions/v1.APIServer"
                 },
                 "businessUnit": {
-                    "description": "The BU that owns and maintains the cluster\n+kubebuilder:validation:Required",
+                    "description": "The BU that owns the cluster\n+kubebuilder:validation:Required",
                     "type": "string"
                 },
                 "capabilities": {
@@ -249,6 +263,10 @@ var doc = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "cloudProviderRegion": {
+                    "description": "The cloud provider standard region.\n+kubebuilder:validation:Required",
+                    "type": "string"
                 },
                 "cloudType": {
                     "description": "The cloud provider.\n+kubebuilder:validation:Required",
@@ -259,7 +277,7 @@ var doc = `{
                     "type": "string"
                 },
                 "extra": {
-                    "description": "Ethos Extra specific information",
+                    "description": "Extra information, not necessary related to the cluster.",
                     "$ref": "#/definitions/v1.Extra"
                 },
                 "k8sInfraRelease": {
@@ -270,12 +288,16 @@ var doc = `{
                     "description": "Timestamp when cluster information was updated",
                     "type": "string"
                 },
+                "managingOrg": {
+                    "description": "The Org that is responsible for the cluster operations\n+kubebuilder:validation:Required",
+                    "type": "string"
+                },
                 "name": {
                     "description": "Cluster name\n+kubebuilder:validation:Required\n+kubebuilder:validation:MaxLength=64\n+kubebuilder:validation:MinLength=3",
                     "type": "string"
                 },
                 "offering": {
-                    "description": "The Ethos offering that the cluster is meant for\n+kubebuilder:validation:Required",
+                    "description": "The Offering that the cluster is meant for\n+kubebuilder:validation:Required",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -293,7 +315,7 @@ var doc = `{
                     "type": "string"
                 },
                 "region": {
-                    "description": "Cluster standard region name\n+kubebuilder:validation:Required",
+                    "description": "Cluster internal region name\n+kubebuilder:validation:Required",
                     "type": "string"
                 },
                 "registeredAt": {
@@ -351,6 +373,10 @@ var doc = `{
                 },
                 "egressPorts": {
                     "description": "Egress ports allowed outside of the namespace",
+                    "type": "string"
+                },
+                "extendedRegion": {
+                    "description": "ExtendedRegion information",
                     "type": "string"
                 },
                 "lbEndpoints": {
