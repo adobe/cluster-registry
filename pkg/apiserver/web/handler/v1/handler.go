@@ -90,7 +90,7 @@ func (h *handler) GetCluster(ctx echo.Context) error {
 
 // ListClusters godoc
 // @Summary List all clusters
-// @Description List all clusters. Use query parametricsers to filter results. Auth is required
+// @Description List all clusters. Use query parameters to filter results. Auth is required
 // @ID get-clusters
 // @Tags cluster
 // @Accept  json

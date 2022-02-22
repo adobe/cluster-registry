@@ -19,7 +19,7 @@ import (
 
 type clusterList struct {
 	Items      []*registryv1.ClusterSpec `json:"items"`
-	ItemsCount int                       `json:"itemsCount"` // TODO: should be rename to total
+	ItemsCount int                       `json:"itemsCount"`
 	Offset     int                       `json:"offset"`
 	Limit      int                       `json:"limit"`
 	More       bool                      `json:"more"`

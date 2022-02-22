@@ -13,7 +13,6 @@ definitions:
           $ref: '#/definitions/v1.ClusterSpec'
         type: array
       itemsCount:
-        description: 'TODO: should be rename to total'
         type: integer
       limit:
         type: integer
@@ -29,7 +28,6 @@ definitions:
           $ref: '#/definitions/v1.ClusterSpec'
         type: array
       itemsCount:
-        description: 'TODO: should be rename to total'
         type: integer
       limit:
         type: integer
@@ -206,7 +204,9 @@ definitions:
         type: string
       ecrIamArns:
         additionalProperties:
-          type: string
+          items:
+            type: string
+          type: array
         description: List of IAM Arns
         type: object
       egressPorts:
@@ -232,10 +232,12 @@ definitions:
           type: object
         type: array
       nfsInfo:
-        additionalProperties:
-          type: string
         description: NFS information
-        type: object
+        items:
+          additionalProperties:
+            type: string
+          type: object
+        type: array
     type: object
   v1.K8sInfraRelease:
     properties:
@@ -336,8 +338,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: List all clusters. Use query parametricsers to filter results.
-        Auth is required
+      description: List all clusters. Use query parameters to filter results. Auth
+        is required
       operationId: get-clusters
       parameters:
       - description: Filter by region
@@ -366,7 +368,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github.com_adobe_cluster-registry_pkg_apiserver_web_handler_v1.clusterList'
+            $ref: '#/definitions/pkg_apiserver_web_handler_v1.clusterList'
         "500":
           description: Internal Server Error
           schema:

@@ -30,7 +30,7 @@ var doc = `{
                         "bearerAuth": []
                     }
                 ],
-                "description": "List all clusters. Use query parametricsers to filter results. Auth is required",
+                "description": "List all clusters. Use query parameters to filter results. Auth is required",
                 "consumes": [
                     "application/json"
                 ],
@@ -78,7 +78,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github.com_adobe_cluster-registry_pkg_apiserver_web_handler_v1.clusterList"
+                            "$ref": "#/definitions/pkg_apiserver_web_handler_v1.clusterList"
                         }
                     },
                     "500": {
@@ -161,7 +161,6 @@ var doc = `{
                     }
                 },
                 "itemsCount": {
-                    "description": "TODO: should be rename to total",
                     "type": "integer"
                 },
                 "limit": {
@@ -185,7 +184,6 @@ var doc = `{
                     }
                 },
                 "itemsCount": {
-                    "description": "TODO: should be rename to total",
                     "type": "integer"
                 },
                 "limit": {
@@ -368,7 +366,10 @@ var doc = `{
                     "description": "List of IAM Arns",
                     "type": "object",
                     "additionalProperties": {
-                        "type": "string"
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
                     }
                 },
                 "egressPorts": {
@@ -398,9 +399,12 @@ var doc = `{
                 },
                 "nfsInfo": {
                     "description": "NFS information",
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
                     }
                 }
             }
