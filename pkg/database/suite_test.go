@@ -151,7 +151,7 @@ func importData(db Db) error {
 	dataJson, err := yaml.YAMLToJSON(data)
 	if err != nil {
 		return err
-	}	
+	}
 
 	err = json.Unmarshal(dataJson, &clusters)
 	if err != nil {

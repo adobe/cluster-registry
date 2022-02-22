@@ -32,23 +32,22 @@
       loggingEndpoints:
       - region: useast1
         endpoint: splunk-us-east1.example.com
-        isDefault: true
+        isDefault: "true"
       - region: useast2
         endpoint: splunk-us-east2.example.com
-        isDefault: false
+        isDefault: "false"
       domainName: example.com
       ecrIamArns:
         iamRoles:
-        - arn:aws:iam::account-id:role/xxx
-        - arn:aws:iam::account-id:role/yyy
+        - "arn:aws:iam::account-id:role/xxx"
+        - "arn:aws:iam::account-id:role/yyy"
         iamUser:
-        - arn:aws:iam::111222333:user/ecr-login
+        - "arn:aws:iam::111222333:user/ecr-login"
       lbEndpoints:
         public: cluster01-prod-useast1.example.com
-      egressPorts:
-      - 1024-65535
+      egressPorts: "1024-65535"
       nfsInfo:
-      - name: xxx
+      - name: xxxss5
         basePath: xyz
         endpoint: xyz
     tiers:
@@ -60,13 +59,13 @@
     - name: workerMemoryOptimized
       instanceType: r5.8xlarge
       labels:
-       node.kubernetes.io/workload.memory-optimized: true
+        node.kubernetes.io/workload.memory-optimized: "true"
       maxCapacity: 100
       minCapacity: 0
       rootDeviceSize: 200
       taints:
       - workload=memory-optimized:NoSchedule
-    accountId: 11111-2222-3333-4444-555555555
+    accountId: "11111-2222-3333-4444-555555555"
     virtualNetworks:
     - id: "/subscriptions/11111-2222-3333-4444-555555555/resourceGroups/cluster01_prod_useast1_network/providers/Microsoft.Network/virtualNetworks/cluster01_prod_useast1-vnet/subnets/cluster01_prod_useast1_master_network_10_0_0_0_24"
       cidrs:
@@ -80,17 +79,17 @@
       - 10.2.0.1/23
       - 10.3.0.1/24
       ownerID: ownerxxx
-    registeredAt: '2019-02-13T06:15:32Z'
-    lastUpdated: '2020-02-13T06:15:32Z'
+    registeredAt: "2021-12-13T05:50:07.492Z"
+    lastUpdated: "2021-12-13T05:50:07.492Z"
     k8sInfraRelease:
       gitSha: 1e8cbd109d7a77909f627ec5247520b70cc209e9
-      lastUpdated: '2021-03-22T11:55:41Z'
+      lastUpdated: "2021-03-22T11:55:41Z"
       release: 2021-W06-0-116-gd0c7e403
-    status: Deprecated
+    status: Active
     phase: Running
     tags:
-      onboarding: off
-      scaling: off
+      onboarding: "off"
+      scaling: "off"
 - apiVersion: registry.ethos.adobe.com/v1
   kind: Cluster
   metadata:
@@ -124,9 +123,9 @@
       domainName: example.com
       ecrIamArns:
         iamRoles:
-        - arn:aws:iam::account-id:role/xxx
+        - "arn:aws:iam::account-id:role/xxx"
         iamUser:
-        - arn:aws:iam::461989703686:user/ecr-login
+        - "arn:aws:iam::461989703686:user/ecr-login"
       lbEndpoints:
         public: cluster02-prod-euwest1.example.com
     tiers:
@@ -138,28 +137,28 @@
     - name: workerMemoryOptimized
       instanceType: r5.8xlarge
       labels:
-        node.kubernetes.io/workload.memory-optimized: true
+        node.kubernetes.io/workload.memory-optimized: "true"
       maxCapacity: 100
       minCapacity: 0
       rootDeviceSize: 200
       taints:
       - workload=memory-optimized:NoSchedule
-    accountId: 11111-2222-3333-4444-55555555
+    accountId: "11111-2222-3333-4444-55555555"
     virtualNetworks:
     - id: "/subscriptions/11111-2222-3333-4444-55555555/resourceGroups/cluster02_prod_euwest1_network/providers/Microsoft.Network/virtualNetworks/cluster02_prod_euwest1_network-vnet/subnets/cluster02_prod_euwest1_network_10_3_0_0_24"
       cidrs:
       - 10.3.0.0/24
-    registeredAt: '2019-02-13T06:15:32Z'
-    lastUpdated: '2020-02-13T06:15:32Z'
+    registeredAt: "2019-02-10T06:15:32Z"
+    lastUpdated: "2020-02-10T06:15:32Z"
     k8sInfraRelease:
       gitSha: 1e8cbd109d7a77909f627ec5247520b70cc209e9
-      lastUpdated: '2021-03-22T11:55:41Z'
+      lastUpdated: "2021-03-22T11:55:41Z"
       release: 2021-W06-0-116-gd0c7e403
     status: Active
     phase: Upgrading
     tags:
-      onboarding: off
-      scaling: on
+      onboarding: "off"
+      scaling: "on"
 - apiVersion: registry.ethos.adobe.com/v1
   kind: Cluster
   metadata:
@@ -192,17 +191,16 @@
       loggingEndpoints:
       - region: useast1
         endpoint: splunk-us-east1.example.com
-        isDefault: true
+        isDefault: "true"
       domainName: example.com
       ecrIamArns:
         iamRoles:
-        - arn:aws:iam::account-id:role/role3
+        - "arn:aws:iam::account-id:role/role3"
         iamUser:
-        - arn:aws:iam::111222333444:user/role1
+        - "arn:aws:iam::111222333444:user/role1"
       lbEndpoints:
         public: cluster03-prod-uswest1.example.com
-      egressPorts:
-      - '80,443'
+      egressPorts: "80,443"
       nfsInfo:
       - name: my-nfs
         basePath: "/nfs"
@@ -219,23 +217,23 @@
     - name: worker
       instanceType: c5.9xlarge
       labels:
-        node.kubernetes.io/workload.memory-optimized: true
+        node.kubernetes.io/workload.memory-optimized: "true"
       maxCapacity: 1000
       minCapacity: 3
       rootDeviceSize: 200
-    accountId: 12345678
+    accountId: "12345678"
     virtualNetworks:
     - id: vpc-123456
       cidrs:
       - 10.0.22.0/8
-    registeredAt: '2020-03-19T07:55:46.132Z'
-    lastUpdated: '2020-03-20T07:55:46.132Z'
+    registeredAt: "2020-03-19T07:55:46.132Z"
+    lastUpdated: "2020-03-20T07:55:46.132Z"
     k8sInfraRelease:
       gitSha: 110bb4f33b2142dde01e74a9bae7148534c2685b
-      lastUpdated: '2021-03-22T11:55:41Z'
+      lastUpdated: "2021-03-22T11:55:41Z"
       release: 2021-W06-0-116-gd0c7e403
     status: Active
     phase: Running
     tags:
-      onboarding: on
-      scaling: on
+      onboarding: "on"
+      scaling: "on"
