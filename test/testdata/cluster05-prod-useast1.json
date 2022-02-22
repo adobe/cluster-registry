@@ -12,6 +12,7 @@
             "certificateAuthorityData": ""
         },
         "businessUnit": "BU1",
+        "managingOrg": "Org1",
         "cloudType": "azure",
         "environment": "prod",
         "extra": {
@@ -34,6 +35,7 @@
         ],
         "phase": "Upgrading",
         "region": "useast1",
+        "cloudProviderRegion": "us-eas1",
         "registeredAt": "2019-02-13T06:15:32Z",
         "lastUpdated": "2019-02-14T06:15:32Z",
         "shortName": "cluster05produseast1",
