@@ -35,6 +35,7 @@
         "phase": "Upgrading",
         "region": "useast1",
         "registeredAt": "2019-02-13T06:15:32Z",
+        "lastUpdated": "2019-02-14T06:15:32Z",
         "shortName": "cluster05produseast1",
         "status": "Deprecated",
         "tiers": [

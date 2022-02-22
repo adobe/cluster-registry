@@ -82,8 +82,8 @@ var _ = Describe("Webhook Server", func() {
 	var server *Server
 
 	const (
-		timeout  = time.Second * 30
-		interval = time.Millisecond * 250
+		timeout  = time.Second * 60
+		interval = time.Second
 	)
 
 	BeforeEach(func() {
@@ -201,9 +201,9 @@ var _ = Describe("Webhook Server", func() {
 						DomainName:       "",
 						LbEndpoints:      map[string]string{},
 						LoggingEndpoints: []map[string]string{},
-						EcrIamArns:       map[string]string{},
+						EcrIamArns:       map[string][]string{},
 						EgressPorts:      "",
-						NFSInfo:          map[string]string{},
+						NFSInfo:          []map[string]string{},
 					},
 					AllowedOnboardingTeams: []registryv1.AllowedOnboardingTeam{},
 					Capabilities:           []string{},

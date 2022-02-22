@@ -112,6 +112,7 @@ func (h *handler) ListClusters(ctx echo.Context) error {
 	environment := ctx.QueryParam("environment")
 	region := ctx.QueryParam("region")
 	status := ctx.QueryParam("status")
+	lastUpdated := ctx.QueryParam("lastUpdated")
 
 	offset, err := strconv.Atoi(ctx.QueryParam("offset"))
 	if err != nil {
@@ -123,6 +124,6 @@ func (h *handler) ListClusters(ctx echo.Context) error {
 		limit = 200
 	}
 
-	clusters, count, more, _ := h.db.ListClusters(offset, limit, region, environment, status)
+	clusters, count, more, _ := h.db.ListClusters(offset, limit, region, environment, status, lastUpdated)
 	return ctx.JSON(http.StatusOK, newClusterListResponse(clusters, count, offset, limit, more))
 }

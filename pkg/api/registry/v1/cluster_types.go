@@ -101,7 +101,7 @@ type ClusterSpec struct {
 	PeerVirtualNetworks []PeerVirtualNetwork `json:"peerVirtualNetworks,omitempty"`
 
 	// Timestamp when cluster information was updated
-	LastUpdated string `json:"lastUpdated,omitempty"`
+	LastUpdated string `json:"lastUpdated"`
 
 	// Cluster tags that were applied
 	Tags map[string]string `json:"tags,omitempty"`
@@ -151,13 +151,13 @@ type Extra struct {
 	LoggingEndpoints []map[string]string `json:"loggingEndpoints,omitempty"`
 
 	// List of IAM Arns
-	EcrIamArns map[string]string `json:"ecrIamArns,omitempty"`
+	EcrIamArns map[string][]string `json:"ecrIamArns,omitempty"`
 
 	// Egress ports allowed outside of the namespace
 	EgressPorts string `json:"egressPorts,omitempty"`
 
 	// NFS information
-	NFSInfo map[string]string `json:"nfsInfo,omitempty"`
+	NFSInfo []map[string]string `json:"nfsInfo,omitempty"`
 }
 
 // Tier details

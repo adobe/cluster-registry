@@ -13,550 +13,891 @@ governing permissions and limitations under the License.
 package database
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"sort"
-	"testing"
 
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
 	"github.com/adobe/cluster-registry/pkg/config"
 	monitoring "github.com/adobe/cluster-registry/pkg/monitoring/apiserver"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
-	"github.com/stretchr/testify/assert"
+	"github.com/labstack/gommon/log"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
-type mockDynamoDBClient struct {
-	dynamodbiface.DynamoDBAPI
-	clusters map[string]*ClusterDb
-}
+var _ = Describe("Database Suite", func() {
+	var db Db
+	var appConfig *config.AppConfig
+	var m *monitoring.Metrics
 
-func (m *mockDynamoDBClient) DescribeTableWithContext(_ context.Context, input *dynamodb.DescribeTableInput, _ ...request.Option) (*dynamodb.DescribeTableOutput, error) {
+	BeforeEach(func() {
+		appConfig = &config.AppConfig{
+			AwsRegion:   dbTestConfig["AWS_REGION"],
+			DbEndpoint:  dbContainer.Endpoint,
+			DbTableName: dbTestConfig["DB_TABLE_NAME"],
+			DbIndexName: dbTestConfig["DB_INDEX_NAME"],
+		}
+		m = monitoring.NewMetrics("cluster_registry_api_database_test", true)
+		db = NewDb(appConfig, m)
 
-	if *input.TableName == "mock-clusters" {
-		return &dynamodb.DescribeTableOutput{}, nil
-	}
-	return &dynamodb.DescribeTableOutput{}, errors.New("No sqs found with the name " + *input.TableName)
-}
-
-func (m *mockDynamoDBClient) GetItem(input *dynamodb.GetItemInput) (*dynamodb.GetItemOutput, error) {
-
-	resp, err := dynamodbattribute.MarshalMap(
-		m.clusters[*input.Key["name"].S],
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	output := &dynamodb.GetItemOutput{
-		Item: resp,
-	}
-	return output, nil
-}
-
-func (m *mockDynamoDBClient) DeleteItem(input *dynamodb.DeleteItemInput) (*dynamodb.DeleteItemOutput, error) {
-
-	clusterName := *input.Key["name"].S
-
-	if c, exist := m.clusters[clusterName]; exist {
-		delete(m.clusters, c.TablePartitionKey)
-	} else {
-		return nil, errors.New("cluster not found")
-	}
-
-	output := &dynamodb.DeleteItemOutput{}
-	return output, nil
-}
-
-func (m *mockDynamoDBClient) PutItem(input *dynamodb.PutItemInput) (*dynamodb.PutItemOutput, error) {
-	var cluster ClusterDb
-	err := dynamodbattribute.UnmarshalMap(input.Item, &cluster)
-	if err != nil {
-		return nil, err
-	}
-
-	m.clusters[cluster.TablePartitionKey] = &cluster
-	return &dynamodb.PutItemOutput{}, err
-}
-
-func (m *mockDynamoDBClient) Query(input *dynamodb.QueryInput) (*dynamodb.QueryOutput, error) {
-	var resp []map[string]*dynamodb.AttributeValue
-
-	for _, c := range m.clusters {
-		attr, err := dynamodbattribute.MarshalMap(
-			c,
-		)
+		err := createTable(dbContainer.Endpoint)
 		if err != nil {
-			return nil, err
-		}
-		resp = append(resp, attr)
-	}
-
-	output := &dynamodb.QueryOutput{
-		Items: resp,
-	}
-	return output, nil
-}
-
-func TestNewDb(t *testing.T) {
-	test := assert.New(t)
-
-	t.Log("Test initializing the database.")
-
-	appConfig := &config.AppConfig{
-		DbEndpoint:  "dummy-url",
-		DbAwsRegion: "dummy-region",
-	}
-
-	m := monitoring.NewMetrics("cluster_registry_api_database_test", true)
-	d := NewDb(appConfig, m)
-	test.NotNil(d)
-}
-
-func TestStatusHealthCheck(t *testing.T) {
-	test := assert.New(t)
-	t.Log("Test the health check for the database")
-
-	tcs := []struct {
-		name          string
-		tableName     string
-		expectedError error
-	}{
-		{
-			name:          "unhealthy hatabase test",
-			tableName:     "mock-clusters",
-			expectedError: nil,
-		},
-		{
-			name:          "unhealthy hatabase test",
-			tableName:     "missing-mock-clusters",
-			expectedError: errors.New("No sqs found with the name missing-mock-clusters"),
-		},
-	}
-
-	for _, tc := range tcs {
-
-		db := &db{
-			dbAPI:   &mockDynamoDBClient{},
-			table:   dbTable{name: tc.tableName},
-			metrics: monitoring.NewMetrics("cluster_registry_api_database_test", true),
+			log.Fatalf("Error while creating table: %v", err.Error())
 		}
 
-		err := db.Status()
-		test.Equal(fmt.Sprintf("%v", err), fmt.Sprintf("%v", tc.expectedError))
-	}
-}
+		err = importData(db)
+		if err != nil {
+			log.Fatalf("Error while populating database: %v", err.Error())
+		}
+	})
 
-func TestGetCluster(t *testing.T) {
-	test := assert.New(t)
+	AfterEach(func() {
+		err := deleteTable(dbContainer.Endpoint, appConfig.DbTableName)
+		if err != nil {
+			log.Fatalf("Error while deleting table: %v", err.Error())
+		}
+	})
 
-	t.Log("Test getting a single cluster from the database.")
+	Context("Database tests", func() {
 
-	tcs := []struct {
-		name            string
-		clusterName     string
-		dbClusters      map[string]*ClusterDb
-		expectedCluster *registryv1.Cluster
-		expectedError   error
-	}{
-		{
-			name:        "existing cluster",
-			clusterName: "cluster1",
-			dbClusters: map[string]*ClusterDb{
-				"cluster1": {
-					TablePartitionKey: "cluster1",
-					Cluster: &registryv1.Cluster{
+		It("Should handle DB status OK", func() {
+			err := db.Status()
+			Expect(err).To(BeNil())
+		})
+
+		It("Should handle DB status not OK", func() {
+			appConfig := &config.AppConfig{
+				AwsRegion:   appConfig.AwsRegion,
+				DbEndpoint:  dbContainer.Endpoint,
+				DbTableName: "wrong-table-names",
+				DbIndexName: appConfig.DbIndexName,
+			}
+			newM := monitoring.NewMetrics("cluster_registry_api_database_test_new", true)
+			newDb := NewDb(appConfig, newM)
+			err := newDb.Status()
+			Expect(err.Error()).To(ContainSubstring("Cannot do operations on a non-existent table"))
+		})
+
+		It("Should handle DB Get cluster", func() {
+			tcs := []struct {
+				name            string
+				clusterName     string
+				expectedCluster *registryv1.Cluster
+			}{
+				{
+					name:        "existing cluster",
+					clusterName: "cluster01-prod-useast1",
+					expectedCluster: &registryv1.Cluster{
 						Spec: registryv1.ClusterSpec{
-							Name:         "cluster1",
-							LastUpdated:  "2020-02-13T06:15:32Z",
-							RegisteredAt: "2019-02-13T06:15:32Z",
+							Name:      "cluster01-prod-useast1",
+							ShortName: "cluster01produseast1",
+							APIServer: registryv1.APIServer{
+								Endpoint:                 "https://cluster01-prod-useast1.example.com",
+								CertificateAuthorityData: "LS0tLS1CRUdJTiBDRVJUSUZJ==",
+							},
+							Region:       "useast1",
+							CloudType:    "azure",
+							Environment:  "Prod",
+							BusinessUnit: "BU1",
+							Offering:     []registryv1.Offering{"caas", "paas"},
+							AccountID:    "11111-2222-3333-4444-555555555",
+							Tiers: []registryv1.Tier{
+								{
+									Name:              "worker",
+									InstanceType:      "c5.9xlarge",
+									MinCapacity:       3,
+									MaxCapacity:       1000,
+									EnableKataSupport: false,
+								},
+								{
+									Name:         "workerMemoryOptimized",
+									InstanceType: "r5.8xlarge",
+									MinCapacity:  0,
+									MaxCapacity:  100,
+									Labels: map[string]string{
+										"node.kubernetes.io/workload.memory-optimized": "true",
+									},
+									Taints:            []string{"workload=memory-optimized:NoSchedule"},
+									EnableKataSupport: false,
+								},
+							},
+							VirtualNetworks: []registryv1.VirtualNetwork{
+								{
+									ID:    "/subscriptions/11111-2222-3333-4444-555555555/resourceGroups/cluster01_prod_useast1_network/providers/Microsoft.Network/virtualNetworks/cluster01_prod_useast1-vnet/subnets/cluster01_prod_useast1_master_network_10_0_0_0_24",
+									Cidrs: []string{"10.0.0.0/24"},
+								},
+								{
+									ID:    "/subscriptions/11111-2222-3333-4444-555555555/resourceGroups/cluster01_prod_useast1_network/providers/Microsoft.Network/virtualNetworks/cluster01_prod_useast1-vnet/subnets/cluster01_prod_useast1_worker_network_10_1_0_0_24",
+									Cidrs: []string{"10.1.0.0/24"},
+								},
+							},
+							K8sInfraRelease: registryv1.K8sInfraRelease{
+								GitSha:      "1e8cbd109d7a77909f627ec5247520b70cc209e9",
+								LastUpdated: "2021-03-22T11:55:41Z",
+								Release:     "2021-W06-0-116-gd0c7e403",
+							},
+							RegisteredAt: "2021-12-13T05:50:07.492Z",
 							Status:       "Active",
 							Phase:        "Running",
+							Type:         "Shared",
+							Extra: registryv1.Extra{
+								DomainName: "example.com",
+								LbEndpoints: map[string]string{
+									"public": "cluster01-prod-useast1.example.com",
+								},
+								LoggingEndpoints: []map[string]string{
+									{
+										"region":    "useast1",
+										"endpoint":  "splunk-us-east1.example.com",
+										"isDefault": "true",
+									},
+									{
+										"isDefault": "false",
+										"region":    "useast2",
+										"endpoint":  "splunk-us-east2.example.com",
+									},
+								},
+								EcrIamArns: map[string][]string{
+									"iamRoles": {
+										"arn:aws:iam::account-id:role/xxx",
+										"arn:aws:iam::account-id:role/yyy",
+									},
+									"iamUser": {
+										"arn:aws:iam::111222333:user/ecr-login",
+									},
+								},
+								EgressPorts: "1024-65535",
+								NFSInfo:     []map[string]string{{"endpoint": "xyz", "basePath": "xyz", "name": "xxxss5"}},
+							},
+							AllowedOnboardingTeams: nil,
+							Capabilities:           []string{"vpc-peering", "gpu-compute"},
+							PeerVirtualNetworks: []registryv1.PeerVirtualNetwork{
+								{
+									ID:      "123r",
+									Cidrs:   []string{"10.2.0.1/23", "10.3.0.1/24"},
+									OwnerID: "ownerxxx",
+								},
+							},
+							LastUpdated: "2021-12-13T05:50:07.492Z",
+							Tags:        map[string]string{"onboarding": "off", "scaling": "off"},
+						},
+					},
+				},
+				{
+					name:            "non existing cluster",
+					clusterName:     "cluster100-prod-useast1",
+					expectedCluster: nil,
+				},
+			}
+
+			for _, tc := range tcs {
+				By(fmt.Sprintf("TestCase %s:\t When getting cluster %s", tc.name, tc.clusterName))
+				c, err := db.GetCluster(tc.clusterName)
+
+				Expect(err).To(BeNil())
+				if tc.expectedCluster == nil {
+					Expect(c).To(BeNil())
+				} else {
+					Expect(c.Spec).To(Equal(tc.expectedCluster.Spec))
+				}
+			}
+		})
+
+		It("Should handle DB Put cluster", func() {
+			tcs := []struct {
+				name            string
+				clusterName     string
+				newCluster      *registryv1.Cluster
+				expectedCluster *registryv1.Cluster
+			}{
+				{
+					name:        "update existing cluster",
+					clusterName: "cluster01-prod-useast1",
+					newCluster: &registryv1.Cluster{
+						Spec: registryv1.ClusterSpec{
+							Name:        "cluster01-prod-useast1",
+							Region:      "useast1",
+							Environment: "Prod",
+							Offering:    []registryv1.Offering{"caas", "paas"},
+							Tiers: []registryv1.Tier{
+								{
+									Name:              "worker",
+									MinCapacity:       0,
+									MaxCapacity:       0,
+									EnableKataSupport: false,
+								},
+								{
+									Name:        "workerMemoryOptimized",
+									MinCapacity: 0,
+									MaxCapacity: 0,
+									Labels: map[string]string{
+										"node.kubernetes.io/workload.memory-optimized": "true",
+									},
+									Taints: []string{
+										"workload=memory-optimized:NoSchedule",
+									},
+									EnableKataSupport: false,
+								},
+							},
+							Status:       "Active",
+							Phase:        "Running",
+							Type:         "Restricted",
+							Capabilities: []string{"gpu-compute"},
+							LastUpdated:  "2020-03-20T07:55:46.132Z",
 							Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
 						},
 					},
-				}},
-			expectedCluster: &registryv1.Cluster{
-				Spec: registryv1.ClusterSpec{
-					Name:         "cluster1",
-					LastUpdated:  "2020-02-13T06:15:32Z",
-					RegisteredAt: "2019-02-13T06:15:32Z",
-					Status:       "Active",
-					Phase:        "Running",
-					Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
-				}},
-			expectedError: nil,
-		},
-		{
-			name:        "non existing cluster",
-			clusterName: "cluster2",
-			dbClusters: map[string]*ClusterDb{
-				"cluster1": {
-					TablePartitionKey: "cluster1",
-					Cluster: &registryv1.Cluster{
+					expectedCluster: &registryv1.Cluster{
 						Spec: registryv1.ClusterSpec{
-							Name:         "cluster1",
-							LastUpdated:  "2020-02-13T06:15:32Z",
-							RegisteredAt: "2019-02-13T06:15:32Z",
+							Name:        "cluster01-prod-useast1",
+							Region:      "useast1",
+							Environment: "Prod",
+							Offering:    []registryv1.Offering{"caas", "paas"},
+							Tiers: []registryv1.Tier{
+								{
+									Name:              "worker",
+									MinCapacity:       0,
+									MaxCapacity:       0,
+									EnableKataSupport: false,
+								},
+								{
+									Name:        "workerMemoryOptimized",
+									MinCapacity: 0,
+									MaxCapacity: 0,
+									Labels: map[string]string{
+										"node.kubernetes.io/workload.memory-optimized": "true",
+									},
+									Taints: []string{
+										"workload=memory-optimized:NoSchedule",
+									},
+									EnableKataSupport: false,
+								},
+							},
 							Status:       "Active",
 							Phase:        "Running",
-							Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
-						},
-					},
-				}},
-			expectedError: nil,
-		},
-	}
-
-	for _, tc := range tcs {
-
-		db := &db{
-			dbAPI:   &mockDynamoDBClient{clusters: tc.dbClusters},
-			table:   dbTable{name: "cluster-registry-test", partitionKey: "name", searchKey: ""},
-			index:   dbTable{name: "cluster-registry-search-test", partitionKey: "kind", searchKey: "name"},
-			metrics: monitoring.NewMetrics("cluster_registry_api_database_test", true),
-		}
-
-		t.Logf("\tTest %s:\tWhen getting cluster %s", tc.name, tc.clusterName)
-
-		c, err := db.GetCluster(tc.clusterName)
-
-		if tc.expectedError != nil {
-			test.Error(err, "there should be an error processing the message")
-			test.Contains(fmt.Sprintf("%v", err), fmt.Sprintf("%v", tc.expectedError), "the error message should be as expected")
-		} else {
-			test.NoError(err)
-		}
-		test.Equal(tc.expectedCluster, c)
-	}
-}
-
-func TestPutCluster(t *testing.T) {
-	test := assert.New(t)
-
-	t.Log("Test create or update a single cluster into the database.")
-
-	tcs := []struct {
-		name             string
-		dbClusters       map[string]*ClusterDb
-		newCluster       *registryv1.Cluster
-		offset           int
-		limit            int
-		expectedClusters []registryv1.Cluster
-		expectedCount    int
-		expectedMore     bool
-		expectedError    error
-	}{
-		{
-			name:       "new cluster",
-			dbClusters: map[string]*ClusterDb{},
-			offset:     0,
-			limit:      10,
-			newCluster: &registryv1.Cluster{
-				Spec: registryv1.ClusterSpec{
-					Name:         "cluster2",
-					LastUpdated:  "2020-02-14T06:15:32Z",
-					RegisteredAt: "2019-02-14T06:15:32Z",
-					Status:       "Active",
-					Phase:        "Running",
-					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
-				}},
-			expectedClusters: []registryv1.Cluster{{
-				Spec: registryv1.ClusterSpec{
-					Name:         "cluster2",
-					LastUpdated:  "2020-02-14T06:15:32Z",
-					RegisteredAt: "2019-02-14T06:15:32Z",
-					Status:       "Active",
-					Phase:        "Running",
-					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
-				}},
-			},
-			expectedCount: 1,
-			expectedMore:  false,
-			expectedError: nil,
-		},
-		{
-			name: "existing cluster",
-			dbClusters: map[string]*ClusterDb{
-				"cluster1": {
-					TablePartitionKey: "cluster1",
-					Cluster: &registryv1.Cluster{
-						Spec: registryv1.ClusterSpec{
-							Name:         "cluster1",
-							LastUpdated:  "2020-02-13T06:15:32Z",
-							RegisteredAt: "2019-02-13T06:15:32Z",
-							Status:       "Active",
-							Phase:        "Running",
-							Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
-						},
-					},
-				}},
-			newCluster: &registryv1.Cluster{
-				Spec: registryv1.ClusterSpec{
-					Name:         "cluster1",
-					LastUpdated:  "2020-02-14T06:15:32Z",
-					RegisteredAt: "2019-02-13T06:15:32Z",
-					Status:       "Active",
-					Phase:        "Running",
-					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
-				}},
-			offset: 0,
-			limit:  10,
-			expectedClusters: []registryv1.Cluster{{
-				Spec: registryv1.ClusterSpec{
-					Name:         "cluster1",
-					LastUpdated:  "2020-02-14T06:15:32Z",
-					RegisteredAt: "2019-02-13T06:15:32Z",
-					Status:       "Active",
-					Phase:        "Running",
-					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
-				}},
-			},
-			expectedCount: 1,
-			expectedMore:  false,
-			expectedError: nil,
-		},
-	}
-
-	for _, tc := range tcs {
-
-		db := &db{
-			dbAPI:   &mockDynamoDBClient{clusters: tc.dbClusters},
-			table:   dbTable{name: "cluster-registry-test", partitionKey: "name", searchKey: ""},
-			index:   dbTable{name: "cluster-registry-search-test", partitionKey: "kind", searchKey: "name"},
-			metrics: monitoring.NewMetrics("cluster_registry_api_database_test", true),
-		}
-
-		t.Logf("\tTest %s:\tWhen creating or updating a cluster %s; nr. of items %d", tc.name, tc.newCluster.ClusterName, tc.expectedCount)
-
-		err := db.PutCluster(tc.newCluster)
-
-		if tc.expectedError != nil {
-			test.Error(err, "there should be an error processing the message")
-			test.Contains(fmt.Sprintf("%v", err), fmt.Sprintf("%v", tc.expectedError), "the error message should be as expected")
-		} else {
-			test.NoError(err)
-		}
-
-		clusters, count, more, err := db.ListClusters(tc.offset, tc.limit, "", "", "")
-
-		test.NoError(err)
-		test.Equal(tc.expectedClusters, clusters)
-		test.Equal(tc.expectedCount, count)
-		test.Equal(tc.expectedMore, more)
-	}
-}
-
-func TestDeleteCluster(t *testing.T) {
-	test := assert.New(t)
-	tcs := []struct {
-		name             string
-		clusterName      string
-		dbClusters       map[string]*ClusterDb
-		offset           int
-		limit            int
-		expectedClusters []registryv1.Cluster
-		expectedError    error
-		expectedCount    int
-		expectedMore     bool
-	}{
-		{
-			name:        "existing cluster",
-			clusterName: "cluster1",
-			dbClusters: map[string]*ClusterDb{
-				"cluster1": {
-					TablePartitionKey: "cluster1",
-					Cluster: &registryv1.Cluster{
-						Spec: registryv1.ClusterSpec{
-							Name:         "cluster1",
-							LastUpdated:  "2020-02-13T06:15:32Z",
-							RegisteredAt: "2019-02-13T06:15:32Z",
-							Status:       "Active",
-							Phase:        "Running",
-							Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
-						},
-					},
-				}},
-			offset:           0,
-			limit:            10,
-			expectedClusters: []registryv1.Cluster{},
-			expectedCount:    0,
-			expectedMore:     false,
-			expectedError:    nil,
-		},
-		{
-			name:        "non existing cluster",
-			clusterName: "cluster2",
-			dbClusters: map[string]*ClusterDb{
-				"cluster1": {
-					TablePartitionKey: "cluster1",
-					Cluster: &registryv1.Cluster{
-						Spec: registryv1.ClusterSpec{
-							Name:         "cluster1",
-							LastUpdated:  "2020-02-13T06:15:32Z",
-							RegisteredAt: "2019-02-13T06:15:32Z",
-							Status:       "Active",
-							Phase:        "Running",
-							Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
-						},
-					},
-				}},
-			offset: 0,
-			limit:  10,
-			expectedClusters: []registryv1.Cluster{{
-				Spec: registryv1.ClusterSpec{
-					Name:         "cluster1",
-					LastUpdated:  "2020-02-13T06:15:32Z",
-					RegisteredAt: "2019-02-13T06:15:32Z",
-					Status:       "Active",
-					Phase:        "Running",
-					Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
-				}},
-			},
-			expectedCount: 1,
-			expectedMore:  false,
-			expectedError: fmt.Errorf("cluster not found"),
-		},
-	}
-
-	for _, tc := range tcs {
-
-		db := &db{
-			dbAPI:   &mockDynamoDBClient{clusters: tc.dbClusters},
-			table:   dbTable{name: "cluster-registry-test", partitionKey: "name", searchKey: ""},
-			index:   dbTable{name: "cluster-registry-search-test", partitionKey: "kind", searchKey: "name"},
-			metrics: monitoring.NewMetrics("cluster_registry_api_database_test", true),
-		}
-
-		err := db.DeleteCluster(tc.clusterName)
-
-		if tc.expectedError != nil {
-			test.Error(err, "there should be an error processing the message")
-			test.Contains(fmt.Sprintf("%v", err), fmt.Sprintf("%v", tc.expectedError), "the error message should be as expected")
-		} else {
-			test.NoError(err)
-		}
-
-		clusters, count, more, err := db.ListClusters(tc.offset, tc.limit, "", "", "")
-
-		test.NoError(err)
-		test.Equal(tc.expectedClusters, clusters)
-		test.Equal(tc.expectedCount, count)
-		test.Equal(tc.expectedMore, more)
-	}
-}
-
-// TODO: add tests for filtering
-func TestListClusters(t *testing.T) {
-	test := assert.New(t)
-
-	t.Log("Test getting all clusters from the database.")
-
-	tcs := []struct {
-		name             string
-		queryParams      map[string]string
-		dbClusters       map[string]*ClusterDb
-		offset           int
-		limit            int
-		expectedClusters []registryv1.Cluster
-		expectedError    error
-		expectedCount    int
-		expectedMore     bool
-	}{
-		{
-			name: "all clusters",
-			queryParams: map[string]string{
-				"region":      "",
-				"environment": "",
-				"status":      "",
-			},
-			dbClusters: map[string]*ClusterDb{
-				"cluster1": {
-					TablePartitionKey: "cluster1",
-					Cluster: &registryv1.Cluster{
-						Spec: registryv1.ClusterSpec{
-							Name:         "cluster1",
-							LastUpdated:  "2020-02-13T06:15:32Z",
-							RegisteredAt: "2019-02-13T06:15:32Z",
-							Status:       "Active",
-							Phase:        "Running",
+							Type:         "Restricted",
+							Capabilities: []string{"gpu-compute"},
+							LastUpdated:  "2020-03-20T07:55:46.132Z",
 							Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
 						},
 					},
 				},
-				"cluster2": {
-					TablePartitionKey: "cluster2",
-					Cluster: &registryv1.Cluster{
+				{
+					name:        "update existing cluster",
+					clusterName: "cluster101-prod-useast1",
+					newCluster: &registryv1.Cluster{
 						Spec: registryv1.ClusterSpec{
-							Name:         "cluster2",
-							LastUpdated:  "2020-02-14T06:15:32Z",
-							RegisteredAt: "2019-02-14T06:15:32Z",
+							Name:        "cluster101-prod-useast1",
+							Region:      "useast1",
+							Environment: "Prod",
+							Offering:    []registryv1.Offering{"caas", "paas"},
+							Tiers: []registryv1.Tier{
+								{
+									Name:              "worker",
+									MinCapacity:       0,
+									MaxCapacity:       0,
+									EnableKataSupport: false,
+								},
+								{
+									Name:        "workerMemoryOptimized",
+									MinCapacity: 0,
+									MaxCapacity: 0,
+									Labels: map[string]string{
+										"node.kubernetes.io/workload.memory-optimized": "true",
+									},
+									Taints: []string{
+										"workload=memory-optimized:NoSchedule",
+									},
+									EnableKataSupport: false,
+								},
+							},
 							Status:       "Active",
 							Phase:        "Running",
-							Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
+							Type:         "Restricted",
+							Capabilities: []string{"gpu-compute"},
+							LastUpdated:  "2020-03-20T07:55:46.132Z",
+							Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
 						},
 					},
-				}},
-			offset: 0,
-			limit:  200,
-			expectedClusters: []registryv1.Cluster{{
-				Spec: registryv1.ClusterSpec{
-					Name:         "cluster1",
-					LastUpdated:  "2020-02-13T06:15:32Z",
-					RegisteredAt: "2019-02-13T06:15:32Z",
-					Status:       "Active",
-					Phase:        "Running",
-					Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
-				}}, {
-				Spec: registryv1.ClusterSpec{
-					Name:         "cluster2",
-					LastUpdated:  "2020-02-14T06:15:32Z",
-					RegisteredAt: "2019-02-14T06:15:32Z",
-					Status:       "Active",
-					Phase:        "Running",
-					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
-				}},
-			},
-			expectedCount: 2,
-			expectedMore:  false,
-			expectedError: nil,
-		},
-	}
+					expectedCluster: &registryv1.Cluster{
+						Spec: registryv1.ClusterSpec{
+							Name:        "cluster101-prod-useast1",
+							Region:      "useast1",
+							Environment: "Prod",
+							Offering:    []registryv1.Offering{"caas", "paas"},
+							Tiers: []registryv1.Tier{
+								{
+									Name:              "worker",
+									MinCapacity:       0,
+									MaxCapacity:       0,
+									EnableKataSupport: false,
+								},
+								{
+									Name:        "workerMemoryOptimized",
+									MinCapacity: 0,
+									MaxCapacity: 0,
+									Labels: map[string]string{
+										"node.kubernetes.io/workload.memory-optimized": "true",
+									},
+									Taints: []string{
+										"workload=memory-optimized:NoSchedule",
+									},
+									EnableKataSupport: false,
+								},
+							},
+							Status:       "Active",
+							Phase:        "Running",
+							Type:         "Restricted",
+							Capabilities: []string{"gpu-compute"},
+							LastUpdated:  "2020-03-20T07:55:46.132Z",
+							Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
+						},
+					},
+				},
+			}
 
-	for _, tc := range tcs {
-		db := &db{
-			dbAPI:   &mockDynamoDBClient{clusters: tc.dbClusters},
-			table:   dbTable{name: "cluster-registry-test", partitionKey: "name", searchKey: ""},
-			index:   dbTable{name: "cluster-registry-search-test", partitionKey: "kind", searchKey: "name"},
-			metrics: monitoring.NewMetrics("cluster_registry_api_database_test", true),
-		}
+			for _, tc := range tcs {
+				By(fmt.Sprintf("TestCase %s:\t When put cluster %s", tc.name, tc.clusterName))
 
-		t.Logf("\tTest %s:\tWhen getting all clusters with region:%s, environment:%s, status:%s, offset:%d, limit:%d, error:%v",
-			tc.name, tc.queryParams["region"], tc.queryParams["environment"], tc.queryParams["status"], tc.offset, tc.limit, tc.expectedError)
+				err := db.PutCluster(tc.newCluster)
+				Expect(err).To(BeNil())
 
-		clusters, count, more, err := db.ListClusters(
-			tc.offset,
-			tc.limit,
-			tc.queryParams["region"],
-			tc.queryParams["environment"],
-			tc.queryParams["status"])
+				c, err := db.GetCluster(tc.clusterName)
+				Expect(err).To(BeNil())
 
-		if tc.expectedError != nil {
-			test.Error(err, "there should be an error processing the message")
-			test.Contains(fmt.Sprintf("%v", err), fmt.Sprintf("%v", tc.expectedError), "the error message should be as expected")
-		} else {
-			test.NoError(err)
-		}
-
-		sort.Slice(clusters, func(i, j int) bool {
-			return clusters[i].Spec.Name < clusters[j].Spec.Name
+				Expect(c.Spec).To(Equal(tc.expectedCluster.Spec))
+			}
 		})
 
-		test.Equal(tc.expectedClusters, clusters)
-		test.Equal(tc.expectedCount, count)
-		test.Equal(tc.expectedMore, more)
-	}
-}
+		It("Should handle DB Delete cluster", func() {
+			tcs := []struct {
+				name          string
+				clusterName   string
+				expectedError error
+			}{
+				{
+					name:          "existing cluster",
+					clusterName:   "cluster01-prod-useast1",
+					expectedError: nil,
+				},
+				{
+					name:          "non existing cluster",
+					clusterName:   "cluster102-prod-useast1",
+					expectedError: fmt.Errorf("cluster not found"),
+				},
+			}
+
+			for _, tc := range tcs {
+				By(fmt.Sprintf("TestCase %s:\t When deleting cluster %s", tc.name, tc.clusterName))
+
+				err := db.DeleteCluster(tc.clusterName)
+				Expect(err).To(BeNil())
+
+				c, err := db.GetCluster(tc.clusterName)
+				Expect(err).To(BeNil())
+				Expect(c).To(BeNil())
+			}
+		})
+
+		It("Should handle DB List clusters", func() {
+			tcs := []struct {
+				name             string
+				queryParams      map[string]string
+				offset           int
+				limit            int
+				expectedCount    int
+				expectedMore     bool
+				expectedError    error
+				expectedClusters []registryv1.Cluster
+			}{
+				{
+					name: "all clusters",
+					queryParams: map[string]string{
+						"region":      "",
+						"environment": "",
+						"status":      "",
+						"lastUpdated": "",
+					},
+					offset:        0,
+					limit:         10,
+					expectedCount: 3,
+					expectedMore:  false,
+					expectedError: nil,
+					expectedClusters: []registryv1.Cluster{
+						{
+							Spec: registryv1.ClusterSpec{
+								Name:      "cluster01-prod-useast1",
+								ShortName: "cluster01produseast1",
+								APIServer: registryv1.APIServer{
+									Endpoint:                 "https://cluster01-prod-useast1.example.com",
+									CertificateAuthorityData: "LS0tLS1CRUdJTiBDRVJUSUZJ==",
+								},
+								Region:       "useast1",
+								CloudType:    "azure",
+								Environment:  "Prod",
+								BusinessUnit: "BU1",
+								Offering:     []registryv1.Offering{"caas", "paas"},
+								AccountID:    "11111-2222-3333-4444-555555555",
+								Tiers: []registryv1.Tier{
+									{
+										Name:              "worker",
+										InstanceType:      "c5.9xlarge",
+										MinCapacity:       3,
+										MaxCapacity:       1000,
+										EnableKataSupport: false,
+									},
+									{
+										Name:         "workerMemoryOptimized",
+										InstanceType: "r5.8xlarge",
+										MinCapacity:  0,
+										MaxCapacity:  100,
+										Labels: map[string]string{
+											"node.kubernetes.io/workload.memory-optimized": "true",
+										},
+										Taints:            []string{"workload=memory-optimized:NoSchedule"},
+										EnableKataSupport: false,
+									},
+								},
+								VirtualNetworks: []registryv1.VirtualNetwork{
+									{
+										ID:    "/subscriptions/11111-2222-3333-4444-555555555/resourceGroups/cluster01_prod_useast1_network/providers/Microsoft.Network/virtualNetworks/cluster01_prod_useast1-vnet/subnets/cluster01_prod_useast1_master_network_10_0_0_0_24",
+										Cidrs: []string{"10.0.0.0/24"},
+									},
+									{
+										ID:    "/subscriptions/11111-2222-3333-4444-555555555/resourceGroups/cluster01_prod_useast1_network/providers/Microsoft.Network/virtualNetworks/cluster01_prod_useast1-vnet/subnets/cluster01_prod_useast1_worker_network_10_1_0_0_24",
+										Cidrs: []string{"10.1.0.0/24"},
+									},
+								},
+								K8sInfraRelease: registryv1.K8sInfraRelease{
+									GitSha:      "1e8cbd109d7a77909f627ec5247520b70cc209e9",
+									LastUpdated: "2021-03-22T11:55:41Z",
+									Release:     "2021-W06-0-116-gd0c7e403",
+								},
+								RegisteredAt: "2021-12-13T05:50:07.492Z",
+								Status:       "Active",
+								Phase:        "Running",
+								Type:         "Shared",
+								Extra: registryv1.Extra{
+									DomainName: "example.com",
+									LbEndpoints: map[string]string{
+										"public": "cluster01-prod-useast1.example.com",
+									},
+									LoggingEndpoints: []map[string]string{
+										{
+											"region":    "useast1",
+											"endpoint":  "splunk-us-east1.example.com",
+											"isDefault": "true",
+										},
+										{
+											"isDefault": "false",
+											"region":    "useast2",
+											"endpoint":  "splunk-us-east2.example.com",
+										},
+									},
+									EcrIamArns: map[string][]string{
+										"iamRoles": {
+											"arn:aws:iam::account-id:role/xxx",
+											"arn:aws:iam::account-id:role/yyy",
+										},
+										"iamUser": {
+											"arn:aws:iam::111222333:user/ecr-login",
+										},
+									},
+									EgressPorts: "1024-65535",
+									NFSInfo:     []map[string]string{{"endpoint": "xyz", "basePath": "xyz", "name": "xxxss5"}},
+								},
+								AllowedOnboardingTeams: nil,
+								Capabilities:           []string{"vpc-peering", "gpu-compute"},
+								PeerVirtualNetworks: []registryv1.PeerVirtualNetwork{
+									{
+										ID:      "123r",
+										Cidrs:   []string{"10.2.0.1/23", "10.3.0.1/24"},
+										OwnerID: "ownerxxx",
+									},
+								},
+								LastUpdated: "2021-12-13T05:50:07.492Z",
+								Tags:        map[string]string{"onboarding": "off", "scaling": "off"},
+							},
+						},
+						{
+							Spec: registryv1.ClusterSpec{
+								Name:      "cluster02-prod-euwest1",
+								ShortName: "cluster02prodeuwest1",
+								APIServer: registryv1.APIServer{
+									Endpoint:                 "https://cluster02-prod-euwest1.example.com",
+									CertificateAuthorityData: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0==",
+								},
+								Region:       "euwest1",
+								CloudType:    "azure",
+								Environment:  "Prod",
+								BusinessUnit: "BU2",
+								Offering:     []registryv1.Offering{"caas", "paas"},
+								AccountID:    "11111-2222-3333-4444-55555555",
+								Tiers: []registryv1.Tier{
+									{
+										Name:              "worker",
+										InstanceType:      "c5.9xlarge",
+										MinCapacity:       3,
+										MaxCapacity:       1000,
+										EnableKataSupport: false,
+									},
+									{
+										Name:         "workerMemoryOptimized",
+										InstanceType: "r5.8xlarge",
+										MinCapacity:  0,
+										MaxCapacity:  100,
+										Labels: map[string]string{
+											"node.kubernetes.io/workload.memory-optimized": "true",
+										},
+										Taints: []string{
+											"workload=memory-optimized:NoSchedule",
+										},
+										EnableKataSupport: false,
+										KernelParameters:  nil,
+									},
+								},
+								VirtualNetworks: []registryv1.VirtualNetwork{
+									{
+										ID:    "/subscriptions/11111-2222-3333-4444-55555555/resourceGroups/cluster02_prod_euwest1_network/providers/Microsoft.Network/virtualNetworks/cluster02_prod_euwest1_network-vnet/subnets/cluster02_prod_euwest1_network_10_3_0_0_24",
+										Cidrs: []string{"10.3.0.0/24"},
+									},
+								},
+								K8sInfraRelease: registryv1.K8sInfraRelease{
+									GitSha:      "1e8cbd109d7a77909f627ec5247520b70cc209e9",
+									LastUpdated: "2021-03-22T11:55:41Z",
+									Release:     "2021-W06-0-116-gd0c7e403",
+								},
+								RegisteredAt: "2019-02-10T06:15:32Z",
+								Status:       "Active",
+								Phase:        "Upgrading",
+								Type:         "Dedicated",
+								Extra: registryv1.Extra{
+									DomainName: "example.com",
+									LbEndpoints: map[string]string{
+										"public": "cluster02-prod-euwest1.example.com",
+									},
+									LoggingEndpoints: nil,
+									EcrIamArns: map[string][]string{
+										"iamRoles": {
+											"arn:aws:iam::account-id:role/xxx",
+										},
+										"iamUser": {
+											"arn:aws:iam::461989703686:user/ecr-login",
+										},
+									},
+								},
+								Capabilities: []string{"mct-support"},
+								LastUpdated:  "2020-02-10T06:15:32Z",
+								Tags:         map[string]string{"onboarding": "off", "scaling": "on"},
+							},
+						},
+						{
+							Spec: registryv1.ClusterSpec{
+								Name:      "cluster03-prod-uswest1",
+								ShortName: "cluster03produswest1",
+								APIServer: registryv1.APIServer{
+									Endpoint:                 "https://cluster03-prod-uswest1.example.com",
+									CertificateAuthorityData: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS==",
+								},
+								Region:       "uswest1",
+								CloudType:    "aws",
+								Environment:  "Prod",
+								BusinessUnit: "BU1",
+								Offering:     []registryv1.Offering{"paas"},
+								AccountID:    "12345678",
+								Tiers: []registryv1.Tier{
+									{
+										Name:              "proxy",
+										InstanceType:      "r5a.4xlarge",
+										MinCapacity:       3,
+										MaxCapacity:       200,
+										EnableKataSupport: false,
+									},
+									{
+										Name:         "worker",
+										InstanceType: "c5.9xlarge",
+										MinCapacity:  3,
+										MaxCapacity:  1000,
+										Labels: map[string]string{
+											"node.kubernetes.io/workload.memory-optimized": "true",
+										},
+										EnableKataSupport: false,
+									},
+								},
+								VirtualNetworks: []registryv1.VirtualNetwork{
+									{
+										ID:    "vpc-123456",
+										Cidrs: []string{"10.0.22.0/8"},
+									},
+								},
+								K8sInfraRelease: registryv1.K8sInfraRelease{
+									GitSha:      "110bb4f33b2142dde01e74a9bae7148534c2685b",
+									LastUpdated: "2021-03-22T11:55:41Z",
+									Release:     "2021-W06-0-116-gd0c7e403",
+								},
+								RegisteredAt: "2020-03-19T07:55:46.132Z",
+								Status:       "Active",
+								Phase:        "Running",
+								Type:         "Dedicated",
+								Capabilities: []string{"gpu-compute"},
+								LastUpdated:  "2020-03-20T07:55:46.132Z",
+								Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
+							},
+						},
+					},
+				},
+				{
+					name: "invalid lastUpdate parameter format",
+					queryParams: map[string]string{
+						"region":      "",
+						"environment": "",
+						"status":      "",
+						"lastUpdated": "2020-03-19",
+					},
+					offset:           0,
+					limit:            10,
+					expectedCount:    1,
+					expectedMore:     false,
+					expectedError:    fmt.Errorf("Error converting lastUpdated parameter to RFC3339"),
+					expectedClusters: nil,
+				},
+				{
+					name: "valid lastUpdate parameter format",
+					queryParams: map[string]string{
+						"region":      "",
+						"environment": "",
+						"status":      "",
+						"lastUpdated": "2021-12-13T00:50:07.492Z",
+					},
+					offset:        0,
+					limit:         10,
+					expectedCount: 1,
+					expectedMore:  false,
+					expectedError: nil,
+					expectedClusters: []registryv1.Cluster{
+						{
+							Spec: registryv1.ClusterSpec{
+								Name:      "cluster01-prod-useast1",
+								ShortName: "cluster01produseast1",
+								APIServer: registryv1.APIServer{
+									Endpoint:                 "https://cluster01-prod-useast1.example.com",
+									CertificateAuthorityData: "LS0tLS1CRUdJTiBDRVJUSUZJ==",
+								},
+								Region:       "useast1",
+								CloudType:    "azure",
+								Environment:  "Prod",
+								BusinessUnit: "BU1",
+								Offering:     []registryv1.Offering{"caas", "paas"},
+								AccountID:    "11111-2222-3333-4444-555555555",
+								Tiers: []registryv1.Tier{
+									{
+										Name:              "worker",
+										InstanceType:      "c5.9xlarge",
+										MinCapacity:       3,
+										MaxCapacity:       1000,
+										EnableKataSupport: false,
+									},
+									{
+										Name:         "workerMemoryOptimized",
+										InstanceType: "r5.8xlarge",
+										MinCapacity:  0,
+										MaxCapacity:  100,
+										Labels: map[string]string{
+											"node.kubernetes.io/workload.memory-optimized": "true",
+										},
+										Taints:            []string{"workload=memory-optimized:NoSchedule"},
+										EnableKataSupport: false,
+									},
+								},
+								VirtualNetworks: []registryv1.VirtualNetwork{
+									{
+										ID:    "/subscriptions/11111-2222-3333-4444-555555555/resourceGroups/cluster01_prod_useast1_network/providers/Microsoft.Network/virtualNetworks/cluster01_prod_useast1-vnet/subnets/cluster01_prod_useast1_master_network_10_0_0_0_24",
+										Cidrs: []string{"10.0.0.0/24"},
+									},
+									{
+										ID:    "/subscriptions/11111-2222-3333-4444-555555555/resourceGroups/cluster01_prod_useast1_network/providers/Microsoft.Network/virtualNetworks/cluster01_prod_useast1-vnet/subnets/cluster01_prod_useast1_worker_network_10_1_0_0_24",
+										Cidrs: []string{"10.1.0.0/24"},
+									},
+								},
+								K8sInfraRelease: registryv1.K8sInfraRelease{
+									GitSha:      "1e8cbd109d7a77909f627ec5247520b70cc209e9",
+									LastUpdated: "2021-03-22T11:55:41Z",
+									Release:     "2021-W06-0-116-gd0c7e403",
+								},
+								RegisteredAt: "2021-12-13T05:50:07.492Z",
+								Status:       "Active",
+								Phase:        "Running",
+								Type:         "Shared",
+								Extra: registryv1.Extra{
+									DomainName: "example.com",
+									LbEndpoints: map[string]string{
+										"public": "cluster01-prod-useast1.example.com",
+									},
+									LoggingEndpoints: []map[string]string{
+										{
+											"region":    "useast1",
+											"endpoint":  "splunk-us-east1.example.com",
+											"isDefault": "true",
+										},
+										{
+											"isDefault": "false",
+											"region":    "useast2",
+											"endpoint":  "splunk-us-east2.example.com",
+										},
+									},
+									EcrIamArns: map[string][]string{
+										"iamRoles": {
+											"arn:aws:iam::account-id:role/xxx",
+											"arn:aws:iam::account-id:role/yyy",
+										},
+										"iamUser": {
+											"arn:aws:iam::111222333:user/ecr-login",
+										},
+									},
+									EgressPorts: "1024-65535",
+									NFSInfo:     []map[string]string{{"endpoint": "xyz", "basePath": "xyz", "name": "xxxss5"}},
+								},
+								AllowedOnboardingTeams: nil,
+								Capabilities:           []string{"vpc-peering", "gpu-compute"},
+								PeerVirtualNetworks: []registryv1.PeerVirtualNetwork{
+									{
+										ID:      "123r",
+										Cidrs:   []string{"10.2.0.1/23", "10.3.0.1/24"},
+										OwnerID: "ownerxxx",
+									},
+								},
+								LastUpdated: "2021-12-13T05:50:07.492Z",
+								Tags:        map[string]string{"onboarding": "off", "scaling": "off"},
+							},
+						},
+					},
+				},
+				{
+					name: "set all query parameters",
+					queryParams: map[string]string{
+						"region":      "euwest1",
+						"environment": "Prod",
+						"status":      "Active",
+						"lastUpdated": "2019-12-13T00:50:07.492Z",
+					},
+					offset:        0,
+					limit:         10,
+					expectedCount: 1,
+					expectedMore:  false,
+					expectedError: nil,
+					expectedClusters: []registryv1.Cluster{
+						{
+							Spec: registryv1.ClusterSpec{
+								Name:      "cluster02-prod-euwest1",
+								ShortName: "cluster02prodeuwest1",
+								APIServer: registryv1.APIServer{
+									Endpoint:                 "https://cluster02-prod-euwest1.example.com",
+									CertificateAuthorityData: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0==",
+								},
+								Region:       "euwest1",
+								CloudType:    "azure",
+								Environment:  "Prod",
+								BusinessUnit: "BU2",
+								Offering:     []registryv1.Offering{"caas", "paas"},
+								AccountID:    "11111-2222-3333-4444-55555555",
+								Tiers: []registryv1.Tier{
+									{
+										Name:              "worker",
+										InstanceType:      "c5.9xlarge",
+										MinCapacity:       3,
+										MaxCapacity:       1000,
+										EnableKataSupport: false,
+									},
+									{
+										Name:         "workerMemoryOptimized",
+										InstanceType: "r5.8xlarge",
+										MinCapacity:  0,
+										MaxCapacity:  100,
+										Labels: map[string]string{
+											"node.kubernetes.io/workload.memory-optimized": "true",
+										},
+										Taints: []string{
+											"workload=memory-optimized:NoSchedule",
+										},
+										EnableKataSupport: false,
+										KernelParameters:  nil,
+									},
+								},
+								VirtualNetworks: []registryv1.VirtualNetwork{
+									{
+										ID:    "/subscriptions/11111-2222-3333-4444-55555555/resourceGroups/cluster02_prod_euwest1_network/providers/Microsoft.Network/virtualNetworks/cluster02_prod_euwest1_network-vnet/subnets/cluster02_prod_euwest1_network_10_3_0_0_24",
+										Cidrs: []string{"10.3.0.0/24"},
+									},
+								},
+								K8sInfraRelease: registryv1.K8sInfraRelease{
+									GitSha:      "1e8cbd109d7a77909f627ec5247520b70cc209e9",
+									LastUpdated: "2021-03-22T11:55:41Z",
+									Release:     "2021-W06-0-116-gd0c7e403",
+								},
+								RegisteredAt: "2019-02-10T06:15:32Z",
+								Status:       "Active",
+								Phase:        "Upgrading",
+								Type:         "Dedicated",
+								Extra: registryv1.Extra{
+									DomainName: "example.com",
+									LbEndpoints: map[string]string{
+										"public": "cluster02-prod-euwest1.example.com",
+									},
+									LoggingEndpoints: nil,
+									EcrIamArns: map[string][]string{
+										"iamRoles": {
+											"arn:aws:iam::account-id:role/xxx",
+										},
+										"iamUser": {
+											"arn:aws:iam::461989703686:user/ecr-login",
+										},
+									},
+								},
+								Capabilities: []string{"mct-support"},
+								LastUpdated:  "2020-02-10T06:15:32Z",
+								Tags:         map[string]string{"onboarding": "off", "scaling": "on"},
+							},
+						},
+					},
+				},
+			}
+			for _, tc := range tcs {
+
+				By(fmt.Sprintf("\tTest %s: When getting all clusters with region:%s, environment:%s, status:%s, lastUpdated:%s, offset:%d, limit:%d",
+					tc.name,
+					tc.queryParams["region"],
+					tc.queryParams["environment"],
+					tc.queryParams["status"],
+					tc.queryParams["lastUpdated"],
+					tc.offset,
+					tc.limit))
+
+				clusters, count, more, err := db.ListClusters(
+					tc.offset,
+					tc.limit,
+					tc.queryParams["region"],
+					tc.queryParams["environment"],
+					tc.queryParams["status"],
+					tc.queryParams["lastUpdated"],
+				)
+
+				if tc.expectedError != nil {
+					Expect(err.Error()).To(ContainSubstring(tc.expectedError.Error()))
+					continue
+				}
+
+				Expect(err).To(BeNil())
+
+				sort.Slice(clusters, func(i, j int) bool {
+					return clusters[i].Spec.Name < clusters[j].Spec.Name
+				})
+
+				Expect(count, tc.expectedCount)
+				Expect(more, tc.expectedMore)
+
+				for i := 0; i < tc.expectedCount; i++ {
+					Expect(clusters[i].Spec).To(Equal(tc.expectedClusters[i].Spec))
+				}
+			}
+		})
+	})
+})
