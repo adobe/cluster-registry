@@ -88,35 +88,97 @@ var _ = Describe("Database Suite", func() {
 					clusterName: "cluster01-prod-useast1",
 					expectedCluster: &registryv1.Cluster{
 						Spec: registryv1.ClusterSpec{
-							Name:        "cluster01-prod-useast1",
-							Region:      "useast1",
-							Environment: "Prod",
-							Offering:    []registryv1.Offering{"caas", "paas"},
+							Name:      "cluster01-prod-useast1",
+							ShortName: "cluster01produseast1",
+							APIServer: registryv1.APIServer{
+								Endpoint:                 "https://cluster01-prod-useast1.example.com",
+								CertificateAuthorityData: "LS0tLS1CRUdJTiBDRVJUSUZJ==",
+							},
+							Region:       "useast1",
+							CloudType:    "azure",
+							Environment:  "Prod",
+							BusinessUnit: "BU1",
+							Offering:     []registryv1.Offering{"caas", "paas"},
+							AccountID:    "11111-2222-3333-4444-555555555",
 							Tiers: []registryv1.Tier{
 								{
 									Name:              "worker",
-									MinCapacity:       0,
-									MaxCapacity:       0,
+									InstanceType:      "c5.9xlarge",
+									MinCapacity:       3,
+									MaxCapacity:       1000,
 									EnableKataSupport: false,
 								},
 								{
-									Name:        "workerMemoryOptimized",
-									MinCapacity: 0,
-									MaxCapacity: 0,
+									Name:         "workerMemoryOptimized",
+									InstanceType: "r5.8xlarge",
+									MinCapacity:  0,
+									MaxCapacity:  100,
 									Labels: map[string]string{
 										"node.kubernetes.io/workload.memory-optimized": "true",
 									},
-									Taints: []string{
-										"workload=memory-optimized:NoSchedule",
-									},
+									Taints:            []string{"workload=memory-optimized:NoSchedule"},
 									EnableKataSupport: false,
 								},
 							},
-							Status:       "Deprecated",
+							VirtualNetworks: []registryv1.VirtualNetwork{
+								{
+									ID:    "/subscriptions/11111-2222-3333-4444-555555555/resourceGroups/cluster01_prod_useast1_network/providers/Microsoft.Network/virtualNetworks/cluster01_prod_useast1-vnet/subnets/cluster01_prod_useast1_master_network_10_0_0_0_24",
+									Cidrs: []string{"10.0.0.0/24"},
+								},
+								{
+									ID:    "/subscriptions/11111-2222-3333-4444-555555555/resourceGroups/cluster01_prod_useast1_network/providers/Microsoft.Network/virtualNetworks/cluster01_prod_useast1-vnet/subnets/cluster01_prod_useast1_worker_network_10_1_0_0_24",
+									Cidrs: []string{"10.1.0.0/24"},
+								},
+							},
+							K8sInfraRelease: registryv1.K8sInfraRelease{
+								GitSha:      "1e8cbd109d7a77909f627ec5247520b70cc209e9",
+								LastUpdated: "2021-03-22T11:55:41Z",
+								Release:     "2021-W06-0-116-gd0c7e403",
+							},
+							RegisteredAt: "2021-12-13T05:50:07.492Z",
+							Status:       "Active",
 							Phase:        "Running",
 							Type:         "Shared",
-							Capabilities: []string{"vpc-peering", "gpu-compute"},
-							Tags:         map[string]string{"onboarding": "off", "scaling": "off"},
+							Extra: registryv1.Extra{
+								DomainName: "example.com",
+								LbEndpoints: map[string]string{
+									"public": "cluster01-prod-useast1.example.com",
+								},
+								LoggingEndpoints: []map[string]string{
+									{
+										"region":    "useast1",
+										"endpoint":  "splunk-us-east1.example.com",
+										"isDefault": "true",
+									},
+									{
+										"isDefault": "false",
+										"region":    "useast2",
+										"endpoint":  "splunk-us-east2.example.com",
+									},
+								},
+								EcrIamArns: map[string][]string{
+									"iamRoles": {
+										"arn:aws:iam::account-id:role/xxx",
+										"arn:aws:iam::account-id:role/yyy",
+									},
+									"iamUser": {
+										"arn:aws:iam::111222333:user/ecr-login",
+									},
+								},
+								EgressPorts: "1024-65535",
+								NFSInfo:     []map[string]string{{"endpoint": "xyz", "basePath": "xyz", "name": "xxxss5"}},
+							},
+							AllowedOnboardingTeams: nil,
+							Capabilities:           []string{"vpc-peering", "gpu-compute"},
+							PeerVirtualNetworks: []registryv1.PeerVirtualNetwork{
+								{
+									ID:      "123r",
+									Cidrs:   []string{"10.2.0.1/23", "10.3.0.1/24"},
+									OwnerID: "ownerxxx",
+								},
+							},
+							LastUpdated: "2021-12-13T05:50:07.492Z",
+							Tags:        map[string]string{"onboarding": "off", "scaling": "off"},
 						},
 					},
 				},
@@ -180,6 +242,7 @@ var _ = Describe("Database Suite", func() {
 							Phase:        "Running",
 							Type:         "Restricted",
 							Capabilities: []string{"gpu-compute"},
+							LastUpdated:  "2020-03-20T07:55:46.132Z",
 							Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
 						},
 					},
@@ -213,6 +276,7 @@ var _ = Describe("Database Suite", func() {
 							Phase:        "Running",
 							Type:         "Restricted",
 							Capabilities: []string{"gpu-compute"},
+							LastUpdated:  "2020-03-20T07:55:46.132Z",
 							Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
 						},
 					},
@@ -250,6 +314,7 @@ var _ = Describe("Database Suite", func() {
 							Phase:        "Running",
 							Type:         "Restricted",
 							Capabilities: []string{"gpu-compute"},
+							LastUpdated:  "2020-03-20T07:55:46.132Z",
 							Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
 						},
 					},
@@ -283,6 +348,7 @@ var _ = Describe("Database Suite", func() {
 							Phase:        "Running",
 							Type:         "Restricted",
 							Capabilities: []string{"gpu-compute"},
+							LastUpdated:  "2020-03-20T07:55:46.132Z",
 							Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
 						},
 					},
@@ -340,6 +406,7 @@ var _ = Describe("Database Suite", func() {
 				limit            int
 				expectedCount    int
 				expectedMore     bool
+				expectedError    error
 				expectedClusters []registryv1.Cluster
 			}{
 				{
@@ -348,62 +415,136 @@ var _ = Describe("Database Suite", func() {
 						"region":      "",
 						"environment": "",
 						"status":      "",
+						"lastUpdated": "",
 					},
 					offset:        0,
 					limit:         10,
 					expectedCount: 3,
 					expectedMore:  false,
+					expectedError: nil,
 					expectedClusters: []registryv1.Cluster{
 						{
 							Spec: registryv1.ClusterSpec{
-								Name:        "cluster01-prod-useast1",
-								Region:      "useast1",
-								Environment: "Prod",
-								Offering:    []registryv1.Offering{"caas", "paas"},
+								Name:      "cluster01-prod-useast1",
+								ShortName: "cluster01produseast1",
+								APIServer: registryv1.APIServer{
+									Endpoint:                 "https://cluster01-prod-useast1.example.com",
+									CertificateAuthorityData: "LS0tLS1CRUdJTiBDRVJUSUZJ==",
+								},
+								Region:       "useast1",
+								CloudType:    "azure",
+								Environment:  "Prod",
+								BusinessUnit: "BU1",
+								Offering:     []registryv1.Offering{"caas", "paas"},
+								AccountID:    "11111-2222-3333-4444-555555555",
 								Tiers: []registryv1.Tier{
 									{
 										Name:              "worker",
-										MinCapacity:       0,
-										MaxCapacity:       0,
+										InstanceType:      "c5.9xlarge",
+										MinCapacity:       3,
+										MaxCapacity:       1000,
 										EnableKataSupport: false,
 									},
 									{
-										Name:        "workerMemoryOptimized",
-										MinCapacity: 0,
-										MaxCapacity: 0,
+										Name:         "workerMemoryOptimized",
+										InstanceType: "r5.8xlarge",
+										MinCapacity:  0,
+										MaxCapacity:  100,
 										Labels: map[string]string{
 											"node.kubernetes.io/workload.memory-optimized": "true",
 										},
-										Taints: []string{
-											"workload=memory-optimized:NoSchedule",
-										},
+										Taints:            []string{"workload=memory-optimized:NoSchedule"},
 										EnableKataSupport: false,
 									},
 								},
-								Status:       "Deprecated",
+								VirtualNetworks: []registryv1.VirtualNetwork{
+									{
+										ID:    "/subscriptions/11111-2222-3333-4444-555555555/resourceGroups/cluster01_prod_useast1_network/providers/Microsoft.Network/virtualNetworks/cluster01_prod_useast1-vnet/subnets/cluster01_prod_useast1_master_network_10_0_0_0_24",
+										Cidrs: []string{"10.0.0.0/24"},
+									},
+									{
+										ID:    "/subscriptions/11111-2222-3333-4444-555555555/resourceGroups/cluster01_prod_useast1_network/providers/Microsoft.Network/virtualNetworks/cluster01_prod_useast1-vnet/subnets/cluster01_prod_useast1_worker_network_10_1_0_0_24",
+										Cidrs: []string{"10.1.0.0/24"},
+									},
+								},
+								K8sInfraRelease: registryv1.K8sInfraRelease{
+									GitSha:      "1e8cbd109d7a77909f627ec5247520b70cc209e9",
+									LastUpdated: "2021-03-22T11:55:41Z",
+									Release:     "2021-W06-0-116-gd0c7e403",
+								},
+								RegisteredAt: "2021-12-13T05:50:07.492Z",
+								Status:       "Active",
 								Phase:        "Running",
 								Type:         "Shared",
-								Capabilities: []string{"vpc-peering", "gpu-compute"},
-								Tags:         map[string]string{"onboarding": "off", "scaling": "off"},
+								Extra: registryv1.Extra{
+									DomainName: "example.com",
+									LbEndpoints: map[string]string{
+										"public": "cluster01-prod-useast1.example.com",
+									},
+									LoggingEndpoints: []map[string]string{
+										{
+											"region":    "useast1",
+											"endpoint":  "splunk-us-east1.example.com",
+											"isDefault": "true",
+										},
+										{
+											"isDefault": "false",
+											"region":    "useast2",
+											"endpoint":  "splunk-us-east2.example.com",
+										},
+									},
+									EcrIamArns: map[string][]string{
+										"iamRoles": {
+											"arn:aws:iam::account-id:role/xxx",
+											"arn:aws:iam::account-id:role/yyy",
+										},
+										"iamUser": {
+											"arn:aws:iam::111222333:user/ecr-login",
+										},
+									},
+									EgressPorts: "1024-65535",
+									NFSInfo:     []map[string]string{{"endpoint": "xyz", "basePath": "xyz", "name": "xxxss5"}},
+								},
+								AllowedOnboardingTeams: nil,
+								Capabilities:           []string{"vpc-peering", "gpu-compute"},
+								PeerVirtualNetworks: []registryv1.PeerVirtualNetwork{
+									{
+										ID:      "123r",
+										Cidrs:   []string{"10.2.0.1/23", "10.3.0.1/24"},
+										OwnerID: "ownerxxx",
+									},
+								},
+								LastUpdated: "2021-12-13T05:50:07.492Z",
+								Tags:        map[string]string{"onboarding": "off", "scaling": "off"},
 							},
 						},
 						{
 							Spec: registryv1.ClusterSpec{
-								Name:        "cluster02-prod-euwest1",
-								Region:      "euwest1",
-								Environment: "Prod",
-								Offering:    []registryv1.Offering{"caas", "paas"},
+								Name:      "cluster02-prod-euwest1",
+								ShortName: "cluster02prodeuwest1",
+								APIServer: registryv1.APIServer{
+									Endpoint:                 "https://cluster02-prod-euwest1.example.com",
+									CertificateAuthorityData: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0==",
+								},
+								Region:       "euwest1",
+								CloudType:    "azure",
+								Environment:  "Prod",
+								BusinessUnit: "BU2",
+								Offering:     []registryv1.Offering{"caas", "paas"},
+								AccountID:    "11111-2222-3333-4444-55555555",
 								Tiers: []registryv1.Tier{
 									{
 										Name:              "worker",
-										MinCapacity:       0,
-										MaxCapacity:       0,
+										InstanceType:      "c5.9xlarge",
+										MinCapacity:       3,
+										MaxCapacity:       1000,
 										EnableKataSupport: false,
 									},
 									{
-										Name:        "workerMemoryOptimized",
-										MinCapacity: 0,
-										MaxCapacity: 0,
+										Name:         "workerMemoryOptimized",
+										InstanceType: "r5.8xlarge",
+										MinCapacity:  0,
+										MaxCapacity:  100,
 										Labels: map[string]string{
 											"node.kubernetes.io/workload.memory-optimized": "true",
 										},
@@ -411,62 +552,338 @@ var _ = Describe("Database Suite", func() {
 											"workload=memory-optimized:NoSchedule",
 										},
 										EnableKataSupport: false,
+										KernelParameters:  nil,
 									},
 								},
+								VirtualNetworks: []registryv1.VirtualNetwork{
+									{
+										ID:    "/subscriptions/11111-2222-3333-4444-55555555/resourceGroups/cluster02_prod_euwest1_network/providers/Microsoft.Network/virtualNetworks/cluster02_prod_euwest1_network-vnet/subnets/cluster02_prod_euwest1_network_10_3_0_0_24",
+										Cidrs: []string{"10.3.0.0/24"},
+									},
+								},
+								K8sInfraRelease: registryv1.K8sInfraRelease{
+									GitSha:      "1e8cbd109d7a77909f627ec5247520b70cc209e9",
+									LastUpdated: "2021-03-22T11:55:41Z",
+									Release:     "2021-W06-0-116-gd0c7e403",
+								},
+								RegisteredAt: "2019-02-10T06:15:32Z",
 								Status:       "Active",
 								Phase:        "Upgrading",
 								Type:         "Dedicated",
+								Extra: registryv1.Extra{
+									DomainName: "example.com",
+									LbEndpoints: map[string]string{
+										"public": "cluster02-prod-euwest1.example.com",
+									},
+									LoggingEndpoints: nil,
+									EcrIamArns: map[string][]string{
+										"iamRoles": {
+											"arn:aws:iam::account-id:role/xxx",
+										},
+										"iamUser": {
+											"arn:aws:iam::461989703686:user/ecr-login",
+										},
+									},
+								},
 								Capabilities: []string{"mct-support"},
+								LastUpdated:  "2020-02-10T06:15:32Z",
 								Tags:         map[string]string{"onboarding": "off", "scaling": "on"},
 							},
 						},
 						{
 							Spec: registryv1.ClusterSpec{
-								Name:        "cluster03-prod-uswest1",
-								Region:      "uswest1",
-								Environment: "Prod",
-								Offering:    []registryv1.Offering{"paas"},
+								Name:      "cluster03-prod-uswest1",
+								ShortName: "cluster03produswest1",
+								APIServer: registryv1.APIServer{
+									Endpoint:                 "https://cluster03-prod-uswest1.example.com",
+									CertificateAuthorityData: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS==",
+								},
+								Region:       "uswest1",
+								CloudType:    "aws",
+								Environment:  "Prod",
+								BusinessUnit: "BU1",
+								Offering:     []registryv1.Offering{"paas"},
+								AccountID:    "12345678",
 								Tiers: []registryv1.Tier{
 									{
 										Name:              "proxy",
-										InstanceType:      "",
-										ContainerRuntime:  "",
-										MinCapacity:       0,
-										MaxCapacity:       0,
+										InstanceType:      "r5a.4xlarge",
+										MinCapacity:       3,
+										MaxCapacity:       200,
 										EnableKataSupport: false,
 									},
 									{
-										Name:        "worker",
-										MinCapacity: 0,
-										MaxCapacity: 0,
+										Name:         "worker",
+										InstanceType: "c5.9xlarge",
+										MinCapacity:  3,
+										MaxCapacity:  1000,
 										Labels: map[string]string{
 											"node.kubernetes.io/workload.memory-optimized": "true",
 										},
 										EnableKataSupport: false,
 									},
 								},
+								VirtualNetworks: []registryv1.VirtualNetwork{
+									{
+										ID:    "vpc-123456",
+										Cidrs: []string{"10.0.22.0/8"},
+									},
+								},
+								K8sInfraRelease: registryv1.K8sInfraRelease{
+									GitSha:      "110bb4f33b2142dde01e74a9bae7148534c2685b",
+									LastUpdated: "2021-03-22T11:55:41Z",
+									Release:     "2021-W06-0-116-gd0c7e403",
+								},
+								RegisteredAt: "2020-03-19T07:55:46.132Z",
 								Status:       "Active",
 								Phase:        "Running",
 								Type:         "Dedicated",
 								Capabilities: []string{"gpu-compute"},
-								Tags:         map[string]string{"scaling": "on", "onboarding": "on"},
+								LastUpdated:  "2020-03-20T07:55:46.132Z",
+								Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
+							},
+						},
+					},
+				},
+				{
+					name: "invalid lastUpdate parameter format",
+					queryParams: map[string]string{
+						"region":      "",
+						"environment": "",
+						"status":      "",
+						"lastUpdated": "2020-03-19",
+					},
+					offset:           0,
+					limit:            10,
+					expectedCount:    1,
+					expectedMore:     false,
+					expectedError:    fmt.Errorf("Error converting lastUpdated parameter to RFC3339"),
+					expectedClusters: nil,
+				},
+				{
+					name: "valid lastUpdate parameter format",
+					queryParams: map[string]string{
+						"region":      "",
+						"environment": "",
+						"status":      "",
+						"lastUpdated": "2021-12-13T00:50:07.492Z",
+					},
+					offset:        0,
+					limit:         10,
+					expectedCount: 1,
+					expectedMore:  false,
+					expectedError: nil,
+					expectedClusters: []registryv1.Cluster{
+						{
+							Spec: registryv1.ClusterSpec{
+								Name:      "cluster01-prod-useast1",
+								ShortName: "cluster01produseast1",
+								APIServer: registryv1.APIServer{
+									Endpoint:                 "https://cluster01-prod-useast1.example.com",
+									CertificateAuthorityData: "LS0tLS1CRUdJTiBDRVJUSUZJ==",
+								},
+								Region:       "useast1",
+								CloudType:    "azure",
+								Environment:  "Prod",
+								BusinessUnit: "BU1",
+								Offering:     []registryv1.Offering{"caas", "paas"},
+								AccountID:    "11111-2222-3333-4444-555555555",
+								Tiers: []registryv1.Tier{
+									{
+										Name:              "worker",
+										InstanceType:      "c5.9xlarge",
+										MinCapacity:       3,
+										MaxCapacity:       1000,
+										EnableKataSupport: false,
+									},
+									{
+										Name:         "workerMemoryOptimized",
+										InstanceType: "r5.8xlarge",
+										MinCapacity:  0,
+										MaxCapacity:  100,
+										Labels: map[string]string{
+											"node.kubernetes.io/workload.memory-optimized": "true",
+										},
+										Taints:            []string{"workload=memory-optimized:NoSchedule"},
+										EnableKataSupport: false,
+									},
+								},
+								VirtualNetworks: []registryv1.VirtualNetwork{
+									{
+										ID:    "/subscriptions/11111-2222-3333-4444-555555555/resourceGroups/cluster01_prod_useast1_network/providers/Microsoft.Network/virtualNetworks/cluster01_prod_useast1-vnet/subnets/cluster01_prod_useast1_master_network_10_0_0_0_24",
+										Cidrs: []string{"10.0.0.0/24"},
+									},
+									{
+										ID:    "/subscriptions/11111-2222-3333-4444-555555555/resourceGroups/cluster01_prod_useast1_network/providers/Microsoft.Network/virtualNetworks/cluster01_prod_useast1-vnet/subnets/cluster01_prod_useast1_worker_network_10_1_0_0_24",
+										Cidrs: []string{"10.1.0.0/24"},
+									},
+								},
+								K8sInfraRelease: registryv1.K8sInfraRelease{
+									GitSha:      "1e8cbd109d7a77909f627ec5247520b70cc209e9",
+									LastUpdated: "2021-03-22T11:55:41Z",
+									Release:     "2021-W06-0-116-gd0c7e403",
+								},
+								RegisteredAt: "2021-12-13T05:50:07.492Z",
+								Status:       "Active",
+								Phase:        "Running",
+								Type:         "Shared",
+								Extra: registryv1.Extra{
+									DomainName: "example.com",
+									LbEndpoints: map[string]string{
+										"public": "cluster01-prod-useast1.example.com",
+									},
+									LoggingEndpoints: []map[string]string{
+										{
+											"region":    "useast1",
+											"endpoint":  "splunk-us-east1.example.com",
+											"isDefault": "true",
+										},
+										{
+											"isDefault": "false",
+											"region":    "useast2",
+											"endpoint":  "splunk-us-east2.example.com",
+										},
+									},
+									EcrIamArns: map[string][]string{
+										"iamRoles": {
+											"arn:aws:iam::account-id:role/xxx",
+											"arn:aws:iam::account-id:role/yyy",
+										},
+										"iamUser": {
+											"arn:aws:iam::111222333:user/ecr-login",
+										},
+									},
+									EgressPorts: "1024-65535",
+									NFSInfo:     []map[string]string{{"endpoint": "xyz", "basePath": "xyz", "name": "xxxss5"}},
+								},
+								AllowedOnboardingTeams: nil,
+								Capabilities:           []string{"vpc-peering", "gpu-compute"},
+								PeerVirtualNetworks: []registryv1.PeerVirtualNetwork{
+									{
+										ID:      "123r",
+										Cidrs:   []string{"10.2.0.1/23", "10.3.0.1/24"},
+										OwnerID: "ownerxxx",
+									},
+								},
+								LastUpdated: "2021-12-13T05:50:07.492Z",
+								Tags:        map[string]string{"onboarding": "off", "scaling": "off"},
+							},
+						},
+					},
+				},
+				{
+					name: "set all query parameters",
+					queryParams: map[string]string{
+						"region":      "euwest1",
+						"environment": "Prod",
+						"status":      "Active",
+						"lastUpdated": "2019-12-13T00:50:07.492Z",
+					},
+					offset:        0,
+					limit:         10,
+					expectedCount: 1,
+					expectedMore:  false,
+					expectedError: nil,
+					expectedClusters: []registryv1.Cluster{
+						{
+							Spec: registryv1.ClusterSpec{
+								Name:      "cluster02-prod-euwest1",
+								ShortName: "cluster02prodeuwest1",
+								APIServer: registryv1.APIServer{
+									Endpoint:                 "https://cluster02-prod-euwest1.example.com",
+									CertificateAuthorityData: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0==",
+								},
+								Region:       "euwest1",
+								CloudType:    "azure",
+								Environment:  "Prod",
+								BusinessUnit: "BU2",
+								Offering:     []registryv1.Offering{"caas", "paas"},
+								AccountID:    "11111-2222-3333-4444-55555555",
+								Tiers: []registryv1.Tier{
+									{
+										Name:              "worker",
+										InstanceType:      "c5.9xlarge",
+										MinCapacity:       3,
+										MaxCapacity:       1000,
+										EnableKataSupport: false,
+									},
+									{
+										Name:         "workerMemoryOptimized",
+										InstanceType: "r5.8xlarge",
+										MinCapacity:  0,
+										MaxCapacity:  100,
+										Labels: map[string]string{
+											"node.kubernetes.io/workload.memory-optimized": "true",
+										},
+										Taints: []string{
+											"workload=memory-optimized:NoSchedule",
+										},
+										EnableKataSupport: false,
+										KernelParameters:  nil,
+									},
+								},
+								VirtualNetworks: []registryv1.VirtualNetwork{
+									{
+										ID:    "/subscriptions/11111-2222-3333-4444-55555555/resourceGroups/cluster02_prod_euwest1_network/providers/Microsoft.Network/virtualNetworks/cluster02_prod_euwest1_network-vnet/subnets/cluster02_prod_euwest1_network_10_3_0_0_24",
+										Cidrs: []string{"10.3.0.0/24"},
+									},
+								},
+								K8sInfraRelease: registryv1.K8sInfraRelease{
+									GitSha:      "1e8cbd109d7a77909f627ec5247520b70cc209e9",
+									LastUpdated: "2021-03-22T11:55:41Z",
+									Release:     "2021-W06-0-116-gd0c7e403",
+								},
+								RegisteredAt: "2019-02-10T06:15:32Z",
+								Status:       "Active",
+								Phase:        "Upgrading",
+								Type:         "Dedicated",
+								Extra: registryv1.Extra{
+									DomainName: "example.com",
+									LbEndpoints: map[string]string{
+										"public": "cluster02-prod-euwest1.example.com",
+									},
+									LoggingEndpoints: nil,
+									EcrIamArns: map[string][]string{
+										"iamRoles": {
+											"arn:aws:iam::account-id:role/xxx",
+										},
+										"iamUser": {
+											"arn:aws:iam::461989703686:user/ecr-login",
+										},
+									},
+								},
+								Capabilities: []string{"mct-support"},
+								LastUpdated:  "2020-02-10T06:15:32Z",
+								Tags:         map[string]string{"onboarding": "off", "scaling": "on"},
 							},
 						},
 					},
 				},
 			}
-
 			for _, tc := range tcs {
 
-				By(fmt.Sprintf("\tTest %s:\tWhen getting all clusters with region:%s, environment:%s, status:%s, offset:%d, limit:%d",
-					tc.name, tc.queryParams["region"], tc.queryParams["environment"], tc.queryParams["status"], tc.offset, tc.limit))
+				By(fmt.Sprintf("\tTest %s: When getting all clusters with region:%s, environment:%s, status:%s, lastUpdated:%s, offset:%d, limit:%d",
+					tc.name,
+					tc.queryParams["region"],
+					tc.queryParams["environment"],
+					tc.queryParams["status"],
+					tc.queryParams["lastUpdated"],
+					tc.offset,
+					tc.limit))
 
 				clusters, count, more, err := db.ListClusters(
 					tc.offset,
 					tc.limit,
 					tc.queryParams["region"],
 					tc.queryParams["environment"],
-					tc.queryParams["status"])
+					tc.queryParams["status"],
+					tc.queryParams["lastUpdated"],
+				)
+
+				if tc.expectedError != nil {
+					Expect(err.Error()).To(ContainSubstring(tc.expectedError.Error()))
+					continue
+				}
 
 				Expect(err).To(BeNil())
 

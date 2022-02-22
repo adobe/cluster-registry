@@ -13,6 +13,8 @@ governing permissions and limitations under the License.
 package database
 
 import (
+	"context"
+	"fmt"
 	"time"
 
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
@@ -34,7 +36,7 @@ const (
 // Db provides an interface for interacting with dynamonDb
 type Db interface {
 	GetCluster(name string) (*registryv1.Cluster, error)
-	ListClusters(offset int, limit int, environment string, region string, status string) ([]registryv1.Cluster, int, bool, error)
+	ListClusters(offset int, limit int, environment string, region string, status string, lastUpdated string) ([]registryv1.Cluster, int, bool, error)
 	PutCluster(cluster *registryv1.Cluster) error
 	DeleteCluster(name string) error
 	Status() error
@@ -61,6 +63,7 @@ type ClusterDb struct {
 	Region            string              `json:"region"`
 	Environment       string              `json:"environment"`
 	Status            string              `json:"status"`
+	LastUpdatedUnix   int64               `json:"lastUpdatedUnix"`
 	Cluster           *registryv1.Cluster `json:"crd"`
 }
 
@@ -95,17 +98,21 @@ func NewDb(appConfig *config.AppConfig, m monitoring.MetricsI) Db {
 	return dbInst
 }
 
-// Status a single cluster
+// Status checks if the database is reachable with a 5 sec timeout
 func (d *db) Status() error {
 	params := &dynamodb.DescribeTableInput{
 		TableName: &d.table.name,
 	}
 
-	_, err := d.dbAPI.DescribeTable(params)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err := d.dbAPI.DescribeTableWithContext(ctx, params)
 	if err != nil {
 		d.metrics.RecordErrorCnt(egressTarget)
-		log.Errorf("Connectivity check using DescribeTable failed. Error: '%v'", err.Error())
-		return err
+		msg := fmt.Sprintf("Connectivity check using DescribeTable failed. Error: '%v'", err.Error())
+		log.Errorf(msg)
+		return fmt.Errorf(msg)
 	}
 
 	return nil
@@ -130,8 +137,9 @@ func (d *db) GetCluster(name string) (*registryv1.Cluster, error) {
 	d.metrics.RecordEgressRequestDur(egressTarget, elapsed)
 
 	if err != nil {
-		log.Errorf("Cannot get cluster '%s' from the database. Error: '%v'", name, err.Error())
-		return nil, err
+		msg := fmt.Sprintf("Cannot get cluster '%s' from the database. Error: '%v'", name, err.Error())
+		log.Errorf(msg)
+		return nil, fmt.Errorf(msg)
 	}
 
 	if resp.Item == nil {
@@ -142,15 +150,16 @@ func (d *db) GetCluster(name string) (*registryv1.Cluster, error) {
 	var clusterDb *ClusterDb
 	err = dynamodbattribute.UnmarshalMap(resp.Item, &clusterDb)
 	if err != nil {
-		log.Errorf("Cannot unmarshal cluster '%s'. Error: '%v'", err.Error())
-		return nil, err
+		msg := fmt.Sprintf("Cannot unmarshal cluster '%s': '%v'", name, err.Error())
+		log.Errorf(msg)
+		return nil, fmt.Errorf(msg)
 	}
 
 	return clusterDb.Cluster, err
 }
 
 // ListClusters list all clusters
-func (d *db) ListClusters(offset int, limit int, region string, environment string, status string) ([]registryv1.Cluster, int, bool, error) {
+func (d *db) ListClusters(offset int, limit int, region string, environment string, status string, lastUpdated string) ([]registryv1.Cluster, int, bool, error) {
 
 	var clusters []registryv1.Cluster = []registryv1.Cluster{}
 	var queryInput *dynamodb.QueryInput
@@ -164,19 +173,32 @@ func (d *db) ListClusters(offset int, limit int, region string, environment stri
 	} else {
 		filter = expression.Name("status").NotEqual(expression.Value("Deleted"))
 	}
+
 	if region != "" {
 		filter = filter.And(expression.Name("region").Equal(expression.Value(region)))
 	}
+
 	if environment != "" {
 		filter = filter.And(expression.Name("environment").Equal(expression.Value(environment)))
+	}
+
+	if lastUpdated != "" {
+		t, err := time.Parse(time.RFC3339, lastUpdated)
+		if err != nil {
+			msg := fmt.Sprintf("Error converting lastUpdated parameter to RFC3339: '%v'.", err)
+			log.Errorf(msg)
+			return nil, 0, false, fmt.Errorf(msg)
+		}
+		filter = filter.And(expression.Name("lastUpdatedUnix").GreaterThanEqual(expression.Value(t.Unix())))
 	}
 
 	keyCondition = expression.Key(d.index.partitionKey).Equal(expression.Value("cluster"))
 	expr, err = expression.NewBuilder().WithKeyCondition(keyCondition).WithFilter(filter).Build()
 
 	if err != nil {
-		log.Errorf("Building dynamodb query expersion failed: '%v'.", err.Error())
-		return nil, 0, false, err
+		msg := fmt.Sprintf("Building dynamodb query expersion failed: '%v'.", err)
+		log.Errorf(msg)
+		return nil, 0, false, fmt.Errorf(msg)
 	}
 
 	queryInput = &dynamodb.QueryInput{
@@ -197,7 +219,9 @@ func (d *db) ListClusters(offset int, limit int, region string, environment stri
 		d.metrics.RecordEgressRequestDur(egressTarget, elapsed)
 
 		if err != nil {
-			log.Errorf("DynamonDB API query call failed: '%v'.", err.Error())
+			msg := fmt.Sprintf("DynamonDB API query call failed: '%v'.", err.Error())
+			log.Errorf(msg)
+			return nil, 0, false, fmt.Errorf(msg)
 		}
 
 		for _, i := range result.Items {
@@ -205,9 +229,10 @@ func (d *db) ListClusters(offset int, limit int, region string, environment stri
 
 			err = dynamodbattribute.UnmarshalMap(i, &item)
 			if err != nil {
-				log.Errorf("Got error when trying to unmarshal cluster: '%v'.", err.Error())
+				msg := fmt.Sprintf("Error when trying to unmarshal cluster: '%v'.", err.Error())
+				log.Errorf(msg)
+				return nil, 0, false, fmt.Errorf(msg)
 			}
-
 			clusters = append(clusters, *item.Cluster)
 		}
 		if result.LastEvaluatedKey == nil {
@@ -234,18 +259,27 @@ func (d *db) ListClusters(offset int, limit int, region string, environment stri
 // PutCluster (create/update) a cluster in database
 func (d *db) PutCluster(cluster *registryv1.Cluster) error {
 
+	lastUpdated, err := time.Parse(time.RFC3339, cluster.Spec.LastUpdated)
+	if err != nil {
+		msg := fmt.Sprintf("Error converting lastUpdated parameter to RFC3339 for cluster %s: '%v'.", cluster.Spec.Name, err)
+		log.Errorf(msg)
+		return fmt.Errorf(msg)
+	}
+
 	clusterDb, err := dynamodbattribute.MarshalMap(ClusterDb{
 		TablePartitionKey: cluster.Spec.Name,
 		IndexPartitionKey: "cluster",
 		Region:            cluster.Spec.Region,
 		Environment:       cluster.Spec.Environment,
 		Status:            cluster.Spec.Status,
+		LastUpdatedUnix:   lastUpdated.Unix(),
 		Cluster:           cluster,
 	})
 
 	if err != nil {
-		log.Errorf("Cannot marshal cluster '%s' into AttributeValue map.", cluster.Name)
-		return err
+		msg := fmt.Sprintf("Cannot marshal cluster '%s' into AttributeValue map.", cluster.Spec.Name)
+		log.Errorf(msg)
+		return fmt.Errorf(msg)
 	}
 
 	params := &dynamodb.PutItemInput{
@@ -261,13 +295,14 @@ func (d *db) PutCluster(cluster *registryv1.Cluster) error {
 	d.metrics.RecordEgressRequestDur(egressTarget, elapsed)
 
 	if err != nil {
-		log.Errorf("Cluster '%s' cannot be updated or created in the database. Error: '%v'", cluster.Spec.Name, err.Error())
-		return err
+		msg := fmt.Sprintf("Cluster '%s' cannot be updated or created in the database. Error: '%v'", cluster.Spec.Name, err.Error())
+		log.Errorf(msg)
+		return fmt.Errorf(msg)
 	}
 
-	log.Infof("Cluster '%s' updated successfully.", cluster.Spec.Name)
+	log.Infof("Cluster '%s' updated.", cluster.Spec.Name)
 
-	return err
+	return nil
 }
 
 // DeleteCluster delete a cluster from database
@@ -289,11 +324,12 @@ func (d *db) DeleteCluster(name string) error {
 	d.metrics.RecordEgressRequestDur(egressTarget, elapsed)
 
 	if err != nil {
-		log.Errorf("Cluster deletion error from db: %v", err.Error())
-		return err
+		msg := fmt.Sprintf("Error while deleting cluster %s from db: %v", name, err.Error())
+		log.Errorf(msg)
+		return fmt.Errorf(msg)
 	}
 
-	log.Infof("Cluster %s deleted successfully", name)
+	log.Infof("Cluster %s deleted.", name)
 
-	return err
+	return nil
 }

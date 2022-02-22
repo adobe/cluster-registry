@@ -14,6 +14,7 @@ package database
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -28,9 +29,9 @@ import (
 	"github.com/onsi/gomega/gexec"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"gopkg.in/yaml.v2"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/yaml"
 )
 
 var dbContainer *datatbaseContainer
@@ -142,12 +143,17 @@ func deleteTable(endpoint string, tableName string) error {
 func importData(db Db) error {
 	var clusters []registryv1.Cluster
 
-	data, err := ioutil.ReadFile("testdata/dummy-data.yaml")
+	data, err := ioutil.ReadFile("testdata/clusters.yaml")
 	if err != nil {
 		return err
 	}
 
-	err = yaml.Unmarshal([]byte(data), &clusters)
+	dataJson, err := yaml.YAMLToJSON(data)
+	if err != nil {
+		return err
+	}	
+
+	err = json.Unmarshal(dataJson, &clusters)
 	if err != nil {
 		return err
 	}
