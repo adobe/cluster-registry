@@ -38,7 +38,7 @@ var (
 	testEnv    *envtest.Environment
 )
 
-func TestAPIs(t *testing.T) {
+func TestWebhook(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Webhook Suite")
 }
@@ -51,7 +51,6 @@ var _ = BeforeSuite(func() {
 		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "..", "config", "crd", "bases")},
 		ErrorIfCRDPathMissing: true,
 	}
-
 	cfg, err := testEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())

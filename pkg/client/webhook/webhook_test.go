@@ -15,6 +15,7 @@ package webhook
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -141,6 +142,7 @@ var _ = Describe("Webhook Server", func() {
 	})
 
 	Context("Alert Mapping", func() {
+
 		const (
 			clusterName = "test-cluster"
 		)
@@ -148,7 +150,6 @@ var _ = Describe("Webhook Server", func() {
 		It("Should handle an alert based on existing alert mapping", func() {
 			ctx := context.Background()
 
-			By("Defining the alert mapping")
 			server.AlertMap = []configv1.AlertRule{
 				{
 					AlertName: "TestAlertMapping",
@@ -253,6 +254,57 @@ var _ = Describe("Webhook Server", func() {
 				if err != nil {
 					return false
 				}
+				fmt.Println(updatedCluster.ObjectMeta.ResourceVersion)
+				return updatedCluster.Spec.Tags["my-tag"] == "off"
+			}, timeout, interval).Should(BeTrue())
+
+			By("Adding annotation to the CRD to ignore specific tag")
+			cluster = &registryv1.Cluster{}
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, clusterLookupKey, cluster)
+				return err == nil
+			}, timeout, interval).Should(BeTrue())
+			cluster.Annotations = map[string]string{"clusters.registry.ethos.adobe.com/excluded-tags": "other-tag,my-tag"}
+			Expect(k8sClient.Update(ctx, cluster)).Should(Succeed())
+
+			// give controller-runtime time to propagagte data into etcd
+			time.Sleep(2 * time.Second)
+
+			By("Firing an alert and check if it is ignored")
+			req = httptest.NewRequest(
+				http.MethodGet,
+				"/webhook",
+				strings.NewReader(newTestAlertAsJSON("TestAlertMapping", AlertStatusFiring)),
+			)
+			w = httptest.NewRecorder()
+			server.webhookHandler(w, req)
+			Expect(w.Result().StatusCode).To(Equal(http.StatusOK))
+
+			updatedCluster = &registryv1.Cluster{}
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, clusterLookupKey, updatedCluster)
+				if err != nil {
+					return false
+				}
+				return updatedCluster.Spec.Tags["my-tag"] == "off"
+			}, timeout, interval).Should(BeTrue())
+
+			By("Resolving the alert and check if it is ignored")
+			req = httptest.NewRequest(
+				http.MethodGet,
+				"/webhook",
+				strings.NewReader(newTestAlertAsJSON("TestAlertMapping", AlertStatusResolved)),
+			)
+			server.webhookHandler(w, req)
+			Expect(w.Result().StatusCode).To(Equal(http.StatusOK))
+
+			updatedCluster = &registryv1.Cluster{}
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, clusterLookupKey, updatedCluster)
+				if err != nil {
+					return false
+				}
+				fmt.Println(updatedCluster.ObjectMeta.ResourceVersion)
 				return updatedCluster.Spec.Tags["my-tag"] == "off"
 			}, timeout, interval).Should(BeTrue())
 		})

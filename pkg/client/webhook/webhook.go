@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	configv1 "github.com/adobe/cluster-registry/pkg/api/config/v1"
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
@@ -41,10 +42,20 @@ const (
 	DeadMansSwitchAlertName = "CRCDeadMansSwitch"
 )
 
-func (s *Server) webhookHandler(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
+// Start starts the webhook server
+func (s *Server) Start() error {
+	http.HandleFunc("/webhook", s.webhookHandler)
+	if err := http.ListenAndServe(s.BindAddress, nil); err != nil {
+		return err
+	}
 
+	return nil
+}
+
+func (s *Server) webhookHandler(w http.ResponseWriter, r *http.Request) {
 	var alert Alert
+
+	defer r.Body.Close()
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -72,25 +83,29 @@ func (s *Server) webhookHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) process(alert Alert) error {
+
+	// DeadMansSwitchAlert should always firing
 	if alert.CommonLabels.Alertname == DeadMansSwitchAlertName && alert.Status == AlertStatusFiring {
 		s.Metrics.RecordDMSLastTimestamp()
 		s.Log.Info("received deadmansswitch", "alertname", DeadMansSwitchAlertName)
 		return nil
 	}
 
-	for _, i := range s.AlertMap {
-		if i.AlertName != alert.CommonLabels.Alertname {
+	for _, a := range s.AlertMap {
+
+		// accept only preconfigured alerts
+		if a.AlertName != alert.CommonLabels.Alertname {
 			continue
 		}
 
 		var tag map[string]string
 
 		if alert.Status == AlertStatusFiring {
-			s.Log.Info("OnFiring", "alert", alert.CommonLabels.Alertname, "tag", i.OnFiring)
-			tag = i.OnFiring
+			s.Log.Info("OnFiring", "alert", alert.CommonLabels.Alertname, "tag", a.OnFiring)
+			tag = a.OnFiring
 		} else if alert.Status == AlertStatusResolved {
-			s.Log.Info("OnResolved", "alert", alert.CommonLabels.Alertname, "tag", i.OnResolved)
-			tag = i.OnResolved
+			s.Log.Info("OnResolved", "alert", alert.CommonLabels.Alertname, "tag", a.OnResolved)
+			tag = a.OnResolved
 		} else {
 			return fmt.Errorf("invalid alert status")
 		}
@@ -100,29 +115,44 @@ func (s *Server) process(alert Alert) error {
 		if err != nil {
 			return err
 		}
+
 		for i := range clusterList.Items {
+			var excludedTagsAnnotation string
+			var excludedTags []string
 			cluster := &clusterList.Items[i]
+
 			if cluster.Spec.Tags == nil {
 				cluster.Spec.Tags = make(map[string]string)
 			}
+
+			excludedTagsAnnotation = cluster.Annotations["clusters.registry.ethos.adobe.com/excluded-tags"]
+
+			if excludedTagsAnnotation != "" {
+				excludedTags = strings.Split(excludedTagsAnnotation, ",")
+			}
+
+			// skip processing tags which are in excluded-tags list
 			for key, value := range tag {
+				if contains(key, excludedTags) {
+					continue
+				}
 				cluster.Spec.Tags[key] = value
 			}
-			if err := s.Client.Update(context.TODO(), &clusterList.Items[i]); err != nil {
+
+			if err := s.Client.Update(context.TODO(), &clusterList.Items[i], &client.UpdateOptions{}); err != nil {
 				return err
 			}
 		}
 		return nil
 	}
-	return fmt.Errorf("unmapped alert")
+	return fmt.Errorf("unmapped alert received via webhook")
 }
 
-// Start starts the webhook server
-func (s *Server) Start() error {
-	http.HandleFunc("/webhook", s.webhookHandler)
-	if err := http.ListenAndServe(s.BindAddress, nil); err != nil {
-		return err
+func contains(item string, slice []string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
 	}
-
-	return nil
+	return false
 }

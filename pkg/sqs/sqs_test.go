@@ -17,9 +17,9 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/adobe/cluster-registry/pkg/api/config"
-	"github.com/adobe/cluster-registry/pkg/api/database"
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
+	"github.com/adobe/cluster-registry/pkg/config"
+	"github.com/adobe/cluster-registry/pkg/database"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/sqs"

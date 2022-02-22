@@ -17,8 +17,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"os"
-	"strconv"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -62,24 +60,17 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	setCACert := true
+	skipCACert := instance.Annotations["clusters.registry.ethos.adobe.com/skip-ca-cert"]
 
-	if envString, ok := os.LookupEnv("SET_CA_CERT"); !ok {
-		// do nothing
-	} else if envBool, err := strconv.ParseBool(envString); err != nil {
-		log.Info("SET_CA_CERT environment variable must be boolean")
+	// skipCACert is an exception rather than a rule
+	if skipCACert == "true" {
+		instance.Spec.APIServer.CertificateAuthorityData = ""
 	} else {
-		setCACert = envBool
-	}
-
-	if setCACert {
 		if r.CAData != "" {
 			instance.Spec.APIServer.CertificateAuthorityData = r.CAData
 		} else {
 			log.Info("Certificate Authority data is empty")
 		}
-	} else {
-		instance.Spec.APIServer.CertificateAuthorityData = ""
 	}
 
 	return r.ReconcileCreateUpdate(instance, log)

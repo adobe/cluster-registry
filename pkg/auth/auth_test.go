@@ -17,8 +17,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/adobe/cluster-registry/pkg/api/monitoring"
-	"github.com/adobe/cluster-registry/pkg/api/utils"
+	"github.com/adobe/cluster-registry/pkg/config"
+	monitoring "github.com/adobe/cluster-registry/pkg/monitoring/apiserver"
 	"github.com/adobe/cluster-registry/test/jwt"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/labstack/echo/v4"
@@ -33,8 +33,8 @@ const (
 `
 	signingKeyPrivate          = "RSA PRIVATE KEY"
 	signingKeyPublic           = "RSA PUBLIC KEY"
-	dummySigningKeyFile        = "../../../test/testdata/dummyRsaPrivateKey.pem"
-	invalidDummySigningKeyFile = "../../../test/testdata/invalidDummyRsaPrivateKey.pem"
+	dummySigningKeyFile        = "../../test/testdata/dummyRsaPrivateKey.pem"
+	invalidDummySigningKeyFile = "../../test/testdata/invalidDummyRsaPrivateKey.pem"
 )
 
 // staticKeySet implements oidc.KeySet
@@ -53,9 +53,9 @@ func (s *staticKeySet) VerifySignature(ctx context.Context, jwt string) (payload
 
 func TestToken(t *testing.T) {
 
-	appConfig := &utils.AppConfig{
+	appConfig := &config.AppConfig{
 		OidcClientId:  "fake-oidc-client-id",
-		OidcIssuerUrl: "https://fake-oidc-provider",
+		OidcIssuerUrl: "https://accounts.google.com",
 	}
 	test := assert.New(t)
 
