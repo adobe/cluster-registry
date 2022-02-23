@@ -84,7 +84,7 @@ func (s *Server) webhookHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) process(alert Alert) error {
 
-	// DeadMansSwitchAlert should always firing
+	// DeadMansSwitchAlert should always fire
 	if alert.CommonLabels.Alertname == DeadMansSwitchAlertName && alert.Status == AlertStatusFiring {
 		s.Metrics.RecordDMSLastTimestamp()
 		s.Log.Info("received deadmansswitch", "alertname", DeadMansSwitchAlertName)

@@ -35,7 +35,7 @@ type ClusterSpec struct {
 	// +kubebuilder:validation:Required
 	APIServer APIServer `json:"apiServer"`
 
-	// Cluster standard region name
+	// Cluster internal region name
 	// +kubebuilder:validation:Required
 	Region string `json:"region"`
 
@@ -43,15 +43,23 @@ type ClusterSpec struct {
 	// +kubebuilder:validation:Required
 	CloudType string `json:"cloudType"`
 
+	// The cloud provider standard region.
+	// +kubebuilder:validation:Required
+	CloudProviderRegion string `json:"cloudProviderRegion"`
+
 	// Cluster environment.
 	// +kubebuilder:validation:Required
 	Environment string `json:"environment"`
 
-	// The BU that owns and maintains the cluster
+	// The BU that owns the cluster
 	// +kubebuilder:validation:Required
 	BusinessUnit string `json:"businessUnit"`
 
-	// The Ethos offering that the cluster is meant for
+	// The Org that is responsible for the cluster operations
+	// +kubebuilder:validation:Required
+	ManagingOrg string `json:"managingOrg"`
+
+	// The Offering that the cluster is meant for
 	// +kubebuilder:validation:Required
 	Offering []Offering `json:"offering"`
 
@@ -88,7 +96,7 @@ type ClusterSpec struct {
 	// The type of the cluster
 	Type string `json:"type,omitempty"`
 
-	// Ethos Extra specific information
+	// Extra information, not necessary related to the cluster.
 	Extra Extra `json:"extra,omitempty"`
 
 	// Git teams and/or LDAP groups that are allowed to onboard and deploy on the cluster
@@ -107,7 +115,7 @@ type ClusterSpec struct {
 	Tags map[string]string `json:"tags,omitempty"`
 }
 
-// Offering - the Ethos offering that the cluster is meant for
+// Offering the cluster is meant for
 // +kubebuilder:validation:Enum=CaaS;PaaS
 type Offering string
 
@@ -158,6 +166,9 @@ type Extra struct {
 
 	// NFS information
 	NFSInfo []map[string]string `json:"nfsInfo,omitempty"`
+
+	// ExtendedRegion information
+	ExtendedRegion string `json:"extendedRegion,omitempty"`
 }
 
 // Tier details

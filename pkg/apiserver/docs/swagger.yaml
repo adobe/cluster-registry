@@ -1,28 +1,40 @@
 basePath: /api
 definitions:
-  github.com_adobe_cluster-registry_pkg_api_api.clusterList:
-    properties:
-      items:
-        items:
-          $ref: '#/definitions/v1.ClusterSpec'
-        type: array
-      itemsCount:
-        type: integer
-    type: object
-  pkg_api_api.clusterList:
-    properties:
-      items:
-        items:
-          $ref: '#/definitions/v1.ClusterSpec'
-        type: array
-      itemsCount:
-        type: integer
-    type: object
-  utils.Error:
+  errors.Error:
     properties:
       errors:
         additionalProperties: true
         type: object
+    type: object
+  github.com_adobe_cluster-registry_pkg_apiserver_web_handler_v1.clusterList:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/v1.ClusterSpec'
+        type: array
+      itemsCount:
+        type: integer
+      limit:
+        type: integer
+      more:
+        type: boolean
+      offset:
+        type: integer
+    type: object
+  pkg_apiserver_web_handler_v1.clusterList:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/v1.ClusterSpec'
+        type: array
+      itemsCount:
+        type: integer
+      limit:
+        type: integer
+      more:
+        type: boolean
+      offset:
+        type: integer
     type: object
   v1.APIServer:
     properties:
@@ -73,7 +85,7 @@ definitions:
           +kubebuilder:validation:Required
       businessUnit:
         description: |-
-          The BU that owns and maintains the cluster
+          The BU that owns the cluster
           +kubebuilder:validation:Required
         type: string
       capabilities:
@@ -81,6 +93,11 @@ definitions:
         items:
           type: string
         type: array
+      cloudProviderRegion:
+        description: |-
+          The cloud provider standard region.
+          +kubebuilder:validation:Required
+        type: string
       cloudType:
         description: |-
           The cloud provider.
@@ -93,7 +110,7 @@ definitions:
         type: string
       extra:
         $ref: '#/definitions/v1.Extra'
-        description: Ethos Extra specific information
+        description: Extra information, not necessary related to the cluster.
       k8sInfraRelease:
         $ref: '#/definitions/v1.K8sInfraRelease'
         description: |-
@@ -101,6 +118,11 @@ definitions:
           +kubebuilder:validation:Required
       lastUpdated:
         description: Timestamp when cluster information was updated
+        type: string
+      managingOrg:
+        description: |-
+          The Org that is responsible for the cluster operations
+          +kubebuilder:validation:Required
         type: string
       name:
         description: |-
@@ -111,7 +133,7 @@ definitions:
         type: string
       offering:
         description: |-
-          The Ethos offering that the cluster is meant for
+          The Offering that the cluster is meant for
           +kubebuilder:validation:Required
         items:
           type: string
@@ -129,7 +151,7 @@ definitions:
         type: string
       region:
         description: |-
-          Cluster standard region name
+          Cluster internal region name
           +kubebuilder:validation:Required
         type: string
       registeredAt:
@@ -182,11 +204,16 @@ definitions:
         type: string
       ecrIamArns:
         additionalProperties:
-          type: string
+          items:
+            type: string
+          type: array
         description: List of IAM Arns
         type: object
       egressPorts:
         description: Egress ports allowed outside of the namespace
+        type: string
+      extendedRegion:
+        description: ExtendedRegion information
         type: string
       lbEndpoints:
         additionalProperties:
@@ -205,10 +232,12 @@ definitions:
           type: object
         type: array
       nfsInfo:
-        additionalProperties:
-          type: string
         description: NFS information
-        type: object
+        items:
+          additionalProperties:
+            type: string
+          type: object
+        type: array
     type: object
   v1.K8sInfraRelease:
     properties:
@@ -321,21 +350,17 @@ paths:
         in: query
         name: environment
         type: string
-      - description: Filter by businessUnit
-        in: query
-        name: businessUnit
-        type: string
       - description: Filter by status
         in: query
         name: status
         type: string
-      - description: Limit number of clusters returned (default is 10)
-        in: query
-        name: limit
-        type: integer
-      - description: Offset/skip number of clusters (default is 0)
+      - description: Offset to start pagination search results (default is 0)
         in: query
         name: offset
+        type: integer
+      - description: The number of results per page (default is 200)
+        in: query
+        name: limit
         type: integer
       produces:
       - application/json
@@ -343,11 +368,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg_api_api.clusterList'
+            $ref: '#/definitions/pkg_apiserver_web_handler_v1.clusterList'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/utils.Error'
+            $ref: '#/definitions/errors.Error'
       security:
       - bearerAuth: []
       summary: List all clusters
@@ -375,11 +400,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/utils.Error'
+            $ref: '#/definitions/errors.Error'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/utils.Error'
+            $ref: '#/definitions/errors.Error'
       security:
       - bearerAuth: []
       summary: Get an cluster
