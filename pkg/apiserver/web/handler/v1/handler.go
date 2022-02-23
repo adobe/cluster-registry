@@ -75,30 +75,14 @@ func (h *handler) Register(v1 *echo.Group) {
 // @Security bearerAuth
 // @Router /v1/clusters/{name} [get]
 func (h *handler) GetCluster(ctx echo.Context) error {
-	var c *registryv1.Cluster
-	var err error
 
 	name := ctx.Param("name")
-	c, err = h.db.GetCluster(name)
+	c, err := getCluster(h.db, name)
 
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, errors.NewError(err))
 	}
 
-	if c == nil {
-		// try with dash name
-		dashName, err := web.GetClusterDashName(name)
-		if err != nil {
-			log.Infof("Cluster %s is not a short name. Error: %v", name, err.Error())
-		} else {
-			c, err = h.db.GetCluster(dashName)
-			if err != nil {
-				return ctx.JSON(http.StatusInternalServerError, errors.NewError(err))
-			}
-		}
-	}
-
-	// stil nil?
 	if c == nil {
 		return ctx.JSON(http.StatusNotFound, errors.NotFound())
 	}
@@ -144,4 +128,29 @@ func (h *handler) ListClusters(ctx echo.Context) error {
 
 	clusters, count, more, _ := h.db.ListClusters(offset, limit, region, environment, status, lastUpdated)
 	return ctx.JSON(http.StatusOK, newClusterListResponse(clusters, count, offset, limit, more))
+}
+
+// getCluster by standard name or short name
+func getCluster(db database.Db, name string) (*registryv1.Cluster, error) {
+
+	var c *registryv1.Cluster
+	var err error
+
+	c, err = db.GetCluster(name)
+	if err != nil {
+		return nil, err
+	}
+
+	if c == nil {
+		dashName, err := web.GetClusterDashName(name)
+		if err != nil {
+			log.Infof("Cluster %s is not a short name. Error: %v", name, err.Error())
+		} else {
+			c, err = db.GetCluster(dashName)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	return c, nil
 }
