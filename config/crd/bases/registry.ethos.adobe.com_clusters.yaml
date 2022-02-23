@@ -77,13 +77,16 @@ spec:
                 - endpoint
                 type: object
               businessUnit:
-                description: The BU that owns and maintains the cluster
+                description: The BU that owns the cluster
                 type: string
               capabilities:
                 description: List of cluster capabilities
                 items:
                   type: string
                 type: array
+              cloudProviderRegion:
+                description: The cloud provider standard region.
+                type: string
               cloudType:
                 description: The cloud provider.
                 type: string
@@ -91,7 +94,7 @@ spec:
                 description: Cluster environment.
                 type: string
               extra:
-                description: Ethos Extra specific information
+                description: Extra information, not necessary related to the cluster.
                 properties:
                   domainName:
                     description: Name of the domain
@@ -105,6 +108,9 @@ spec:
                     type: object
                   egressPorts:
                     description: Egress ports allowed outside of the namespace
+                    type: string
+                  extendedRegion:
+                    description: ExtendedRegion information
                     type: string
                   lbEndpoints:
                     additionalProperties:
@@ -149,16 +155,18 @@ spec:
               lastUpdated:
                 description: Timestamp when cluster information was updated
                 type: string
+              managingOrg:
+                description: The Org that is responsible for the cluster operations
+                type: string
               name:
                 description: Cluster name
                 maxLength: 64
                 minLength: 3
                 type: string
               offering:
-                description: The Ethos offering that the cluster is meant for
+                description: The Offering that the cluster is meant for
                 items:
-                  description: Offering - the Ethos offering that the cluster is meant
-                    for
+                  description: Offering the cluster is meant for
                   enum:
                   - CaaS
                   - PaaS
@@ -192,7 +200,7 @@ spec:
                 - Upgrading
                 type: string
               region:
-                description: Cluster standard region name
+                description: Cluster internal region name
                 type: string
               registeredAt:
                 description: Timestamp when cluster was registered in Cluster Registry
@@ -289,10 +297,12 @@ spec:
             - accountId
             - apiServer
             - businessUnit
+            - cloudProviderRegion
             - cloudType
             - environment
             - k8sInfraRelease
             - lastUpdated
+            - managingOrg
             - name
             - offering
             - phase
