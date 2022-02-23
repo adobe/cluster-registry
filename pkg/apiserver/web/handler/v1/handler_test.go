@@ -66,6 +66,7 @@ func TestGetCluster(t *testing.T) {
 		name             string
 		clusterName      string
 		clusters         []registryv1.Cluster
+		expectedCluster  registryv1.Cluster
 		expectedResponse string
 		expectedStatus   int
 	}{
@@ -81,6 +82,15 @@ func TestGetCluster(t *testing.T) {
 					Phase:        "Running",
 					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
 				}}},
+			expectedCluster: registryv1.Cluster{
+				Spec: registryv1.ClusterSpec{
+					Name:         "cluster1",
+					LastUpdated:  "2020-02-14T06:15:32Z",
+					RegisteredAt: "2019-02-14T06:15:32Z",
+					Status:       "Active",
+					Phase:        "Running",
+					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
+				}},
 			expectedStatus: http.StatusOK,
 		},
 		{
@@ -95,7 +105,31 @@ func TestGetCluster(t *testing.T) {
 					Phase:        "Running",
 					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
 				}}},
-			expectedStatus: http.StatusNotFound,
+			expectedCluster: registryv1.Cluster{},
+			expectedStatus:  http.StatusNotFound,
+		},
+		{
+			name:        "get cluster by shortname",
+			clusterName: "cluster1produseast1",
+			clusters: []registryv1.Cluster{{
+				Spec: registryv1.ClusterSpec{
+					Name:         "cluster1-prod-useast1",
+					LastUpdated:  "2020-02-14T06:15:32Z",
+					RegisteredAt: "2019-02-14T06:15:32Z",
+					Status:       "Active",
+					Phase:        "Running",
+					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
+				}}},
+			expectedCluster: registryv1.Cluster{
+				Spec: registryv1.ClusterSpec{
+					Name:         "cluster1-prod-useast1",
+					LastUpdated:  "2020-02-14T06:15:32Z",
+					RegisteredAt: "2019-02-14T06:15:32Z",
+					Status:       "Active",
+					Phase:        "Running",
+					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
+				}},
+			expectedStatus: http.StatusOK,
 		},
 	}
 	for _, tc := range tcs {
@@ -125,7 +159,7 @@ func TestGetCluster(t *testing.T) {
 			var c registryv1.ClusterSpec
 			err := json.Unmarshal(rec.Body.Bytes(), &c)
 			test.NoError(err)
-			test.Equal(tc.clusterName, c.Name)
+			test.Equal(tc.expectedCluster.Spec.Name, c.Name)
 		}
 	}
 }

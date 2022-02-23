@@ -18,6 +18,7 @@ import (
 
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
 	"github.com/adobe/cluster-registry/pkg/apiserver/errors"
+	"github.com/adobe/cluster-registry/pkg/apiserver/web"
 	"github.com/adobe/cluster-registry/pkg/auth"
 	"github.com/adobe/cluster-registry/pkg/config"
 	"github.com/adobe/cluster-registry/pkg/database"
@@ -74,13 +75,30 @@ func (h *handler) Register(v1 *echo.Group) {
 // @Security bearerAuth
 // @Router /v1/clusters/{name} [get]
 func (h *handler) GetCluster(ctx echo.Context) error {
+	var c *registryv1.Cluster
+	var err error
+
 	name := ctx.Param("name")
-	c, err := h.db.GetCluster(name)
+	c, err = h.db.GetCluster(name)
 
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, errors.NewError(err))
 	}
 
+	if c == nil {
+		// try with dash name
+		dashName, err := web.GetClusterDashName(name)
+		if err != nil {
+			log.Infof("Cluster %s is not a short name. Error: %v", name, err.Error())
+		} else {
+			c, err = h.db.GetCluster(dashName)
+			if err != nil {
+				return ctx.JSON(http.StatusInternalServerError, errors.NewError(err))
+			}
+		}
+	}
+
+	// stil nil?
 	if c == nil {
 		return ctx.JSON(http.StatusNotFound, errors.NotFound())
 	}
