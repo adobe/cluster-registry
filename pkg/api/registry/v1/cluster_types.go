@@ -25,7 +25,7 @@ type ClusterSpec struct {
 	// +kubebuilder:validation:MinLength=3
 	Name string `json:"name"`
 
-	// Cluster name, without dash.
+	// Cluster name, without dash
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MaxLength=64
 	// +kubebuilder:validation:MinLength=3
@@ -39,15 +39,15 @@ type ClusterSpec struct {
 	// +kubebuilder:validation:Required
 	Region string `json:"region"`
 
-	// The cloud provider.
+	// The cloud provider
 	// +kubebuilder:validation:Required
 	CloudType string `json:"cloudType"`
 
-	// The cloud provider standard region.
+	// The cloud provider standard region
 	// +kubebuilder:validation:Required
 	CloudProviderRegion string `json:"cloudProviderRegion"`
 
-	// Cluster environment.
+	// Cluster environment
 	// +kubebuilder:validation:Required
 	Environment string `json:"environment"`
 
@@ -96,7 +96,7 @@ type ClusterSpec struct {
 	// The type of the cluster
 	Type string `json:"type,omitempty"`
 
-	// Extra information, not necessary related to the cluster.
+	// Extra information, not necessary related to the cluster
 	Extra Extra `json:"extra,omitempty"`
 
 	// Git teams and/or LDAP groups that are allowed to onboard and deploy on the cluster
@@ -130,7 +130,7 @@ type APIServer struct {
 	CertificateAuthorityData string `json:"certificateAuthorityData"`
 }
 
-// AllowedOnboardingTeam represents the Git teams and/or LDAP groups that are allowed to onboard.
+// AllowedOnboardingTeam represents the Git teams and/or LDAP groups that are allowed to onboard
 type AllowedOnboardingTeam struct {
 
 	// Name of the team
@@ -144,7 +144,7 @@ type AllowedOnboardingTeam struct {
 	LdapGroups []string `json:"ldapGroups,omitempty"`
 }
 
-// Extra information.
+// Extra information
 type Extra struct {
 	// Name of the domain
 	// +kubebuilder:validation:Required
@@ -208,7 +208,7 @@ type Tier struct {
 	KernelParameters map[string]string `json:"kernelParameters,omitempty"`
 }
 
-// VirtualNetwork information.
+// VirtualNetwork information
 type VirtualNetwork struct {
 
 	// Virtual private network Id

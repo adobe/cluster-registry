@@ -44,7 +44,7 @@ spec:
                   and deploy on the cluster
                 items:
                   description: AllowedOnboardingTeam represents the Git teams and/or
-                    LDAP groups that are allowed to onboard.
+                    LDAP groups that are allowed to onboard
                   properties:
                     gitTeams:
                       description: List of git teams
@@ -85,16 +85,16 @@ spec:
                   type: string
                 type: array
               cloudProviderRegion:
-                description: The cloud provider standard region.
+                description: The cloud provider standard region
                 type: string
               cloudType:
-                description: The cloud provider.
+                description: The cloud provider
                 type: string
               environment:
-                description: Cluster environment.
+                description: Cluster environment
                 type: string
               extra:
-                description: Extra information, not necessary related to the cluster.
+                description: Extra information, not necessary related to the cluster
                 properties:
                   domainName:
                     description: Name of the domain
@@ -206,7 +206,7 @@ spec:
                 description: Timestamp when cluster was registered in Cluster Registry
                 type: string
               shortName:
-                description: Cluster name, without dash.
+                description: Cluster name, without dash
                 maxLength: 64
                 minLength: 3
                 type: string
@@ -278,7 +278,7 @@ spec:
               virtualNetworks:
                 description: Virtual Private Networks information
                 items:
-                  description: VirtualNetwork information.
+                  description: VirtualNetwork information
                   properties:
                     cidrs:
                       description: CIDRs used in this VirtualNetwork
