@@ -20,6 +20,6 @@ COPY --from=build /go/bin/heyparser /bin/heyparser
 
 RUN chmod +x /bin/hey /bin/heyparser
 
-COPY test/performance/benchmark.sh /script/
+COPY test/performance/scripts/benchmark.sh /script/
 
 ENTRYPOINT ["/script/benchmark.sh"]

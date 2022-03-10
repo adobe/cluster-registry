@@ -77,6 +77,13 @@ update-go-deps:
 	done
 	@echo "Don't forget to run 'make tidy'"
 
+.PHONY: build-performance
+build-performance:
+	docker build -t ${IMAGE_PERFORMANCE_TESTS}:$(TAG) -f test/performance/Dockerfile .
+
+.PHONY: release-performance
+release-performance:
+	./test/performance/scripts/release.sh
 
 ##############
 # Formatting #
@@ -145,19 +152,13 @@ test-e2e:
 	@. local/.env.local && go test -race github.com/adobe/cluster-registry/test/e2e -count=1 -v
 	$(shell pwd)/local/cleanup.sh
 
-IMAGE_TAG_PERFORMENCE=latest
-IMAGE_PERFORMENCE_TESTS=performance:${IMAGE_TAG_PERFORMENCE}
-API_URL=http://cluster-registry-api:8080
-NETWORK=cluster-registry-net
-NR_OF_SECS=10
+## Make sure you have set the APISERVER_AUTH_TOKEN env variable
+## Use PERFORMANCE_TEST_TIME env var to set the benchmark time per endpoint
+## Use APISERVER_ENDPOINT env var to set the endpoint for the benchmark
+.PHONY: test-performance
+test-performance: ## Outputs requests/s, average req time, 99.9th percentile req time
+	@. local/.env.local && test/performance/scripts/run_bech_container.sh
 
-build-performance:
-	@echo "Building docker image '${IMAGE_PERFORMENCE_TESTS}'..."
-	@docker build -q -t ${IMAGE_PERFORMENCE_TESTS} -f test/performance/Dockerfile .
-	@printf "Done!\n\n"
-
-test-performance: build-performance
-	@docker run --rm --network=$(NETWORK) performance ${API_URL} ${NR_OF_SECS} ${API_TOKEN}
 
 ###############
 # Development #
