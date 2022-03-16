@@ -25,6 +25,9 @@ import (
 	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
+// Version it's passed as ldflags in the build process
+var Version = "dev"
+
 // @title Swagger Example API
 // @version 1.0
 // @description Cluster Registry API
@@ -61,6 +64,7 @@ func main() {
 	a.GET("/api/swagger/*", echoSwagger.WrapHandler)
 	a.GET("/livez", web.Livez)
 	a.GET("/readyz", status.Readyz)
+	a.GET("/version", web.Version(Version))
 	a.GET("/metrics", web.Metrics())
 
 	v1 := a.Group("/api/v1")

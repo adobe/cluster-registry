@@ -15,11 +15,11 @@ VERSION?=$(shell cat VERSION | tr -d " \t\n\r")
 # The ldflags for the go build process to set the version related data.
 GO_BUILD_LDFLAGS=\
 	-s \
-	-X $(GO_PKG)/version.Revision=$(BUILD_REVISION)  \
-	-X $(GO_PKG)/version.BuildUser=$(BUILD_USER) \
-	-X $(GO_PKG)/version.BuildDate=$(BUILD_DATE) \
-	-X $(GO_PKG)/version.Branch=$(BUILD_BRANCH) \
-	-X $(GO_PKG)/version.Version=$(VERSION)
+	-X main.Version=$(VERSION) \
+	-X main.Revision=$(BUILD_REVISION)  \
+	-X main.BuildUser=$(BUILD_USER) \
+	-X main.BuildDate=$(BUILD_DATE) \
+	-X main.Branch=$(BUILD_BRANCH)
 
 GO_BUILD_RECIPE=\
 	GOOS=$(GOOS) \
@@ -157,7 +157,9 @@ test-e2e:
 ## Use APISERVER_ENDPOINT env var to set the endpoint for the benchmark
 .PHONY: test-performance
 test-performance: ## Outputs requests/s, average req time, 99.9th percentile req time
-	@. local/.env.local && test/performance/scripts/run_bech_container.sh
+	@. local/.env.local \
+		&& export APISERVER_ENDPOINT=${APISERVER_ENDPOINT} \
+		&& test/performance/scripts/run_bech_container.sh
 
 
 ###############
