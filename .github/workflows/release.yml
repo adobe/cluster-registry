@@ -27,5 +27,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push Docker images
+      - name: Build and push api and cc Docker images
         run: make release
+      - name: Build and push performance tests Docker image
+        run: make release-performance
