@@ -6,6 +6,7 @@ set -o pipefail # only exit with zero if all commands of the pipeline exit succe
 
 REGISTRY="ghcr.io"
 REPOSITORY="adobe"
+TAG="${GITHUB_REF##*/}" # GITHUB_REF is a gitactions env var, ex: refs/heads/<branch_name>
 
 # If you move this file rethink the ROOT_DIR var
 ROOT_DIR="$(cd "$(dirname "$0")/../../.."; pwd)"
