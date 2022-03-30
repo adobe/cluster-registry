@@ -1,3 +1,16 @@
+# 0.1.6
+
+## cluster-registry-api
+- Add /version endpoint
+- Accept shortname
+- Db test refactoring
+- Improved /readyz endpoint
+- Added /status check
+- Added performance tests
+
+## cluster-registry-client
+- Use annotation mechanism to change controller behavior
+
 # 0.1.5
 
 ## cluster-registry-api

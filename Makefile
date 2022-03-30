@@ -15,11 +15,11 @@ VERSION?=$(shell cat VERSION | tr -d " \t\n\r")
 # The ldflags for the go build process to set the version related data.
 GO_BUILD_LDFLAGS=\
 	-s \
-	-X $(GO_PKG)/version.Revision=$(BUILD_REVISION)  \
-	-X $(GO_PKG)/version.BuildUser=$(BUILD_USER) \
-	-X $(GO_PKG)/version.BuildDate=$(BUILD_DATE) \
-	-X $(GO_PKG)/version.Branch=$(BUILD_BRANCH) \
-	-X $(GO_PKG)/version.Version=$(VERSION)
+	-X main.Version=$(VERSION) \
+	-X main.Revision=$(BUILD_REVISION)  \
+	-X main.BuildUser=$(BUILD_USER) \
+	-X main.BuildDate=$(BUILD_DATE) \
+	-X main.Branch=$(BUILD_BRANCH)
 
 GO_BUILD_RECIPE=\
 	GOOS=$(GOOS) \
@@ -58,7 +58,7 @@ build-client:
 release:
 	./hack/release.sh
 
-.PHONY: image 
+.PHONY: image
 image: GOOS := linux
 image: .hack-apiserver-image .hack-client-image
 
@@ -77,6 +77,13 @@ update-go-deps:
 	done
 	@echo "Don't forget to run 'make tidy'"
 
+.PHONY: build-performance
+build-performance:
+	docker build -t ${IMAGE_PERFORMANCE_TESTS}:$(TAG) -f test/performance/Dockerfile .
+
+.PHONY: release-performance
+release-performance:
+	./test/performance/scripts/release.sh
 
 ##############
 # Formatting #
@@ -90,7 +97,7 @@ go-fmt:
 	@echo 'Formatting go code...'
 	@gofmt -s -w .
 	@echo 'Not formatiing issues found in go codebase!'
-	
+
 
 .PHONY: check-license
 check-license:
@@ -145,6 +152,14 @@ test-e2e:
 	@. local/.env.local && go test -race github.com/adobe/cluster-registry/test/e2e -count=1 -v
 	$(shell pwd)/local/cleanup.sh
 
+## Make sure you have set the APISERVER_AUTH_TOKEN env variable
+## Use PERFORMANCE_TEST_TIME env var to set the benchmark time per endpoint
+## Use APISERVER_ENDPOINT env var to set the endpoint for the benchmark
+.PHONY: test-performance
+test-performance: ## Outputs requests/s, average req time, 99.9th percentile req time
+	@. local/.env.local \
+		&& export APISERVER_ENDPOINT=${APISERVER_ENDPOINT} \
+		&& test/performance/scripts/run_bech_container.sh
 
 
 ###############

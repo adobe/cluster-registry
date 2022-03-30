@@ -18,6 +18,7 @@ import (
 
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
 	"github.com/adobe/cluster-registry/pkg/apiserver/errors"
+	"github.com/adobe/cluster-registry/pkg/apiserver/web"
 	"github.com/adobe/cluster-registry/pkg/auth"
 	"github.com/adobe/cluster-registry/pkg/config"
 	"github.com/adobe/cluster-registry/pkg/database"
@@ -74,8 +75,9 @@ func (h *handler) Register(v1 *echo.Group) {
 // @Security bearerAuth
 // @Router /v1/clusters/{name} [get]
 func (h *handler) GetCluster(ctx echo.Context) error {
+
 	name := ctx.Param("name")
-	c, err := h.db.GetCluster(name)
+	c, err := getCluster(h.db, name)
 
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, errors.NewError(err))
@@ -126,4 +128,29 @@ func (h *handler) ListClusters(ctx echo.Context) error {
 
 	clusters, count, more, _ := h.db.ListClusters(offset, limit, region, environment, status, lastUpdated)
 	return ctx.JSON(http.StatusOK, newClusterListResponse(clusters, count, offset, limit, more))
+}
+
+// getCluster by standard name or short name
+func getCluster(db database.Db, name string) (*registryv1.Cluster, error) {
+
+	var c *registryv1.Cluster
+	var err error
+
+	c, err = db.GetCluster(name)
+	if err != nil {
+		return nil, err
+	}
+
+	if c == nil {
+		dashName, err := web.GetClusterDashName(name)
+		if err != nil {
+			log.Infof("Cluster %s is not a short name. Error: %v", name, err.Error())
+		} else {
+			c, err = db.GetCluster(dashName)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	return c, nil
 }
