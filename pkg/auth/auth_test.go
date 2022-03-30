@@ -56,6 +56,10 @@ func TestToken(t *testing.T) {
 		OidcClientId:  "fake-oidc-client-id",
 		OidcIssuerUrl: "https://accounts.google.com",
 	}
+	spnAppConfig := &config.AppConfig{
+		OidcClientId:  "spn:" + appConfig.OidcClientId,
+		OidcIssuerUrl: appConfig.OidcIssuerUrl,
+	}
 	test := assert.New(t)
 
 	t.Log("Test oidc token authentication.")
@@ -69,6 +73,12 @@ func TestToken(t *testing.T) {
 		{
 			name:           "valid token",
 			authHeader:     jwt.BuildAuthHeader(appConfig, false, dummySigningKeyFile, signingKeyPrivate, jwt.Claim{}),
+			expectedStatus: http.StatusOK,
+			signingKeyFile: dummySigningKeyFile,
+		},
+		{
+			name:           "valid spn token",
+			authHeader:     jwt.BuildAuthHeader(spnAppConfig, false, dummySigningKeyFile, signingKeyPrivate, jwt.Claim{}),
 			expectedStatus: http.StatusOK,
 			signingKeyFile: dummySigningKeyFile,
 		},
@@ -128,16 +138,23 @@ func TestToken(t *testing.T) {
 		c := e.NewContext(req, res)
 		m := monitoring.NewMetrics("cluster_registry_api_authz_test", true)
 		auth, err := NewAuthenticator(appConfig, m)
-		pubKeys := []*jose.JSONWebKey{jwt.GetSigningKey(tc.signingKeyFile, signingKeyPublic)}
-
 		if err != nil {
 			t.Fatalf("Failed to initialize authenticator: %v", err)
 		}
-		auth.setVerifier(oidc.NewVerifier(
-			appConfig.OidcIssuerUrl,
-			&staticKeySet{keys: pubKeys},
-			&oidc.Config{ClientID: appConfig.OidcClientId},
-		))
+
+		pubKeys := []*jose.JSONWebKey{jwt.GetSigningKey(tc.signingKeyFile, signingKeyPublic)}
+		auth.setVerifiers(
+			oidc.NewVerifier(
+				appConfig.OidcIssuerUrl,
+				&staticKeySet{keys: pubKeys},
+				&oidc.Config{ClientID: appConfig.OidcClientId},
+			),
+			oidc.NewVerifier(
+				spnAppConfig.OidcIssuerUrl,
+				&staticKeySet{keys: pubKeys},
+				&oidc.Config{ClientID: spnAppConfig.OidcClientId},
+			),
+		)
 
 		h := auth.VerifyToken()(handler)
 		test.NoError(h(c))
