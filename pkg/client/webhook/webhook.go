@@ -125,7 +125,7 @@ func (s *Server) process(alert Alert) error {
 				cluster.Spec.Tags = make(map[string]string)
 			}
 
-			excludedTagsAnnotation = cluster.Annotations["clusters.registry.ethos.adobe.com/excluded-tags"]
+			excludedTagsAnnotation = cluster.Annotations["registry.ethos.adobe.com/excluded-tags"]
 
 			if excludedTagsAnnotation != "" {
 				excludedTags = strings.Split(excludedTagsAnnotation, ",")
