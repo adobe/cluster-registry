@@ -122,7 +122,7 @@ var _ = Describe("Client Controller", func() {
 				err := k8sClient.Get(ctx, clusterLookupKey, cluster)
 				return err == nil
 			}, timeout, interval).Should(BeTrue())
-			cluster.Annotations = map[string]string{"clusters.registry.ethos.adobe.com/skip-ca-cert": "true"}
+			cluster.Annotations = map[string]string{"registry.ethos.adobe.com/skip-ca-cert": "true"}
 			Expect(k8sClient.Update(ctx, cluster)).Should(Succeed())
 
 			// give controller-runtime time to propagagte data into etcd
