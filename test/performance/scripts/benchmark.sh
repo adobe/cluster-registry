@@ -68,7 +68,7 @@ run_benckmarks "${ENDPOINT}/livez" "${NR_OF_SECS}"
 
 if [ -z "${APISERVER_AUTH_TOKEN}" ]; then
     if [ -z "${TOKEN_PATH}" ]; then
-        printf "ERROR: Missing env variable API_AUTH_TOKEN for the rest of the endpoints.\n" 1>&2
+        printf "ERROR: Missing env variable APISERVER_AUTH_TOKEN for the rest of the endpoints.\n" 1>&2
         exit 1
     fi
     APISERVER_AUTH_TOKEN=$(cat "${TOKEN_PATH}")
