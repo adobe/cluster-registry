@@ -16,6 +16,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/adobe/cluster-registry/pkg/config"
@@ -37,10 +38,12 @@ var (
 )
 
 // Authenticator implements the OIDC authentication
+// We have two verifiers to allow tokens with or without the 'spn' token.
 type Authenticator struct {
-	verifier *oidc.IDTokenVerifier
-	ctx      context.Context
-	metrics  monitoring.MetricsI
+	verifier    *oidc.IDTokenVerifier
+	spnVerifier *oidc.IDTokenVerifier
+	ctx         context.Context
+	metrics     monitoring.MetricsI
 }
 
 // NewAuthenticator creates new Authenticator
@@ -56,12 +59,28 @@ func NewAuthenticator(appConfig *config.AppConfig, m monitoring.MetricsI) (*Auth
 		ClientID: appConfig.OidcClientId,
 	}
 
+	spnConfig := &oidc.Config{
+		ClientID: "spn:" + appConfig.OidcClientId,
+	}
+
 	verifier := provider.Verifier(config)
+	spnVerifier := provider.Verifier(spnConfig)
+
 	return &Authenticator{
-		verifier: verifier,
-		ctx:      ctx,
-		metrics:  m,
+		verifier:    verifier,
+		spnVerifier: spnVerifier,
+		ctx:         ctx,
+		metrics:     m,
 	}, nil
+}
+
+// verify check if the token is valid by both verifiers, to allow tokens with or without the 'spn' prefix
+func (a *Authenticator) verify(ctx context.Context, rawToken string) (*oidc.IDToken, error) {
+	token, err := a.verifier.Verify(ctx, rawToken)
+	if err != nil && strings.Contains(err.Error(), "spn:") {
+		token, err = a.spnVerifier.Verify(ctx, rawToken)
+	}
+	return token, err
 }
 
 // VerifyToken verifies if the JWT token from request header is valid
@@ -76,7 +95,7 @@ func (a *Authenticator) VerifyToken() echo.MiddlewareFunc {
 			}
 
 			start := time.Now()
-			token, err := a.verifier.Verify(a.ctx, rawToken)
+			token, err := a.verify(a.ctx, rawToken)
 			elapsed := float64(time.Since(start)) / float64(time.Second)
 
 			a.metrics.RecordEgressRequestCnt(egressTarget)
@@ -100,8 +119,9 @@ func (a *Authenticator) VerifyToken() echo.MiddlewareFunc {
 }
 
 // setVerifier set a custom verifier - used in testing
-func (a *Authenticator) setVerifier(v *oidc.IDTokenVerifier) {
+func (a *Authenticator) setVerifiers(v *oidc.IDTokenVerifier, spnv *oidc.IDTokenVerifier) {
 	a.verifier = v
+	a.spnVerifier = spnv
 }
 
 // extractToken extracts the JWT token from authorization header data

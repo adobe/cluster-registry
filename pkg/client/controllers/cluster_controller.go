@@ -60,7 +60,7 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	skipCACert := instance.Annotations["clusters.registry.ethos.adobe.com/skip-ca-cert"]
+	skipCACert := instance.Annotations["registry.ethos.adobe.com/skip-ca-cert"]
 
 	// skipCACert is an exception rather than a rule
 	if skipCACert == "true" {
