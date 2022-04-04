@@ -18,7 +18,7 @@ Example:
 
 ## Skip CA Cert
 
-The annotation `registry.ethos.adobe.com/skip-ca-cert` defines the behavior of the cluster-registry-client for setting the K8s API CA Certificate. If it's set to `true`, the `CertificateAuthorityData` will not be set.
+The annotation `registry.ethos.adobe.com/skip-ca-cert` defines the behavior of the cluster-registry-client for setting the K8s API CA Certificate. If it's set to `true`, the `CertificateAuthorityData` will not be set with the in-cluster CA Cert.
 
 Example:
     `registry.ethos.adobe.com/skip-ca-cert: "true"`
