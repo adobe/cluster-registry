@@ -242,7 +242,8 @@ var _ = Describe("Database Suite", func() {
 							Phase:        "Running",
 							Type:         "Restricted",
 							Capabilities: []string{"gpu-compute"},
-							LastUpdated:  "2020-03-20T07:55:46.132Z",
+							RegisteredAt: "2022-03-20T07:55:46.132Z",
+							LastUpdated:  "2022-03-20T07:55:46.132Z",
 							Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
 						},
 					},
@@ -276,13 +277,14 @@ var _ = Describe("Database Suite", func() {
 							Phase:        "Running",
 							Type:         "Restricted",
 							Capabilities: []string{"gpu-compute"},
-							LastUpdated:  "2020-03-20T07:55:46.132Z",
+							RegisteredAt: "2021-12-13T05:50:07.492Z", // once the cluster is first registered, this filed cannot be changed
+							LastUpdated:  "2022-03-20T07:55:46.132Z",
 							Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
 						},
 					},
 				},
 				{
-					name:        "update existing cluster",
+					name:        "update non existing cluster",
 					clusterName: "cluster101-prod-useast1",
 					newCluster: &registryv1.Cluster{
 						Spec: registryv1.ClusterSpec{

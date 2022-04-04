@@ -123,6 +123,7 @@ var _ = Describe("Client Controller", func() {
 				return err == nil
 			}, timeout, interval).Should(BeTrue())
 			cluster.Annotations = map[string]string{"registry.ethos.adobe.com/skip-ca-cert": "true"}
+			cluster.Spec.APIServer.CertificateAuthorityData = "_custom_cert_data_"
 			Expect(k8sClient.Update(ctx, cluster)).Should(Succeed())
 
 			// give controller-runtime time to propagagte data into etcd
@@ -134,7 +135,7 @@ var _ = Describe("Client Controller", func() {
 				if err != nil {
 					return false
 				}
-				return updatedCluster.Spec.APIServer.CertificateAuthorityData == ""
+				return updatedCluster.Spec.APIServer.CertificateAuthorityData == "_custom_cert_data_"
 			}, timeout, interval).Should(BeTrue())
 		})
 	})
