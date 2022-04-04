@@ -63,9 +63,7 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	skipCACert := instance.Annotations["registry.ethos.adobe.com/skip-ca-cert"]
 
 	// skipCACert is an exception rather than a rule
-	if skipCACert == "true" {
-		instance.Spec.APIServer.CertificateAuthorityData = ""
-	} else {
+	if skipCACert != "true" {
 		if r.CAData != "" {
 			instance.Spec.APIServer.CertificateAuthorityData = r.CAData
 		} else {

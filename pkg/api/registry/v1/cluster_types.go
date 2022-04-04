@@ -105,7 +105,7 @@ type ClusterSpec struct {
 	// List of cluster capabilities
 	Capabilities []string `json:"capabilities,omitempty"`
 
-	// Information about Virtual Networks peered with the cluster
+	// Information about Virtual Networks manual peered with the cluster
 	PeerVirtualNetworks []PeerVirtualNetwork `json:"peerVirtualNetworks,omitempty"`
 
 	// Timestamp when cluster information was updated

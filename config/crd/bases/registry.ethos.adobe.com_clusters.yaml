@@ -173,7 +173,8 @@ spec:
                   type: string
                 type: array
               peerVirtualNetworks:
-                description: Information about Virtual Networks peered with the cluster
+                description: Information about Virtual Networks manual peered with
+                  the cluster
                 items:
                   description: PeerVirtualNetwork -  peering information done at cluster
                     onboarding

@@ -266,6 +266,12 @@ func (d *db) PutCluster(cluster *registryv1.Cluster) error {
 		return fmt.Errorf(msg)
 	}
 
+	existingCluster, _ := d.GetCluster(cluster.Spec.Name)
+	if existingCluster != nil {
+		fmt.Printf("Cluster '%s' found in the database. It will be updated.", cluster.Spec.Name)
+		cluster.Spec.RegisteredAt = existingCluster.Spec.RegisteredAt
+	}
+
 	clusterDb, err := dynamodbattribute.MarshalMap(ClusterDb{
 		TablePartitionKey: cluster.Spec.Name,
 		IndexPartitionKey: "cluster",
