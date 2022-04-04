@@ -3,6 +3,7 @@
 # Environment variables as input:
 #   APISERVER_ENDPOINT (required), the url to the api service
 #   APISERVER_AUTH_TOKEN (required), the token used to authenticate to the api
+#   TOKEN_PATH, use this env variable to set the APISERVER_AUTH_TOKEN from a file
 #   PERFORMANCE_TEST_TIME, the time it will take for a benchmark to run on one endpoint
 #                          the default is 10
 #   LIMIT, the number of clusters on the '/clusters' endpoint. We need a consistent nr
@@ -66,11 +67,14 @@ run_benckmarks "${ENDPOINT}/readyz" "${NR_OF_SECS}"
 run_benckmarks "${ENDPOINT}/livez" "${NR_OF_SECS}"
 
 if [ -z "${APISERVER_AUTH_TOKEN}" ]; then
-    printf "ERROR: Missing env variable API_AUTH_TOKEN for the rest of the endpoints.\n" 1>&2
-    exit 1
+    if [ -z "${TOKEN_PATH}" ]; then
+        printf "ERROR: Missing env variable APISERVER_AUTH_TOKEN for the rest of the endpoints.\n" 1>&2
+        exit 1
+    fi
+    APISERVER_AUTH_TOKEN=$(cat "${TOKEN_PATH}")
 fi
-TOKEN="${APISERVER_AUTH_TOKEN}"
 
+TOKEN="${APISERVER_AUTH_TOKEN}"
 LIMIT="${LIMIT:-200}"
 OFFSET="${OFFSET:-0}"
 

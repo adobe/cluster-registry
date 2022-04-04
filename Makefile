@@ -152,13 +152,19 @@ test-e2e:
 	@. local/.env.local && go test -race github.com/adobe/cluster-registry/test/e2e -count=1 -v
 	$(shell pwd)/local/cleanup.sh
 
-## Make sure you have set the APISERVER_AUTH_TOKEN env variable
-## Use PERFORMANCE_TEST_TIME env var to set the benchmark time per endpoint
-## Use APISERVER_ENDPOINT env var to set the endpoint for the benchmark
+## Make sure you have set the APISERVER_AUTH_TOKEN env variable.
+## Use PERFORMANCE_TEST_TIME env var to set the benchmark time per endpoint.
+## Use APISERVER_ENDPOINT env var to set the endpoint for the benchmark.
+## The env variables from the local env will overwrite th local/.env.local ones.
 .PHONY: test-performance
 test-performance: ## Outputs requests/s, average req time, 99.9th percentile req time
 	@. local/.env.local \
-		&& export APISERVER_ENDPOINT=${APISERVER_ENDPOINT} \
+		&& export LOCAL_ENV_APISERVER_ENDPOINT=${APISERVER_ENDPOINT} \
+		&& export LOCAL_ENV_APISERVER_AUTH_TOKEN=${APISERVER_AUTH_TOKEN} \
+		&& export LOCAL_ENV_PERFORMANCE_TEST_TIME=${PERFORMANCE_TEST_TIME} \
+		&& export LOCAL_ENV_IMAGE_PERFORMANCE_TESTS=${IMAGE_PERFORMANCE_TESTS} \
+		&& export LOCAL_ENV_TAG=${TAG} \
+		&& export LOCAL_ENV_NETWORK=${NETWORK} \
 		&& test/performance/scripts/run_bech_container.sh
 
 
