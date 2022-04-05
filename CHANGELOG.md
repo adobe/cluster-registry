@@ -1,3 +1,15 @@
+# 0.2.1
+
+## cluster-registry-api
+- Registration timestamp (#25)
+- Add the option to read the token from disk to the performance tests (#24)
+- Fix annotation format (#22)
+- Add support for tokens that does not have the 'spn' prefix (#23)
+- Release tag fix for the performance tests image (#21)
+
+## cluster-registry-client
+- Fix annotation format (#22)
+
 # 0.1.6
 
 ## cluster-registry-api
