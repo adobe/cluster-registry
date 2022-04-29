@@ -18,16 +18,17 @@ import (
 )
 
 type AppConfig struct {
-	AwsRegion     string
-	DbEndpoint    string
-	DbAwsRegion   string
-	DbTableName   string
-	DbIndexName   string
-	SqsEndpoint   string
-	SqsAwsRegion  string
-	SqsQueueName  string
-	OidcClientId  string
-	OidcIssuerUrl string
+	AwsRegion             string
+	DbEndpoint            string
+	DbAwsRegion           string
+	DbTableName           string
+	DbIndexName           string
+	SqsEndpoint           string
+	SqsAwsRegion          string
+	SqsQueueName          string
+	OidcClientId          string
+	OidcIssuerUrl         string
+	ApiRateLimiterEnabled bool
 }
 
 func LoadApiConfig() (*AppConfig, error) {
@@ -78,17 +79,24 @@ func LoadApiConfig() (*AppConfig, error) {
 		return nil, fmt.Errorf("Environment variable OIDC_ISSUER_URL is not set.")
 	}
 
+	apiRateLimiterEnabled := false
+	configApiRateLimiterEnabled := getEnv("API_RATE_LIMITER_ENABLED", "")
+	if configApiRateLimiterEnabled == "true" {
+		apiRateLimiterEnabled = true
+	}
+
 	return &AppConfig{
-		AwsRegion:     awsRegion,
-		DbEndpoint:    dbEndpoint,
-		DbAwsRegion:   dbAwsRegion,
-		DbTableName:   dbTableName,
-		DbIndexName:   dbIndexName,
-		SqsEndpoint:   sqsEndpoint,
-		SqsAwsRegion:  sqsAwsRegion,
-		SqsQueueName:  sqsQueueName,
-		OidcClientId:  oidcClientId,
-		OidcIssuerUrl: oidcIssuerUrl,
+		AwsRegion:             awsRegion,
+		DbEndpoint:            dbEndpoint,
+		DbAwsRegion:           dbAwsRegion,
+		DbTableName:           dbTableName,
+		DbIndexName:           dbIndexName,
+		SqsEndpoint:           sqsEndpoint,
+		SqsAwsRegion:          sqsAwsRegion,
+		SqsQueueName:          sqsQueueName,
+		OidcClientId:          oidcClientId,
+		OidcIssuerUrl:         oidcIssuerUrl,
+		ApiRateLimiterEnabled: apiRateLimiterEnabled,
 	}, nil
 }
 
