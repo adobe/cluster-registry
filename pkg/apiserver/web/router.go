@@ -13,6 +13,7 @@ governing permissions and limitations under the License.
 package web
 
 import (
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
@@ -30,5 +31,11 @@ func NewRouter() *echo.Echo {
 		AllowMethods: []string{echo.GET, echo.HEAD},
 	}))
 	e.Validator = NewValidator()
+	e.Use(middleware.RequestIDWithConfig(middleware.RequestIDConfig{
+		Generator: func() string {
+			id := uuid.New()
+			return id.String()
+		},
+	}))
 	return e
 }
