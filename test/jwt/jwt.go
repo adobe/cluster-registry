@@ -33,7 +33,7 @@ const (
 	dummySigningKeyType = "RSA PRIVATE KEY"
 
 	authScheme  = "Bearer"
-	dummyOid    = "00000000-0000-0000-0000-000000000000"
+	dummyOid    = "00000000-0000-0000-0000-000000000001"
 	expiredDate = "2021-03-11T00:00:00Z"
 )
 

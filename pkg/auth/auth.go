@@ -112,6 +112,8 @@ func (a *Authenticator) VerifyToken() echo.MiddlewareFunc {
 				return c.JSON(http.StatusForbidden, NewError(err))
 			}
 
+			c.Set("oid", claims.Oid)
+
 			log.Info("Identity logged in: ", claims.Oid)
 			return next(c)
 		}

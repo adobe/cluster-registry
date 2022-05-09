@@ -288,3 +288,47 @@ func (s *e2eTestSuite) TBD_Test_EndToEnd_UpdateCluster() {
 	s.Assert().Equal(resp.StatusCode, http.StatusOK)
 	s.Assert().Equal(inputCluster.Spec.Status, outputCluster.Status)
 }
+
+func (s *e2eTestSuite) Test_EndToEnd_RateLimiter() {
+
+	appConfig, err := config.LoadApiConfig()
+	if err != nil {
+		s.T().Fatalf("Cannot load the api configuration: '%v'", err.Error())
+	}
+
+	jwtToken := jwt.GenerateDefaultSignedToken(appConfig)
+	bearer := "Bearer " + jwtToken
+
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/api/v1/clusters", s.apiPort), nil)
+	if err != nil {
+		s.T().Fatalf("Cannot build http request: %v", err.Error())
+	}
+
+	req.Header.Add("Authorization", bearer)
+	client := &http.Client{}
+
+	statusOK := 0
+	statusTooManyRequests := 0
+	requests_nr := 200
+	expectedMaxStatusOK := 150
+
+	for i := 0; i < requests_nr; i++ {
+		resp, err := client.Do(req)
+		if err != nil {
+			s.T().Fatalf("Cannot make http request: %v", err.Error())
+		}
+		defer resp.Body.Close()
+
+		s.NoError(err)
+
+		if resp.StatusCode == http.StatusOK {
+			statusOK += 1
+		} else if resp.StatusCode == http.StatusTooManyRequests {
+			statusTooManyRequests += 1
+		} else {
+			s.T().Errorf("Unexpected status code: %d", resp.StatusCode)
+		}
+	}
+
+	s.Assert().LessOrEqual(statusOK, expectedMaxStatusOK)
+}
