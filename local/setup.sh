@@ -93,6 +93,8 @@ if [[ "${RUN_APISERVER}" == 1 ]]; then
 		-e SQS_AWS_REGION \
 		-e SQS_ENDPOINT=http://${CONTAINER_SQS}:9324 \
 		-e SQS_QUEUE_NAME=${SQS_QUEUE_NAME} \
+		-e API_RATE_LIMITER=${API_RATE_LIMITER} \
+		-e LOG_LEVEL=${LOG_LEVEL} \
 		--network ${NETWORK} \
 		${IMAGE_APISERVER}:${TAG}
 fi
