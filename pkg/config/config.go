@@ -15,6 +15,8 @@ package config
 import (
 	"fmt"
 	"os"
+
+	"github.com/labstack/gommon/log"
 )
 
 type AppConfig struct {
@@ -29,6 +31,7 @@ type AppConfig struct {
 	OidcClientId          string
 	OidcIssuerUrl         string
 	ApiRateLimiterEnabled bool
+	LogLevel              log.Lvl
 }
 
 func LoadApiConfig() (*AppConfig, error) {
@@ -80,9 +83,17 @@ func LoadApiConfig() (*AppConfig, error) {
 	}
 
 	apiRateLimiterEnabled := false
-	configApiRateLimiterEnabled := getEnv("API_RATE_LIMITER_ENABLED", "")
-	if configApiRateLimiterEnabled == "true" {
+	configApiRateLimiter := getEnv("API_RATE_LIMITER", "")
+	if configApiRateLimiter == "enabled" {
 		apiRateLimiterEnabled = true
+	}
+
+	logLevel := log.WARN
+	configLogLevel := getEnv("LOG_LEVEL", "")
+	if configLogLevel == "DEBUG" {
+		logLevel = log.DEBUG
+	} else if configLogLevel == "INFO" {
+		logLevel = log.INFO
 	}
 
 	return &AppConfig{
@@ -97,6 +108,7 @@ func LoadApiConfig() (*AppConfig, error) {
 		OidcClientId:          oidcClientId,
 		OidcIssuerUrl:         oidcIssuerUrl,
 		ApiRateLimiterEnabled: apiRateLimiterEnabled,
+		LogLevel:              logLevel,
 	}, nil
 }
 
