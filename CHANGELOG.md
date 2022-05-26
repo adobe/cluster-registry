@@ -1,3 +1,11 @@
+# 1.0.1
+
+## cluster-registry-api
+- Add debug level configuration (#30)
+
+## cluster-registry-client
+- N/A
+
 # 1.0.0
 
 ## cluster-registry-api
