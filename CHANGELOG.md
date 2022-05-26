@@ -1,3 +1,11 @@
+# 1.0.2
+
+## cluster-registry-api
+- Fix rate limit middleware skipper (#32)
+
+## cluster-registry-client
+- N/A
+
 # 1.0.1
 
 ## cluster-registry-api
