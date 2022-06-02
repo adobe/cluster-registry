@@ -43,14 +43,6 @@ var url, namespace string
 
 var jwtToken string
 
-type clusterList struct {
-	Items  []registryv1.ClusterSpec `json:"items"`
-	Count  int                      `json:"itemsCount"`
-	Offset int                      `json:"offset"`
-	Limit  int                      `json:"limit"`
-	More   bool                     `json:"more"`
-}
-
 // Gets env variable with an fallback value, if fallback is empty then env variable
 // is mandatory and if missing exit the program
 func getEnv(key, fallback string) string {
