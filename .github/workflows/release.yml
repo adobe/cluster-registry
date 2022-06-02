@@ -31,3 +31,5 @@ jobs:
         run: make release
       - name: Build and push performance tests Docker image
         run: make release-performance
+      - name: Build and push SLTs Docker image
+        run: make release-slt
