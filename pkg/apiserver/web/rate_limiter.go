@@ -25,7 +25,7 @@ import (
 func RateLimiter(appConfig *config.AppConfig) echo.MiddlewareFunc {
 	return middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
 		Skipper: func(c echo.Context) bool {
-			return appConfig.ApiRateLimiterEnabled
+			return !appConfig.ApiRateLimiterEnabled
 		},
 		Store: middleware.NewRateLimiterMemoryStoreWithConfig(
 			middleware.RateLimiterMemoryStoreConfig{Rate: 2, Burst: 120, ExpiresIn: 1 * time.Minute},

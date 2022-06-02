@@ -1,3 +1,28 @@
+# 1.0.2
+
+## cluster-registry-api
+- Fix rate limit middleware skipper (#32)
+
+## cluster-registry-client
+- N/A
+
+# 1.0.1
+
+## cluster-registry-api
+- Add debug level configuration (#30)
+
+## cluster-registry-client
+- N/A
+
+# 1.0.0
+
+## cluster-registry-api
+- Add rate limiter for /api/v1 (#27)
+- Add request_id for each request (#28)
+
+## cluster-registry-client
+- N/A
+
 # 0.2.1
 
 ## cluster-registry-api

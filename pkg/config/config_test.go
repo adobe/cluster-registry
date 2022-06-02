@@ -17,6 +17,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/labstack/gommon/log"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -70,17 +71,18 @@ func TestLoadApiConfig(t *testing.T) {
 		{
 			name: "valid api config",
 			envVars: map[string]string{
-				"AWS_REGION":               "aws-region",
-				"DB_ENDPOINT":              "http://localhost:8000",
-				"DB_AWS_REGION":            "db-aws-region",
-				"DB_TABLE_NAME":            "cluster-registry-local",
-				"DB_INDEX_NAME":            "search-index-local",
-				"SQS_ENDPOINT":             "http://localhost:9324",
-				"SQS_AWS_REGION":           "sqs-aws-region",
-				"SQS_QUEUE_NAME":           "cluster-registry-local",
-				"OIDC_CLIENT_ID":           "oidc-client-id",
-				"OIDC_ISSUER_URL":          "http://fake-oidc-provider",
-				"API_RATE_LIMITER_ENABLED": "true",
+				"AWS_REGION":       "aws-region",
+				"DB_ENDPOINT":      "http://localhost:8000",
+				"DB_AWS_REGION":    "db-aws-region",
+				"DB_TABLE_NAME":    "cluster-registry-local",
+				"DB_INDEX_NAME":    "search-index-local",
+				"SQS_ENDPOINT":     "http://localhost:9324",
+				"SQS_AWS_REGION":   "sqs-aws-region",
+				"SQS_QUEUE_NAME":   "cluster-registry-local",
+				"OIDC_CLIENT_ID":   "oidc-client-id",
+				"OIDC_ISSUER_URL":  "http://fake-oidc-provider",
+				"API_RATE_LIMITER": "enabled",
+				"LOG_LEVEL":        "DEBUG",
 			},
 			expectedAppConfig: &AppConfig{
 				AwsRegion:             "aws-region",
@@ -94,6 +96,7 @@ func TestLoadApiConfig(t *testing.T) {
 				OidcClientId:          "oidc-client-id",
 				OidcIssuerUrl:         "http://fake-oidc-provider",
 				ApiRateLimiterEnabled: true,
+				LogLevel:              log.DEBUG,
 			},
 			expectedError: nil,
 		},

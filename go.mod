@@ -39,5 +39,6 @@ require (
 	k8s.io/apimachinery v0.21.2
 	k8s.io/client-go v0.21.2
 	sigs.k8s.io/controller-runtime v0.9.2
-	sigs.k8s.io/yaml v1.2.0 // indirect
+	sigs.k8s.io/kind v0.14.0 // indirect
+	sigs.k8s.io/yaml v1.3.0 // indirect
 )
