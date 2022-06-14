@@ -11,11 +11,11 @@ governing permissions and limitations under the License.
 */
 
 /*
-This is an SLT that checks if the cluster registry client reacts after an CRD update
+This is a SLT that checks if the cluster registry client reacts after an CRD update
 and pushes the changes to the APIs database.
 */
 
-package main
+package slt
 
 import (
 	"context"
@@ -23,13 +23,14 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"time"
 
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
 
+	log "github.com/labstack/gommon/log"
+	"github.com/prometheus/client_golang/prometheus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
@@ -39,26 +40,28 @@ import (
 const tagSLT = "update-slt"
 
 // This vars will get overwritten by env vars if they exists
-var url, namespace string
+var tokenPath, url, namespace string
 
 var jwtToken string
 
-// Gets env variable with an fallback value, if fallback is empty then env variable
-// is mandatory and if missing exit the program
-func getEnv(key, fallback string) string {
+var logger *log.Logger
+var statusMetric prometheus.Gauge
 
+// GetEnv gets env variable with an fallback value, if fallback is empty then env variable
+// is mandatory and if missing exit the program
+func GetEnv(key, fallback string) string {
 	if value, ok := os.LookupEnv(key); ok {
 		return value
 	}
+
 	if fallback == "" {
-		log.Printf("Missing environment variable %s", key)
-		os.Exit(1)
+		(*logger).Fatalf("Missing environment variable %s", key)
 	}
+
 	return fallback
 }
 
 func readTokenFromFile(filePath string) (string, error) {
-
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return "", fmt.Errorf("Error reading token from file %s: %s", filePath, err.Error())
@@ -68,7 +71,6 @@ func readTokenFromFile(filePath string) (string, error) {
 }
 
 func updateCrd() (string, string, error) {
-
 	var clusterList registryv1.ClusterList
 
 	cfg, err := config.GetConfig()
@@ -104,16 +106,16 @@ func updateCrd() (string, string, error) {
 	cluster := &clusterList.Items[0]
 
 	if (*cluster).Spec.Tags == nil {
-		log.Printf("Creating '%s' tag with the 'Tick' value...", tagSLT)
+		(*logger).Infof("Creating '%s' tag with the 'Tick' value...", tagSLT)
 		(*cluster).Spec.Tags = map[string]string{tagSLT: "Tick"}
 
 	} else if (*cluster).Spec.Tags[tagSLT] == "Tick" {
-		log.Printf("Changing '%s' tag value from '%s' to '%s'...",
+		(*logger).Infof("Changing '%s' tag value from '%s' to '%s'...",
 			tagSLT, (*cluster).Spec.Tags[tagSLT], "Tack")
 		(*cluster).Spec.Tags[tagSLT] = "Tack"
 
 	} else if (*cluster).Spec.Tags[tagSLT] == "Tack" {
-		log.Printf("Changing '%s' tag value from '%s' to '%s'...",
+		(*logger).Infof("Changing '%s' tag value from '%s' to '%s'...",
 			tagSLT, (*cluster).Spec.Tags[tagSLT], "Tick")
 		(*cluster).Spec.Tags[tagSLT] = "Tick"
 	}
@@ -142,7 +144,6 @@ func updateCrd() (string, string, error) {
 }
 
 func checkAPIforUpdate(clusterName, tagSLTValue string) error {
-
 	var cluster registryv1.ClusterSpec
 
 	endpoint := fmt.Sprintf("%s/api/v1/clusters/%s", url, clusterName)
@@ -188,57 +189,68 @@ func checkAPIforUpdate(clusterName, tagSLTValue string) error {
 	}
 
 	return nil
-
 }
 
-func main() {
+// SetLogger sets the global logger for the slt package
+func SetLogger(loggerIn *log.Logger) {
+	logger = loggerIn
+}
 
-	tokenPath := getEnv("TOKEN_PATH", "")
-	url = getEnv("URL", "http://localhost:8080")
-	namespace = getEnv("NAMESPACE", "cluster-registry")
+// GetConfigFromEnv gets from the env the needed global env
+func GetConfigFromEnv() (tokenPath, url, namespace string) {
+	tokenPath = GetEnv("TOKEN_PATH", "")
+	url = GetEnv("URL", "http://localhost:8080")
+	namespace = GetEnv("NAMESPACE", "cluster-registry")
 
-	log.Printf("Reading the Cluster Registry API token from '%s'", tokenPath)
+	return tokenPath, url, namespace
+}
+
+// AddConfig sets global env variables
+func AddConfig(localTokenPath, localURL, localNamespace string) {
+	tokenPath = localTokenPath
+	url = localURL
+	namespace = localNamespace
+	fmt.Printf("SLT Config:\n  tokenPath: %s\n  url: %s\n  namespace: %s\n\n",
+		tokenPath, url, namespace)
+}
+
+// Run run the SLT
+func Run() (float64, error) {
+	(*logger).Infof("Reading the Cluster Registry API token from '%s'", tokenPath)
 	data, err := readTokenFromFile(tokenPath)
 	jwtToken = data
 	if err != nil {
-		log.Println(err.Error())
-		os.Exit(1)
+		return 0, err
 	}
 
-	log.Println("Updating the Cluster Registry CRD...")
+	(*logger).Info("Updating the Cluster Registry CRD...")
 	clusterName, tagSLTValue, err := updateCrd()
 	if err != nil {
-		log.Printf("[ERROR] %s", err.Error())
-		os.Exit(1)
+		return 0, err
 	}
-	log.Println("Cluster Registry CRD updated!")
+	(*logger).Info("Cluster Registry CRD updated!")
 
-	log.Println("Waiting for the Cluster Registry API to update the database...")
+	(*logger).Info("Waiting for the Cluster Registry API to update the database...")
 	maxNrOfTries, nrOfTries := 3, 1
-	updateConfirmed := false
 	for nrOfTries <= maxNrOfTries {
 		// Give to the CR client time to push to the SQS queue and for the API to read
 		// from the queue and update the DB. By local tests it takes around 11s
 		time.Sleep(11 * time.Second)
 
-		log.Println(fmt.Sprintf("Checking the API for the update (check %d/%d)...",
-			nrOfTries, maxNrOfTries))
+		(*logger).Infof("Checking the API for the update (check %d/%d)...",
+			nrOfTries, maxNrOfTries)
 		nrOfTries++
 
 		err = checkAPIforUpdate(clusterName, tagSLTValue)
 		if err != nil {
-			log.Printf("[ERROR] %s", err.Error())
+			(*logger).Error(err.Error())
 			continue
 		}
 
-		log.Println("Update confirmed!")
-		updateConfirmed = true
-		break
+		(*logger).Info("Update confirmed")
+		return 1, nil
 	}
 
-	if !updateConfirmed {
-		log.Println("[ERROR] Failed to confirm the update!")
-		os.Exit(1)
-	}
-
+	(*logger).Info("Failed to confirm the update")
+	return 0, nil
 }
