@@ -19,15 +19,15 @@ else
 fi
 
 # The default will not be assinged if the var is empty only if it does not exist
-default_image_name="${REGISTRY}/${REPOSITORY}/slt-update-crd"
-IMAGE_SLT_UPDATE_CRD="${IMAGE_SLT_UPDATE_CRD:-"${default_image_name}"}"
-IMAGE_SLT_UPDATE_CRD="${IMAGE_SLT_UPDATE_CRD}${IMAGE_SUFFIX}"
+default_image_name="${REGISTRY}/${REPOSITORY}/slt"
+IMAGE_SLT="${IMAGE_SLT:-"${default_image_name}"}"
+IMAGE_SLT="${IMAGE_SLT}${IMAGE_SUFFIX}"
 
 
-printf "Realeasing image %s...\n\n" "${IMAGE_SLT_UPDATE_CRD}:${TAG}"
+printf "Realeasing image %s...\n\n" "${IMAGE_SLT}:${TAG}"
 
 make -C "${ROOT_DIR}" --always-make build-slt \
     TAG="${TAG}" \
-    IMAGE_SLT_UPDATE_CRD="${IMAGE_SLT_UPDATE_CRD}"
+    IMAGE_SLT="${IMAGE_SLT}"
 
-docker push "${IMAGE_SLT_UPDATE_CRD}:${TAG}"
+docker push "${IMAGE_SLT}:${TAG}"

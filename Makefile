@@ -87,7 +87,7 @@ release-performance:
 
 .PHONY: build-slt
 build-slt:
-	docker build -t ${IMAGE_SLT_UPDATE_CRD}:$(TAG) -f test/slt/Dockerfile .
+	docker build -t ${IMAGE_SLT}:$(TAG) -f test/slt/Dockerfile .
 
 .PHONY: release-slt
 release-slt:
