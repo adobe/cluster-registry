@@ -19,7 +19,7 @@ else
 fi
 
 # The default will not be assinged if the var is empty only if it does not exist
-default_image_name="${REGISTRY}/${REPOSITORY}/slt"
+default_image_name="${REGISTRY}/${REPOSITORY}/cluster-registry-slt"
 IMAGE_SLT="${IMAGE_SLT:-"${default_image_name}"}"
 IMAGE_SLT="${IMAGE_SLT}${IMAGE_SUFFIX}"
 
