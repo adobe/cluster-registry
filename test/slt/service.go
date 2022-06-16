@@ -43,7 +43,7 @@ func runSLTLoop() {
 
 	slt.AddConfig(slt.GetConfigFromEnv())
 
-	for true {
+	for {
 		status, err := slt.Run()
 		if err != nil {
 			logger.Fatal(err)
@@ -60,13 +60,18 @@ func init() {
 	logger = log.New("echo")
 	slt.SetLogger(logger)
 
-	aux, err := time.ParseDuration(slt.GetEnv("TIME_BETWEEN_SLT", "1m"))
+	// Using aux instead of timeBetweenSLTs because it will create a new local variable
+	// with the same name and not assign the returned value to the global one
+	aux, err := time.ParseDuration(slt.GetEnv("TIME_BETWEEN_SLT", "5m"))
 	if err != nil {
 		logger.Fatalf("Error converting `TIME_BETWEEN_SLT` value: %s", err)
 	}
 	timeBetweenSLTs = aux
 
-	prometheus.Register(sltStatus)
+	err = prometheus.Register(sltStatus)
+	if err != nil {
+		logger.Fatalf("Error registering metric: %s", err)
+	}
 }
 
 func main() {

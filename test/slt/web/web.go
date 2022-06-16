@@ -21,7 +21,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-// NewEchoWithLogger returns an eco server with a specific logger
+// NewEchoWithLogger returns an echo server with a specific logger
 func NewEchoWithLogger(logger *log.Logger) *echo.Echo {
 	e := echo.New()
 	e.Logger = logger

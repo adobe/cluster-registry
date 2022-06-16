@@ -30,13 +30,13 @@ import (
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
 
 	log "github.com/labstack/gommon/log"
-	"github.com/prometheus/client_golang/prometheus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
+// The key name of the tag to update for the slt test
 const tagSLT = "update-slt"
 
 // This vars will get overwritten by env vars if they exists
@@ -45,7 +45,6 @@ var tokenPath, url, namespace string
 var jwtToken string
 
 var logger *log.Logger
-var statusMetric prometheus.Gauge
 
 // GetEnv gets env variable with an fallback value, if fallback is empty then env variable
 // is mandatory and if missing exit the program
