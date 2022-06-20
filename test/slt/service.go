@@ -42,9 +42,15 @@ func runSLTLoop() {
 	time.Sleep(1 * time.Second)
 
 	slt.AddConfig(slt.GetConfigFromEnv())
+	resourceID, tenantID, clientID, clientSecret := slt.GetAuthDetails()
 
 	for {
-		status, err := slt.Run()
+		token, err := slt.GetToken(resourceID, tenantID, clientID, clientSecret)
+		if err != nil {
+			logger.Fatalf("Error getting jwt token: %s", err)
+		}
+
+		status, err := slt.Run(token)
 		if err != nil {
 			logger.Fatal(err)
 		}

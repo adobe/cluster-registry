@@ -29,6 +29,7 @@ import (
 
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
 
+	"github.com/Azure/go-autorest/autorest/azure/auth"
 	log "github.com/labstack/gommon/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -40,9 +41,7 @@ import (
 const tagSLT = "update-slt"
 
 // This vars will get overwritten by env vars if they exists
-var tokenPath, url, namespace string
-
-var jwtToken string
+var url, namespace string
 
 var logger *log.Logger
 
@@ -60,13 +59,32 @@ func GetEnv(key, fallback string) string {
 	return fallback
 }
 
-func readTokenFromFile(filePath string) (string, error) {
-	data, err := os.ReadFile(filePath)
+// GetToken gets an jwt for authenticating to CR
+func GetToken(resourceID, tenantID, clientID, clientSecret string) (string, error) {
+	clientCredentials := auth.NewClientCredentialsConfig(clientID, clientSecret, tenantID)
+
+	token, err := clientCredentials.ServicePrincipalToken()
 	if err != nil {
-		return "", fmt.Errorf("Error reading token from file %s: %s", filePath, err.Error())
+		return "", err
 	}
 
-	return string(data), nil
+	err = token.RefreshExchange(resourceID)
+	if err != nil {
+		return "", err
+	}
+
+	return token.Token().AccessToken, nil
+}
+
+// GetAuthDetails gets auth details from the env
+func GetAuthDetails() (resourceID, tenantID, clientID, clientSecret string) {
+
+	resourceID = GetEnv("RESOURCE_ID", "")  // Cluster Registry App ID
+	tenantID = GetEnv("TENANT_ID", "")      // Adobe.com tenant ID
+	clientID = GetEnv("CLIENT_ID", "")      // Your App ID
+	clientSecret = GetEnv("APP_SECRET", "") // Your App Secret
+
+	return resourceID, tenantID, clientID, clientSecret
 }
 
 func updateCrd() (string, string, error) {
@@ -142,7 +160,7 @@ func updateCrd() (string, string, error) {
 	return (*cluster).Spec.Name, (*cluster).Spec.Tags[tagSLT], nil
 }
 
-func checkAPIforUpdate(clusterName, tagSLTValue string) error {
+func checkAPIforUpdate(jwtToken, clusterName, tagSLTValue string) error {
 	var cluster registryv1.ClusterSpec
 
 	endpoint := fmt.Sprintf("%s/api/v1/clusters/%s", url, clusterName)
@@ -196,32 +214,22 @@ func SetLogger(loggerIn *log.Logger) {
 }
 
 // GetConfigFromEnv gets from the env the needed global env
-func GetConfigFromEnv() (tokenPath, url, namespace string) {
-	tokenPath = GetEnv("TOKEN_PATH", "")
+func GetConfigFromEnv() (url, namespace string) {
 	url = GetEnv("URL", "http://localhost:8080")
 	namespace = GetEnv("NAMESPACE", "cluster-registry")
 
-	return tokenPath, url, namespace
+	return url, namespace
 }
 
 // AddConfig sets global env variables
-func AddConfig(localTokenPath, localURL, localNamespace string) {
-	tokenPath = localTokenPath
+func AddConfig(localURL, localNamespace string) {
 	url = localURL
 	namespace = localNamespace
-	fmt.Printf("SLT Config:\n  tokenPath: %s\n  url: %s\n  namespace: %s\n\n",
-		tokenPath, url, namespace)
+	fmt.Printf("SLT Config:\n  url: %s\n  namespace: %s\n\n", url, namespace)
 }
 
-// Run run the SLT
-func Run() (float64, error) {
-	(*logger).Infof("Reading the Cluster Registry API token from '%s'", tokenPath)
-	data, err := readTokenFromFile(tokenPath)
-	jwtToken = data
-	if err != nil {
-		return 0, err
-	}
-
+// Run runs the SLT
+func Run(jwtToken string) (float64, error) {
 	(*logger).Info("Updating the Cluster Registry CRD...")
 	clusterName, tagSLTValue, err := updateCrd()
 	if err != nil {
@@ -240,7 +248,7 @@ func Run() (float64, error) {
 			nrOfTries, maxNrOfTries)
 		nrOfTries++
 
-		err = checkAPIforUpdate(clusterName, tagSLTValue)
+		err = checkAPIforUpdate(jwtToken, clusterName, tagSLTValue)
 		if err != nil {
 			(*logger).Error(err.Error())
 			continue
