@@ -37,6 +37,15 @@ var sltStatus = prometheus.NewGauge(
 	},
 )
 
+var sltDuration = prometheus.NewGauge(
+	prometheus.GaugeOpts{
+		Name: "slt_duration",
+		Help: "It's how much time did the last SLT run take (in seconds). Be mindful " +
+			"that the time between the crd is updated and the change propagates to the " +
+			"API is around 11s, so the full slt duration can't be smaller than that.",
+	},
+)
+
 func runSLTLoop() {
 	// Wait a sec for the server to start
 	time.Sleep(1 * time.Second)
@@ -50,11 +59,17 @@ func runSLTLoop() {
 			logger.Fatalf("Error getting jwt token: %s", err)
 		}
 
+		start := time.Now()
+
 		status, err := slt.Run(token)
 		if err != nil {
 			logger.Fatal(err)
 		}
+
+		duration := float64(time.Since(start).Seconds())
+
 		sltStatus.Set(status)
+		sltDuration.Set(duration)
 
 		// The time between SLTs
 		time.Sleep(timeBetweenSLTs)
@@ -74,8 +89,11 @@ func init() {
 	}
 	timeBetweenSLTs = aux
 
-	err = prometheus.Register(sltStatus)
-	if err != nil {
+	if err := prometheus.Register(sltStatus); err != nil {
+		logger.Fatalf("Error registering metric: %s", err)
+	}
+
+	if err := prometheus.Register(sltDuration); err != nil {
 		logger.Fatalf("Error registering metric: %s", err)
 	}
 }
