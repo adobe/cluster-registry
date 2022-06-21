@@ -30,7 +30,7 @@ import (
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
 
 	"github.com/Azure/go-autorest/autorest/azure/auth"
-	log "github.com/labstack/gommon/log"
+	"github.com/labstack/echo/v4"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
@@ -43,7 +43,7 @@ const tagSLT = "update-slt"
 // This vars will get overwritten by env vars if they exists
 var url, namespace string
 
-var logger *log.Logger
+var logger echo.Logger
 
 // GetEnv gets env variable with an fallback value, if fallback is empty then env variable
 // is mandatory and if missing exit the program
@@ -53,7 +53,7 @@ func GetEnv(key, fallback string) string {
 	}
 
 	if fallback == "" {
-		(*logger).Fatalf("Missing environment variable %s", key)
+		logger.Fatalf("Missing environment variable %s", key)
 	}
 
 	return fallback
@@ -123,16 +123,16 @@ func updateCrd() (string, string, error) {
 	cluster := &clusterList.Items[0]
 
 	if (*cluster).Spec.Tags == nil {
-		(*logger).Infof("Creating '%s' tag with the 'Tick' value...", tagSLT)
+		logger.Infof("Creating '%s' tag with the 'Tick' value...", tagSLT)
 		(*cluster).Spec.Tags = map[string]string{tagSLT: "Tick"}
 
 	} else if (*cluster).Spec.Tags[tagSLT] == "Tick" {
-		(*logger).Infof("Changing '%s' tag value from '%s' to '%s'...",
+		logger.Infof("Changing '%s' tag value from '%s' to '%s'...",
 			tagSLT, (*cluster).Spec.Tags[tagSLT], "Tack")
 		(*cluster).Spec.Tags[tagSLT] = "Tack"
 
 	} else if (*cluster).Spec.Tags[tagSLT] == "Tack" {
-		(*logger).Infof("Changing '%s' tag value from '%s' to '%s'...",
+		logger.Infof("Changing '%s' tag value from '%s' to '%s'...",
 			tagSLT, (*cluster).Spec.Tags[tagSLT], "Tick")
 		(*cluster).Spec.Tags[tagSLT] = "Tick"
 	}
@@ -209,8 +209,8 @@ func checkAPIforUpdate(jwtToken, clusterName, tagSLTValue string) error {
 }
 
 // SetLogger sets the global logger for the slt package
-func SetLogger(loggerIn *log.Logger) {
-	logger = loggerIn
+func SetLogger(lgr echo.Logger) {
+	logger = lgr
 }
 
 // GetConfigFromEnv gets from the env the needed global env
@@ -225,39 +225,39 @@ func GetConfigFromEnv() (url, namespace string) {
 func AddConfig(localURL, localNamespace string) {
 	url = localURL
 	namespace = localNamespace
-	fmt.Printf("SLT Config:\n  url: %s\n  namespace: %s\n\n", url, namespace)
+	fmt.Printf("SLT Config:\n  CR Ulr: %s\n  Namespace: %s\n\n", url, namespace)
 }
 
 // Run runs the SLT
 func Run(jwtToken string) (float64, error) {
-	(*logger).Info("Updating the Cluster Registry CRD...")
+	logger.Info("Updating the Cluster Registry CRD...")
 	clusterName, tagSLTValue, err := updateCrd()
 	if err != nil {
 		return 0, err
 	}
-	(*logger).Info("Cluster Registry CRD updated!")
+	logger.Info("Cluster Registry CRD updated!")
 
-	(*logger).Info("Waiting for the Cluster Registry API to update the database...")
+	logger.Info("Waiting for the Cluster Registry API to update the database...")
 	maxNrOfTries, nrOfTries := 3, 1
 	for nrOfTries <= maxNrOfTries {
 		// Give to the CR client time to push to the SQS queue and for the API to read
 		// from the queue and update the DB. By local tests it takes around 11s
 		time.Sleep(11 * time.Second)
 
-		(*logger).Infof("Checking the API for the update (check %d/%d)...",
+		logger.Infof("Checking the API for the update (check %d/%d)...",
 			nrOfTries, maxNrOfTries)
 		nrOfTries++
 
 		err = checkAPIforUpdate(jwtToken, clusterName, tagSLTValue)
 		if err != nil {
-			(*logger).Error(err.Error())
+			logger.Error(err.Error())
 			continue
 		}
 
-		(*logger).Info("Update confirmed")
+		logger.Info("Update confirmed")
 		return 1, nil
 	}
 
-	(*logger).Info("Failed to confirm the update")
+	logger.Error("Failed to confirm the update")
 	return 0, nil
 }

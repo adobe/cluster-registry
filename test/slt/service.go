@@ -19,14 +19,13 @@ package main
 import (
 	"time"
 
-	"github.com/labstack/gommon/log"
 	"github.com/prometheus/client_golang/prometheus"
 
 	slt "github.com/adobe/cluster-registry/test/slt/slt"
 	web "github.com/adobe/cluster-registry/test/slt/web"
 )
 
-var logger *log.Logger
+var logger *web.Logger
 var timeBetweenSLTs time.Duration // Minutes to wait between SLTs
 
 var sltStatus = prometheus.NewGauge(
@@ -78,7 +77,7 @@ func runSLTLoop() {
 
 // Runs before main
 func init() {
-	logger = log.New("echo")
+	logger = web.NewLogger("slt-service")
 	slt.SetLogger(logger)
 
 	// Using aux instead of timeBetweenSLTs because it will create a new local variable
