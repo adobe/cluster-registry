@@ -34,7 +34,7 @@ type Logger struct {
 func (l *Logger) Fatal(i ...interface{}) {
 	err := ioutil.WriteFile(l.filePath, []byte(fmt.Sprint(i...)), 0777)
 	if err != nil {
-		l.Logger.Error("Failed to open and write to the logging file: %s", err)
+		l.Logger.Errorf("Failed to open and write to the logging file: %s", err)
 	}
 	l.Logger.Fatal(i...)
 }
@@ -43,7 +43,7 @@ func (l *Logger) Fatal(i ...interface{}) {
 func (l *Logger) Fatalf(format string, args ...interface{}) {
 	err := ioutil.WriteFile(l.filePath, []byte(fmt.Sprintf(format, args...)), 0777)
 	if err != nil {
-		l.Logger.Error("Failed to open and write to the logging file: %s", err)
+		l.Logger.Errorf("Failed to open and write to the logging file: %s", err)
 	}
 	l.Logger.Fatalf(format, args...)
 }
