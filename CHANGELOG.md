@@ -1,3 +1,11 @@
+# 1.1.2
+
+## cluster-registry-api
+- Add SLT to check the update CRD operation (#34)
+
+## cluster-registry-client
+- N/A
+
 # 1.0.2
 
 ## cluster-registry-api
