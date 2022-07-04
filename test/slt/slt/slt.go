@@ -125,15 +125,20 @@ func updateCrd() (string, string, error) {
 	if (*cluster).Spec.Tags == nil {
 		logger.Infof("Creating '%s' tag with the 'Tick' value...", tagSLT)
 		(*cluster).Spec.Tags = map[string]string{tagSLT: "Tick"}
-
-	} else if (*cluster).Spec.Tags[tagSLT] == "Tick" {
-		logger.Infof("Changing '%s' tag value from '%s' to '%s'...",
-			tagSLT, (*cluster).Spec.Tags[tagSLT], "Tack")
-		(*cluster).Spec.Tags[tagSLT] = "Tack"
-
-	} else if (*cluster).Spec.Tags[tagSLT] == "Tack" {
-		logger.Infof("Changing '%s' tag value from '%s' to '%s'...",
-			tagSLT, (*cluster).Spec.Tags[tagSLT], "Tick")
+	} else if value, ok := (*cluster).Spec.Tags[tagSLT]; ok {
+		if value == "Tick" {
+			logger.Infof("Changing '%s' tag value from '%s' to '%s'...",
+				tagSLT, value, "Tack")
+			(*cluster).Spec.Tags[tagSLT] = "Tack"
+		} else if value == "Tack" {
+			logger.Infof("Changing '%s' tag value from '%s' to '%s'...",
+				tagSLT, value, "Tick")
+			(*cluster).Spec.Tags[tagSLT] = "Tick"
+		} else {
+			return "", "", fmt.Errorf("found '%s' tag with wrong value '%s'", tagSLT, value)
+		}
+	} else {
+		logger.Infof("Creating '%s' tag with the 'Tick' value...", tagSLT)
 		(*cluster).Spec.Tags[tagSLT] = "Tick"
 	}
 
