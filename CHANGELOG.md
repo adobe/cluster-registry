@@ -1,3 +1,11 @@
+# 1.1.3
+
+## cluster-registry-api
+- SLT bugfix (#37)
+
+## cluster-registry-client
+- N/A
+
 # 1.1.2
 
 ## cluster-registry-api
