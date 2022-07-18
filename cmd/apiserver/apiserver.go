@@ -13,7 +13,8 @@ governing permissions and limitations under the License.
 package main
 
 import (
-	_ "github.com/adobe/cluster-registry/pkg/apiserver/docs"
+	// docs "github.com/adobe/cluster-registry/pkg/apiserver/docs"
+	"github.com/adobe/cluster-registry/pkg/apiserver/docs"
 	"github.com/adobe/cluster-registry/pkg/apiserver/web"
 	api "github.com/adobe/cluster-registry/pkg/apiserver/web"
 	apiv1 "github.com/adobe/cluster-registry/pkg/apiserver/web/handler/v1"
@@ -64,6 +65,8 @@ func main() {
 		Consumer:  c,
 		AppConfig: appConfig,
 	}
+
+	docs.SwaggerInfo.Host = appConfig.ApiHost
 
 	a.GET("/api/swagger/*", echoSwagger.WrapHandler)
 	a.GET("/livez", web.Livez)

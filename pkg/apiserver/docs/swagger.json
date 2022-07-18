@@ -52,6 +52,12 @@
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "Filter since last updated (RFC3339)",
+                        "name": "lastUpdated",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "description": "Offset to start pagination search results (default is 0)",
                         "name": "offset",
@@ -68,7 +74,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg_apiserver_web_handler_v1.clusterList"
+                            "$ref": "#/definitions/github.com_adobe_cluster-registry_pkg_apiserver_web_handler_v1.clusterList"
                         }
                     },
                     "500": {
@@ -253,19 +259,19 @@
                     }
                 },
                 "cloudProviderRegion": {
-                    "description": "The cloud provider standard region.\n+kubebuilder:validation:Required",
+                    "description": "The cloud provider standard region\n+kubebuilder:validation:Required",
                     "type": "string"
                 },
                 "cloudType": {
-                    "description": "The cloud provider.\n+kubebuilder:validation:Required",
+                    "description": "The cloud provider\n+kubebuilder:validation:Required",
                     "type": "string"
                 },
                 "environment": {
-                    "description": "Cluster environment.\n+kubebuilder:validation:Required",
+                    "description": "Cluster environment\n+kubebuilder:validation:Required",
                     "type": "string"
                 },
                 "extra": {
-                    "description": "Extra information, not necessary related to the cluster.",
+                    "description": "Extra information, not necessary related to the cluster",
                     "$ref": "#/definitions/v1.Extra"
                 },
                 "k8sInfraRelease": {
@@ -292,7 +298,7 @@
                     }
                 },
                 "peerVirtualNetworks": {
-                    "description": "Information about Virtual Networks peered with the cluster",
+                    "description": "Information about Virtual Networks manual peered with the cluster",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v1.PeerVirtualNetwork"
@@ -311,7 +317,7 @@
                     "type": "string"
                 },
                 "shortName": {
-                    "description": "Cluster name, without dash.\n+kubebuilder:validation:Required\n+kubebuilder:validation:MaxLength=64\n+kubebuilder:validation:MinLength=3",
+                    "description": "Cluster name, without dash\n+kubebuilder:validation:Required\n+kubebuilder:validation:MaxLength=64\n+kubebuilder:validation:MinLength=3",
                     "type": "string"
                 },
                 "status": {

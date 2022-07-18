@@ -95,6 +95,7 @@ if [[ "${RUN_APISERVER}" == 1 ]]; then
 		-e SQS_QUEUE_NAME=${SQS_QUEUE_NAME} \
 		-e API_RATE_LIMITER=${API_RATE_LIMITER} \
 		-e LOG_LEVEL=${LOG_LEVEL} \
+		-e API_HOST=${API_HOST} \
 		--network ${NETWORK} \
 		${IMAGE_APISERVER}:${TAG}
 fi
