@@ -254,7 +254,7 @@ func (s *e2eTestSuite) TBD_Test_EndToEnd_UpdateCluster() {
 		s.T().Fatalf("Falied to create object %s into k8s api.", inputCluster.Spec.Name)
 	}
 
-	s.T().Logf("Successfully created cluster %s.", inputCluster.ClusterName)
+	s.T().Logf("Successfully created cluster %s.", inputCluster.Spec.Name)
 
 	time.Sleep(10 * time.Second)
 
