@@ -36,7 +36,9 @@ all: format generate build test test-e2e
 .PHONY: clean
 clean:
 	# Remove all files and directories ignored by git.
+	# Stop all local containers.
 	git clean -Xfd .
+	./local/cleanup.sh
 
 
 ############
@@ -97,20 +99,22 @@ release-slt:
 # Formatting #
 ##############
 
+.PHONY: format-prereq
+format-prereq:
+	@[ -f $(GOSEC) ] || GOBIN=$(shell pwd)/bin go get "github.com/securego/gosec/v2/cmd/gosec";
+
 .PHONY: format
-format: go-fmt go-vet go-lint go-sec check-license
+format: format-prereq go-fmt go-vet go-lint go-sec check-license
 
 .PHONY: go-fmt
 go-fmt:
 	@echo 'Formatting go code...'
 	@gofmt -s -w .
-	@echo 'Not formatiing issues found in go codebase!'
-
+	@echo 'Not formating issues found in go codebase!'
 
 .PHONY: check-license
 check-license:
 	./hack/check_license.sh
-
 
 .PHONY: go-lint
 go-lint: golangci-lint
@@ -123,21 +127,21 @@ lint-fix: golangci-lint
 	$(GOLANGCI_LINT) run --fix
 
 GOLANGCI_LINT = $(shell pwd)/bin/golangci-lint
+GOLANGCI_LINT_VERSION = "v1.46.2"
 golangci-lint:
-	@[ -f $(GOLANGCI_LINT) ] || { \
-	set -e ;\
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell dirname $(GOLANGCI_LINT)) v1.41.1 ;\
-	}
+	@[ -f $(GOLANGCI_LINT) ] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell dirname $(GOLANGCI_LINT)) $(GOLANGCI_LINT_VERSION);
 
 GOSEC = $(shell pwd)/bin/gosec
-go-sec: ## Inspects source code for security problems
-	@if ! command -v gosec >/dev/null 2>&1 ; then $(call go-get-tool,$(GOSEC),github.com/securego/gosec/v2/cmd/gosec); fi
+.PHONY: go-sec
+go-sec:
+	@[ -f $(GOSEC) ] || GOBIN=$(shell pwd)/bin go get "github.com/securego/gosec/v2/cmd/gosec";
 	@echo 'Checking source code for security problems...'
 	$(GOSEC)  ./pkg/...
-	@echo 'No security problems found in go codebase!'
+	@echo 'No security problems found in go codebase!'	
 
-go-vet: ## Identifying subtle source code issues
-	@echo 'Vetting go code...'
+.PHONY: go-vet
+go-vet:
+	@echo 'Vetting go code and identify subtle source code issues...'
 	@go vet $(shell pwd)/pkg/apiserver/...
 	@echo 'Not issues found in go codebase!'
 
@@ -146,19 +150,23 @@ go-vet: ## Identifying subtle source code issues
 # Testing #
 ###########
 
-ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
+KUBEBUILDER_ASSETS=$(shell pwd)/kubebuilder
+K8S_VERSION=1.21.2
 
 .PHONY: test
 test:
-	mkdir -p ${ENVTEST_ASSETS_DIR}
-	test -f ${ENVTEST_ASSETS_DIR}/setup-envtest.sh || curl -sSLo ${ENVTEST_ASSETS_DIR}/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.7.2/hack/setup-envtest.sh
-	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); go test -race $(TEST_RUN_ARGS) -short $(PKGS) -count=1 -cover -v
+	@[ -d $(KUBEBUILDER_ASSETS) ] || {\
+		mkdir -p $(KUBEBUILDER_ASSETS);\
+		curl -sSLo envtest-bins.tar.gz "https://go.kubebuilder.io/test-tools/$(K8S_VERSION)/$(GOOS)/$(GOARCH)";\
+		tar -C $(KUBEBUILDER_ASSETS) --strip-components=1 -zvxf envtest-bins.tar.gz;\
+	}
+	KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS)/bin go test -race $(TEST_RUN_ARGS) -short $(PKGS) -count=1 -cover -v
 
 .PHONY: test-e2e
 test-e2e:
 	$(shell pwd)/local/setup.sh
 	@. local/.env.local && go test -race github.com/adobe/cluster-registry/test/e2e -count=1 -v
-	$(shell pwd)/local/cleanup.sh
+	# $(shell pwd)/local/cleanup.sh
 
 ## Make sure you have set the APISERVER_AUTH_TOKEN env variable.
 ## Use PERFORMANCE_TEST_TIME env var to set the benchmark time per endpoint.
@@ -185,11 +193,11 @@ MANAGER_ROLE ?= "cluster-registry"
 
 CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
 controller-gen: ## Download controller-gen locally if necessary.
-	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1)
+	@[ -f $(CONTROLLER_GEN) ] || GOBIN=$(shell pwd)/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1
 
 KUSTOMIZE = $(shell pwd)/bin/kustomize
 kustomize: ## Download kustomize locally if necessary.
-	$(call go-get-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v3@v3.8.7)
+	@[ -f $(KUSTOMIZE) ] || GOBIN=$(shell pwd)/bin go install sigs.k8s.io/kustomize/kustomize/v4@v4.5.5
 
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=$(MANAGER_ROLE) webhook paths="$(shell pwd)/pkg/api/..." output:crd:artifacts:config=$(shell pwd)/config/crd/bases output:rbac:artifacts:config=$(shell pwd)/config/rbac
@@ -197,21 +205,12 @@ manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and Cust
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="$(shell pwd)/hack/boilerplate.go.txt" paths="$(shell pwd)/pkg/api/..."
 
-# go-get-tool will 'go get' any package $2 and install it to $1.
-define go-get-tool
-	@[ -f $(1) ] || { \
-	set -e; \
-	TMP_DIR=$$(mktemp -d); \
-	cd $$TMP_DIR; \
-	go mod init tmp; \
-	echo "Downloading $(2)"; \
-	GOBIN=$(shell pwd)/bin go get $(2); \
-	rm -rf $$TMP_DIR; \
-	}
-endef
 
-# -------------
-# DOCUMENTATION
-# -------------
+#################
+# Documentation #
+#################
+
+SWAGGER_CLI = $(shell pwd)/bin/swag
 swagger:
-	swag init --parseDependency --parseInternal --parseDepth 2 -g cmd/apiserver/apiserver.go --output pkg/apiserver/docs/
+	@[ -f $(SWAGGER_CLI) ] || GOBIN=$(shell pwd)/bin go install github.com/swaggo/swag/cmd/swag@v1.8.3
+	$(SWAGGER_CLI) init --parseDependency --parseInternal --parseDepth 2 -g cmd/apiserver/apiserver.go --output pkg/apiserver/docs/
