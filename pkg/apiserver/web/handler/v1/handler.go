@@ -100,6 +100,7 @@ func (h *handler) GetCluster(ctx echo.Context) error {
 // @Param region query string false "Filter by region"
 // @Param environment query string false "Filter by environment"
 // @Param status query string false "Filter by status"
+// @Param lastUpdated query string false "Filter since last updated (RFC3339)"
 // @Param offset query integer false "Offset to start pagination search results (default is 0)"
 // @Param limit query integer false "The number of results per page (default is 200)"
 // @Success 200 {object} clusterList
