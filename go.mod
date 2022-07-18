@@ -16,6 +16,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.1.4 // indirect
 	github.com/onsi/gomega v1.19.0
 	github.com/prometheus/client_golang v1.12.1
+	github.com/securego/gosec/v2 v2.12.0 // indirect
 	github.com/stretchr/testify v1.7.2
 	github.com/swaggo/echo-swagger v1.3.3
 	github.com/swaggo/swag v1.8.3
