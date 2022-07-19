@@ -1,3 +1,11 @@
+# 1.1.4
+
+## cluster-registry-api
+- Fix swagger #39
+
+## cluster-registry-client
+- N/A
+
 # 1.1.3
 
 ## cluster-registry-api
