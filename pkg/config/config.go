@@ -20,18 +20,19 @@ import (
 )
 
 type AppConfig struct {
+	ApiRateLimiterEnabled bool
+	ApiHost               string
 	AwsRegion             string
 	DbEndpoint            string
 	DbAwsRegion           string
 	DbTableName           string
 	DbIndexName           string
+	LogLevel              log.Lvl
+	OidcClientId          string
+	OidcIssuerUrl         string
 	SqsEndpoint           string
 	SqsAwsRegion          string
 	SqsQueueName          string
-	OidcClientId          string
-	OidcIssuerUrl         string
-	ApiRateLimiterEnabled bool
-	LogLevel              log.Lvl
 }
 
 func LoadApiConfig() (*AppConfig, error) {
@@ -96,6 +97,8 @@ func LoadApiConfig() (*AppConfig, error) {
 		logLevel = log.INFO
 	}
 
+	apiHost := getEnv("API_HOST", "0.0.0.0:8080")
+
 	return &AppConfig{
 		AwsRegion:             awsRegion,
 		DbEndpoint:            dbEndpoint,
@@ -109,6 +112,7 @@ func LoadApiConfig() (*AppConfig, error) {
 		OidcIssuerUrl:         oidcIssuerUrl,
 		ApiRateLimiterEnabled: apiRateLimiterEnabled,
 		LogLevel:              logLevel,
+		ApiHost:               apiHost,
 	}, nil
 }
 

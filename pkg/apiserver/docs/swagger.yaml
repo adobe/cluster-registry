@@ -95,22 +95,22 @@ definitions:
         type: array
       cloudProviderRegion:
         description: |-
-          The cloud provider standard region.
+          The cloud provider standard region
           +kubebuilder:validation:Required
         type: string
       cloudType:
         description: |-
-          The cloud provider.
+          The cloud provider
           +kubebuilder:validation:Required
         type: string
       environment:
         description: |-
-          Cluster environment.
+          Cluster environment
           +kubebuilder:validation:Required
         type: string
       extra:
         $ref: '#/definitions/v1.Extra'
-        description: Extra information, not necessary related to the cluster.
+        description: Extra information, not necessary related to the cluster
       k8sInfraRelease:
         $ref: '#/definitions/v1.K8sInfraRelease'
         description: |-
@@ -139,7 +139,7 @@ definitions:
           type: string
         type: array
       peerVirtualNetworks:
-        description: Information about Virtual Networks peered with the cluster
+        description: Information about Virtual Networks manual peered with the cluster
         items:
           $ref: '#/definitions/v1.PeerVirtualNetwork'
         type: array
@@ -161,7 +161,7 @@ definitions:
         type: string
       shortName:
         description: |-
-          Cluster name, without dash.
+          Cluster name, without dash
           +kubebuilder:validation:Required
           +kubebuilder:validation:MaxLength=64
           +kubebuilder:validation:MinLength=3
@@ -354,6 +354,10 @@ paths:
         in: query
         name: status
         type: string
+      - description: Filter since last updated (RFC3339)
+        in: query
+        name: lastUpdated
+        type: string
       - description: Offset to start pagination search results (default is 0)
         in: query
         name: offset
@@ -368,7 +372,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg_apiserver_web_handler_v1.clusterList'
+            $ref: '#/definitions/github.com_adobe_cluster-registry_pkg_apiserver_web_handler_v1.clusterList'
         "500":
           description: Internal Server Error
           schema:

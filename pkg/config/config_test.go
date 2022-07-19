@@ -83,6 +83,7 @@ func TestLoadApiConfig(t *testing.T) {
 				"OIDC_ISSUER_URL":  "http://fake-oidc-provider",
 				"API_RATE_LIMITER": "enabled",
 				"LOG_LEVEL":        "DEBUG",
+				"API_HOST":         "custom-host:8080",
 			},
 			expectedAppConfig: &AppConfig{
 				AwsRegion:             "aws-region",
@@ -97,6 +98,7 @@ func TestLoadApiConfig(t *testing.T) {
 				OidcIssuerUrl:         "http://fake-oidc-provider",
 				ApiRateLimiterEnabled: true,
 				LogLevel:              log.DEBUG,
+				ApiHost:               "custom-host:8080",
 			},
 			expectedError: nil,
 		},
@@ -124,6 +126,7 @@ func TestLoadApiConfig(t *testing.T) {
 				SqsQueueName:  "cluster-registry-local",
 				OidcClientId:  "oidc-client-id",
 				OidcIssuerUrl: "http://fake-oidc-provider",
+				ApiHost:       "0.0.0.0:8080",
 			},
 			expectedError: fmt.Errorf("Environment variable OIDC_ISSUER_URL is not set."),
 		},
