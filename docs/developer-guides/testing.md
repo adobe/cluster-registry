@@ -32,3 +32,33 @@ func main() {
 	fmt.Println(jwtToken)
 }
 ```
+
+#### SLT test
+
+This is an end to end test that consists of a service that serves the /metrics endpoint for Prometheus to scrape the test metrics, and the test itself that runs in a loop and updates the metrics.
+
+```mermaid
+sequenceDiagram
+    participant SLTService
+    participant ClusterRegistryClient
+	participant ClusterRegistryAPI
+	participant CRD
+	participant Prometheus
+	Note left of SLTService: CR API Token
+    SLTService->>CRD: Modify `update-slt` tag
+    ClusterRegistryClient->>CRD: Check crd change
+    ClusterRegistryClient->>ClusterRegistryAPI: Push change to database
+    SLTService->>ClusterRegistryAPI: Check change in database
+	Prometheus->>SLTService: Scrape /metrics endpoint
+```
+
+The test and consists of the following stages with it's following logs:
+1. Get a token to authenticate to Cluster Registry.
+2. Makes an update on the cluster custom object by adding new `Tag` named `update-slt` with the value `Tick` or `Tack`. Logs in order:
+    - `Updating the Cluster Registry CRD...`
+    - `Changing 'update-slt' tag value`
+    - `Cluster Registry CRD updated!`
+3. Query the Cluster Registry API to check for the update at the endpoint `/api/v1/clusters/[cluster-name]`. Logs in order:
+    - `Waiting for the Cluster Registry API to update the database...`
+    - `Checking the API for the update (check 1/3)... (reties 3 times at a 11s interval)`
+    - `Update confirmed`
