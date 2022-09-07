@@ -34,7 +34,7 @@ type Logger struct {
 func (l *Logger) Fatal(i ...interface{}) {
 	err := ioutil.WriteFile(l.filePath, []byte(fmt.Sprint(i...)), 0777)
 	if err != nil {
-		l.Logger.Errorf("Failed to open and write to the logging file: %s", err)
+		l.Logger.Warnf("Failed to open and write to the logging file: %s", err)
 	}
 	l.Logger.Fatal(i...)
 }
@@ -59,10 +59,10 @@ func NewLogger(name string) *Logger {
 // NewEchoWithLogger returns an echo server with a specific logger
 func NewEchoWithLogger(logger *Logger) *echo.Echo {
 	e := echo.New()
-	e.Logger = logger
+	e.Logger = logger // App logs
 
 	e.Pre(middleware.RemoveTrailingSlash())
-	e.Use(middleware.Logger())
+	e.Use(middleware.Logger()) // Logs http requests
 
 	return e
 }
