@@ -30,7 +30,7 @@ func SetLogger(lgr echo.Logger) {
 func GetClusterConfigFromEnv() GetClusterConfig {
 	return GetClusterConfig{
 		url:         h.GetEnv("URL", "http://localhost:8080", logger),
-		clusterName: h.GetEnv("CLUSTER_NAME", "ethos11-prod-or1", logger),
+		clusterName: h.GetEnv("CLUSTER_NAME", "", logger),
 	}
 }
 
