@@ -6,7 +6,6 @@ import (
 
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/labstack/echo/v4"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/adobe/cluster-registry/pkg/config"
 	"github.com/adobe/cluster-registry/test/jwt"
@@ -30,6 +29,7 @@ func SetLogger(lgr echo.Logger) {
 	logger = lgr
 }
 
+// readToken is an atomic getter for the token
 func readToken() string {
 	tokenRWLock.RLock()
 	defer tokenRWLock.RUnlock()
@@ -97,15 +97,6 @@ func RefreshToken(_ interface{}) {
 
 func init() {
 	metrics.RegisterMetrics()
-}
-
-// Metrics returns a HandlerFunc for the metrics endpoint
-func Metrics() echo.HandlerFunc {
-	h := promhttp.Handler()
-	return func(c echo.Context) error {
-		h.ServeHTTP(c.Response(), c.Request())
-		return nil
-	}
 }
 
 // RunE2eTest starts e2e test

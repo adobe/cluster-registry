@@ -42,7 +42,7 @@ func init() {
 	timeBetweenGetAllClusters = h.GetEnv("TIME_BETWEEN_GET_ALL_CLUSTERS", "5m", logger)
 	tokenRefreshTime = h.GetEnv("TOKEN_REFRESH_TIME", "29m", logger)
 
-	go h.RunFucInLoop(checks.RefreshToken, nil, tokenRefreshTime, "", logger)
+	go h.RunFuncInLoop(checks.RefreshToken, nil, tokenRefreshTime, "", logger)
 }
 
 func main() {
@@ -51,7 +51,7 @@ func main() {
 	e.GET("/metrics", web.Metrics())
 	e.GET("/livez", web.Livez)
 
-	go h.RunFucInLoop(
+	go h.RunFuncInLoop(
 		checks.RunE2eTest,
 		update.GetConfigFromEnv(),
 		timeBetweenE2e,
@@ -59,7 +59,7 @@ func main() {
 		logger,
 	)
 
-	go h.RunFucInLoop(
+	go h.RunFuncInLoop(
 		checks.RunClusterRequest,
 		request.GetClusterConfigFromEnv(),
 		timeBetweenGetCluster,
@@ -67,7 +67,7 @@ func main() {
 		logger,
 	)
 
-	go h.RunFucInLoop(
+	go h.RunFuncInLoop(
 		checks.RunAllClustersRequests,
 		request.GetAllClusterConfigFromEnv(),
 		timeBetweenGetAllClusters,

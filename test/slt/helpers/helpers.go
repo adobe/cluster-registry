@@ -38,11 +38,11 @@ func GetRandomTime(maxTime string, logger echo.Logger) string {
 	return (time.Second * time.Duration(radomSeconds)).String()
 }
 
-// RunFucInLoop runs a function in a loop.
+// RunFuncInLoop runs a function in a loop.
 // f is the function to run,
 // timeInterval is the time it waits to run again,
 // offSetStart is the time to wait before the loop starts.
-func RunFucInLoop(f func(interface{}), config interface{}, timeInterval string, offSetStart string, logger echo.Logger) {
+func RunFuncInLoop(f func(interface{}), config interface{}, timeInterval string, offSetStart string, logger echo.Logger) {
 	interval, err := time.ParseDuration(timeInterval)
 	if err != nil {
 		logger.Fatalf("error parsing time interval to run %s function in loop: %s", GetFunctionName(f), err)
