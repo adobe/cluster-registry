@@ -15,18 +15,29 @@ import (
 	"github.com/adobe/cluster-registry/test/slt/metrics"
 )
 
-var logger echo.Logger
-
 var (
 	token       string
 	tokenRWLock sync.RWMutex
 )
 
+const MetricLabelToken = "token_refresh"
+
+var logger echo.Logger
+
+func init() {
+	metrics.RegisterMetrics()
+
+	update.InitMetrics()
+	request.InitMetrics()
+
+	metrics.ErrCnt.WithLabelValues(MetricLabelToken).Add(0)
+}
+
 // SetLogger sets the global logger for the all the checks
 func SetLogger(lgr echo.Logger) {
+	logger = lgr
 	update.SetLogger(lgr)
 	request.SetLogger(lgr)
-	logger = lgr
 }
 
 // readToken is an atomic getter for the token
@@ -84,8 +95,9 @@ func RefreshToken(_ interface{}) {
 
 	resourceID, tenantID, clientID, clientSecret := GetAuthDetails()
 
-	localToken, err := requestToken(resourceID, tenantID, clientID, clientSecret)
+	localToken, err := debugGenerateToken(resourceID, tenantID, clientID, clientSecret)
 	if err != nil {
+		metrics.ErrCnt.WithLabelValues(MetricLabelToken).Inc()
 		logger.Fatalf("error getting jwt token: %s", err)
 	}
 
@@ -93,10 +105,6 @@ func RefreshToken(_ interface{}) {
 	token = localToken
 	tokenRWLock.Unlock()
 	logger.Info("the Cluster Registry token just got refreshed.")
-}
-
-func init() {
-	metrics.RegisterMetrics()
 }
 
 // RunE2eTest starts e2e test
@@ -111,16 +119,19 @@ func RunE2eTest(config interface{}) {
 
 	start := time.Now()
 
-	status, nrOfTries, err := update.Run(conf, jwtToken)
+	_, nrOfTries, err := update.Run(conf, jwtToken)
 	if err != nil {
-		logger.Fatal(err)
+		metrics.ErrCnt.WithLabelValues(update.MetricLabel).Inc()
+		metrics.TestStatus.WithLabelValues(update.MetricLabel).Set(0)
+		logger.Error(err)
+		return
 	}
 
 	timeTook := float64(time.Since(start).Seconds())
 
-	metrics.E2eStatus.Set(float64(status))
-	metrics.E2eDuration.Set(timeTook)
-	metrics.E2eProcessingDuration.Set(timeTook - float64(nrOfTries*11)) // 11 is the sleep between the tries
+	// 11 is the sleep between the tries
+	metrics.TestDuration.WithLabelValues(update.MetricLabel).Observe(timeTook - float64(nrOfTries*11))
+	metrics.TestStatus.WithLabelValues(update.MetricLabel).Set(1)
 }
 
 // RunClusterRequest run a GET request to CR on the /clusters/[clustername] endpoint
@@ -140,12 +151,14 @@ func RunClusterRequest(config interface{}) {
 
 	if err != nil {
 		logger.Errorf("failed timing the request that gets a cluster: %s", err.Error())
-		metrics.AllClustersReqDuration.Set(0)
+		metrics.TestStatus.WithLabelValues(request.MetricLabelGetCluster).Set(0)
+		metrics.ErrCnt.WithLabelValues(request.MetricLabelGetCluster).Inc()
 		return
 	}
 	logger.Infof("timing completed for the request that gets a cluster: took %fs", timeTook)
 
-	metrics.ClusterReqDuration.Set(timeTook)
+	metrics.TestStatus.WithLabelValues(request.MetricLabelGetCluster).Set(1)
+	metrics.TestDuration.WithLabelValues(request.MetricLabelGetCluster).Observe(timeTook)
 }
 
 // RunAllClustersRequests run a GET request to CR on the /clusters endpoint
@@ -165,10 +178,12 @@ func RunAllClustersRequests(config interface{}) {
 
 	if err != nil {
 		logger.Errorf("failed timing the request that gets multiple clusters: %s", err.Error())
-		metrics.AllClustersReqDuration.Set(0)
+		metrics.TestStatus.WithLabelValues(request.MetricLabelGetAllClusters).Set(0)
+		metrics.ErrCnt.WithLabelValues(request.MetricLabelGetAllClusters).Inc()
 		return
 	}
 	logger.Infof("timing completed for the request that gets multiple clusters: took %fs", timeTook)
 
-	metrics.AllClustersReqDuration.Set(timeTook)
+	metrics.TestStatus.WithLabelValues(request.MetricLabelGetAllClusters).Set(1)
+	metrics.TestDuration.WithLabelValues(request.MetricLabelGetAllClusters).Observe(timeTook)
 }

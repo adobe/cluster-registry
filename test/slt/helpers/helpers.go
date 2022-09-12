@@ -9,11 +9,13 @@ import (
 	"os"
 	"reflect"
 	"runtime"
+	"strconv"
 	"time"
 
 	"github.com/labstack/echo/v4"
 
 	cr "github.com/adobe/cluster-registry/pkg/api/registry/v1"
+	"github.com/adobe/cluster-registry/test/slt/metrics"
 )
 
 // ClusterList ...
@@ -121,7 +123,13 @@ func GetCluster(url, clusterName, jwtToken string) (*cr.ClusterSpec, error) {
 	endpoint := fmt.Sprintf("%s/api/v1/clusters/%s", url, clusterName)
 	bearer := "Bearer " + jwtToken
 
+	start := time.Now()
 	body, respCode, err := reqGet(endpoint, bearer)
+	timeTook := float64(time.Since(start).Seconds())
+	metrics.EgressReqDuration.WithLabelValues(
+		"/api/v1/clusters/[cluster]",
+		"GET",
+		strconv.Itoa(respCode)).Observe(timeTook)
 	if err != nil {
 		if respCode == 404 {
 			return nil, fmt.Errorf("cluster %s was not found: %s", clusterName, err.Error())
@@ -144,7 +152,13 @@ func GetClusters(url, perPageLimit, pageNr, jwtToken string) (*ClusterList, erro
 	endpoint := fmt.Sprintf("%s/api/v1/clusters?offset=%s&limit=%s", url, pageNr, perPageLimit)
 	bearer := "Bearer " + jwtToken
 
-	body, _, err := reqGet(endpoint, bearer)
+	start := time.Now()
+	body, respCode, err := reqGet(endpoint, bearer)
+	timeTook := float64(time.Since(start).Seconds())
+	metrics.EgressReqDuration.WithLabelValues(
+		"/api/v1/clusters",
+		"GET",
+		strconv.Itoa(respCode)).Observe(timeTook)
 	if err != nil {
 		return nil, err
 	}

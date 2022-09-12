@@ -4,7 +4,14 @@ import (
 	"github.com/labstack/echo/v4"
 
 	h "github.com/adobe/cluster-registry/test/slt/helpers"
+	"github.com/adobe/cluster-registry/test/slt/metrics"
 )
+
+// MetricLabelGetCluster is the label name for metrics regarding this package
+const MetricLabelGetCluster = "get_cluster_test"
+
+// MetricLabelGetAllClusters is the label name for metrics regarding this package
+const MetricLabelGetAllClusters = "get_multiple_clusters_test"
 
 var logger echo.Logger
 
@@ -26,6 +33,15 @@ func SetLogger(lgr echo.Logger) {
 	logger = lgr
 }
 
+// InitMetrics initializes the error metrics to 0
+func InitMetrics() {
+	metrics.ErrCnt.WithLabelValues(MetricLabelGetCluster).Add(0)
+	metrics.ErrCnt.WithLabelValues(MetricLabelGetAllClusters).Add(0)
+
+	metrics.TestStatus.WithLabelValues(MetricLabelGetCluster).Set(0)
+	metrics.TestStatus.WithLabelValues(MetricLabelGetAllClusters).Set(0)
+}
+
 // GetClusterConfigFromEnv gets from the env the needed global env
 func GetClusterConfigFromEnv() GetClusterConfig {
 	return GetClusterConfig{
@@ -43,7 +59,7 @@ func GetAllClusterConfigFromEnv() GetAllClusterConfig {
 	}
 }
 
-// RunGetCluster as
+// RunGetCluster runs the test
 func RunGetCluster(config GetClusterConfig, jwtToken string) error {
 	_, err := h.GetCluster(config.url, config.clusterName, jwtToken)
 	if err != nil {
@@ -52,7 +68,7 @@ func RunGetCluster(config GetClusterConfig, jwtToken string) error {
 	return nil
 }
 
-// RunGetAllClusters as
+// RunGetAllClusters runs the test
 func RunGetAllClusters(config GetAllClusterConfig, jwtToken string) error {
 	_, err := h.GetClusters(config.url, config.perPageLimit, config.pageNr, jwtToken)
 	if err != nil {

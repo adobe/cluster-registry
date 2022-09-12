@@ -7,45 +7,48 @@ import (
 
 var logger echo.Logger
 
-var E2eStatus = prometheus.NewGauge(
+const metricsPrefix = "cluster_registry_slt"
+
+var reqDurBuckets = []float64{.25, .5, 1, 3, 5, 10, 15, 20}
+
+var TestStatus = prometheus.NewGaugeVec(
 	prometheus.GaugeOpts{
-		Name: "cr_e2e_status",
+		Subsystem: metricsPrefix,
+		Name:      "test_status",
 		Help: "The status of the last SLT, has values between 1 if the check passed and 0 " +
 			"if it failed.",
 	},
+	[]string{"test"},
 )
 
-var E2eDuration = prometheus.NewGauge(
-	prometheus.GaugeOpts{
-		Name: "cr_e2e_duration",
-		Help: "It's how much time did the last e2e test take to run (in seconds). Be mindful " +
-			"that the time between the crd is updated and the change propagates to the " +
-			"API is around 11s, so the full slt duration can't be smaller than that.",
+var EgressReqDuration = prometheus.NewHistogramVec(
+	prometheus.HistogramOpts{
+		Subsystem: metricsPrefix,
+		Name:      "egress_request_duration_seconds",
+		Help:      "The duration of the requests to the Cluster Registry API.",
+		Buckets:   reqDurBuckets,
 	},
+	[]string{"route", "method", "status_code"},
 )
 
-var E2eProcessingDuration = prometheus.NewGauge(
-	prometheus.GaugeOpts{
-		Name: "cr_e2e_processing_duration",
-		Help: "It's how much time did the last e2e test take to run (in seconds). But the time " +
-			"waited(sleep) for the update to propagate to the API is subtracted, so this calculates " +
-			"only the time the code is running without the sleeps.",
+var TestDuration = prometheus.NewHistogramVec(
+	prometheus.HistogramOpts{
+		Subsystem: metricsPrefix,
+		Name:      "test_duration_seconds",
+		Help: "It's how much time took for the test to complete. For the e2e test the " +
+			"sleeps are excluded.",
+		Buckets: reqDurBuckets,
 	},
+	[]string{"test"},
 )
 
-var ClusterReqDuration = prometheus.NewGauge(
-	prometheus.GaugeOpts{
-		Name: "cr_cluster_request_duration",
-		Help: "It's how much time took to get a cluster (in seconds) using the " +
-			"/clusters/[clustername] endpoint.",
+var ErrCnt = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Subsystem: metricsPrefix,
+		Name:      "error_count",
+		Help:      "The total number of errors, labeled by the test",
 	},
-)
-
-var AllClustersReqDuration = prometheus.NewGauge(
-	prometheus.GaugeOpts{
-		Name: "cr_all_clusters_request_duration",
-		Help: "It's how much time took to get a page of 200 clusters (in seconds) using the /clusters endpoint.",
-	},
+	[]string{"test"},
 )
 
 // SetLogger sets the global logger
@@ -55,23 +58,19 @@ func SetLogger(lgr echo.Logger) {
 
 // RegisterMetrics registers the metrics from this package
 func RegisterMetrics() {
-	if err := prometheus.Register(E2eStatus); err != nil {
+	if err := prometheus.Register(TestStatus); err != nil {
 		logger.Fatalf("Error registering metric: %s", err)
 	}
 
-	if err := prometheus.Register(E2eDuration); err != nil {
+	if err := prometheus.Register(EgressReqDuration); err != nil {
 		logger.Fatalf("Error registering metric: %s", err)
 	}
 
-	if err := prometheus.Register(E2eProcessingDuration); err != nil {
+	if err := prometheus.Register(TestDuration); err != nil {
 		logger.Fatalf("Error registering metric: %s", err)
 	}
 
-	if err := prometheus.Register(ClusterReqDuration); err != nil {
-		logger.Fatalf("Error registering metric: %s", err)
-	}
-
-	if err := prometheus.Register(AllClustersReqDuration); err != nil {
+	if err := prometheus.Register(ErrCnt); err != nil {
 		logger.Fatalf("Error registering metric: %s", err)
 	}
 }

@@ -27,6 +27,7 @@ import (
 	h "github.com/adobe/cluster-registry/test/slt/helpers"
 
 	cr "github.com/adobe/cluster-registry/pkg/api/registry/v1"
+	"github.com/adobe/cluster-registry/test/slt/metrics"
 	"github.com/labstack/echo/v4"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -36,6 +37,7 @@ import (
 
 // The key name of the tag to update for the slt test
 const tagSLT = "update-slt"
+const MetricLabel = "e2e_test"
 
 var logger echo.Logger
 
@@ -48,6 +50,12 @@ type TestConfig struct {
 // SetLogger sets the global logger for the slt package
 func SetLogger(lgr echo.Logger) {
 	logger = lgr
+}
+
+// InitMetrics initializes the error metrics to 0
+func InitMetrics() {
+	metrics.ErrCnt.WithLabelValues(MetricLabel).Add(0)
+	metrics.TestStatus.WithLabelValues(MetricLabel).Set(0)
 }
 
 // GetConfigFromEnv gets from the env the needed global env
@@ -152,7 +160,7 @@ func checkAPIforUpdate(url, clusterName, tagSLTValue, jwtToken string) error {
 	return nil
 }
 
-// Run runs the SLT
+// Run runs the test
 func Run(config TestConfig, jwtToken string) (int, int, error) {
 	logger.Info("updating the Cluster Registry CRD...")
 	clusterName, tagSLTValue, err := updateCrd(config.namespace)
