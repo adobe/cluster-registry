@@ -24,11 +24,6 @@ type ClusterList struct {
 	ItemsCount int               `json:"itemsCount"`
 }
 
-type parameter struct {
-	Name  string
-	Value string
-}
-
 // GetRandomTime returns a random time interval as a string
 func GetRandomTime(maxTime string, logger echo.Logger) string {
 	interval, err := time.ParseDuration(maxTime)
