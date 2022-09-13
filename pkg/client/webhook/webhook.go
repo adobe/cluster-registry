@@ -19,6 +19,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 
 	configv1 "github.com/adobe/cluster-registry/pkg/api/config/v1"
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
@@ -45,7 +46,11 @@ const (
 // Start starts the webhook server
 func (s *Server) Start() error {
 	http.HandleFunc("/webhook", s.webhookHandler)
-	if err := http.ListenAndServe(s.BindAddress, nil); err != nil {
+	server := &http.Server{
+		Addr:              s.BindAddress,
+		ReadHeaderTimeout: 2 * time.Minute,
+	}
+	if err := server.ListenAndServe(); err != nil {
 		return err
 	}
 
