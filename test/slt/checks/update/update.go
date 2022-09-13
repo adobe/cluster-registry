@@ -161,11 +161,11 @@ func checkAPIforUpdate(url, clusterName, tagSLTValue, jwtToken string) error {
 }
 
 // Run runs the test
-func Run(config TestConfig, jwtToken string) (int, int, error) {
+func Run(config TestConfig, jwtToken string) (int, error) {
 	logger.Info("updating the Cluster Registry CRD...")
 	clusterName, tagSLTValue, err := updateCrd(config.namespace)
 	if err != nil {
-		return 0, 0, err
+		return 0, err
 	}
 	logger.Info("Cluster Registry CRD updated!")
 
@@ -187,9 +187,9 @@ func Run(config TestConfig, jwtToken string) (int, int, error) {
 		}
 
 		logger.Info("update confirmed")
-		return 1, nrOfTries, nil
+		return nrOfTries, nil
 	}
 
-	logger.Error("failed to confirm the update")
-	return 0, 0, nil
+	err = errors.New("failed to confirm the update")
+	return nrOfTries, err
 }

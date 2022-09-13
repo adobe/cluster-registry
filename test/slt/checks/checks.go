@@ -90,15 +90,17 @@ func debugGenerateToken(resourceID, tenantID, clientID, clientSecret string) (st
 }
 
 // RefreshToken refreshes the token global variable in this package
+// The '_' parameter is only so this function can be passed to RunFunctionInLoop
 func RefreshToken(_ interface{}) {
-	// The '_' parameter is only so this function can be passed to RunFunctionInLoop
-
 	resourceID, tenantID, clientID, clientSecret := GetAuthDetails()
 
 	localToken, err := requestToken(resourceID, tenantID, clientID, clientSecret)
 	if err != nil {
+		if token == "" {
+			logger.Fatalf("error getting jwt token: %s", err)
+		}
 		metrics.ErrCnt.WithLabelValues(MetricLabelToken).Inc()
-		logger.Fatalf("error getting jwt token: %s", err)
+		logger.Errorf("error getting jwt token: %s", err)
 	}
 
 	tokenRWLock.Lock()
@@ -119,7 +121,7 @@ func RunE2eTest(config interface{}) {
 
 	start := time.Now()
 
-	_, nrOfTries, err := update.Run(conf, jwtToken)
+	nrOfTries, err := update.Run(conf, jwtToken)
 	if err != nil {
 		metrics.ErrCnt.WithLabelValues(update.MetricLabel).Inc()
 		metrics.TestStatus.WithLabelValues(update.MetricLabel).Set(0)
