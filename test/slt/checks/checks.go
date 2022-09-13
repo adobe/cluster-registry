@@ -95,7 +95,7 @@ func RefreshToken(_ interface{}) {
 
 	resourceID, tenantID, clientID, clientSecret := GetAuthDetails()
 
-	localToken, err := debugGenerateToken(resourceID, tenantID, clientID, clientSecret)
+	localToken, err := requestToken(resourceID, tenantID, clientID, clientSecret)
 	if err != nil {
 		metrics.ErrCnt.WithLabelValues(MetricLabelToken).Inc()
 		logger.Fatalf("error getting jwt token: %s", err)
