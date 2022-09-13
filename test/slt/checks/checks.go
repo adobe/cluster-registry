@@ -7,8 +7,6 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/labstack/echo/v4"
 
-	"github.com/adobe/cluster-registry/pkg/config"
-	"github.com/adobe/cluster-registry/test/jwt"
 	"github.com/adobe/cluster-registry/test/slt/checks/request"
 	"github.com/adobe/cluster-registry/test/slt/checks/update"
 	h "github.com/adobe/cluster-registry/test/slt/helpers"
@@ -82,12 +80,11 @@ func requestToken(resourceID, tenantID, clientID, clientSecret string) (string, 
 	return token.Token().AccessToken, nil
 }
 
-// Use this function when testing generating a test token in the local env
-func debugGenerateToken(resourceID, tenantID, clientID, clientSecret string) (string, error) {
-	appConfig, _ := config.LoadApiConfig()
-	return jwt.GenerateDefaultSignedToken(appConfig), nil
-
-}
+// // Use this function when testing generating a test token in the local env
+// func debugGenerateToken(resourceID, tenantID, clientID, clientSecret string) (string, error) {
+// 	appConfig, _ := config.LoadApiConfig()
+// 	return jwt.GenerateDefaultSignedToken(appConfig), nil
+// }
 
 // RefreshToken refreshes the token global variable in this package
 // The '_' parameter is only so this function can be passed to RunFunctionInLoop
