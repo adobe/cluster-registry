@@ -19,38 +19,6 @@ import (
 	"github.com/labstack/gommon/log"
 )
 
-// // loggersLock is a global lock to make all write log operations atomic
-// var loggersLock *sync.Mutex
-
-// func getLock() *sync.Mutex {
-// 	if loggersLock == nil {
-// 		loggersLock = &sync.Mutex{}
-// 	}
-// 	return loggersLock
-// }
-
-// // Writer ...
-// type Writer struct {
-// 	w  io.Writer
-// 	mu *sync.Mutex
-// }
-
-// // NewWriter ...
-// func NewWriter(w io.Writer, mu *sync.Mutex) *Writer {
-// 	return &Writer{
-// 		w:  w,
-// 		mu: mu,
-// 	}
-// }
-
-// func (w *Writer) Write(p []byte) (int, error) {
-// 	w.mu.Lock()
-// 	n, err := w.w.Write(p)
-// 	w.mu.Unlock()
-
-// 	return n, err
-// }
-
 // Logger is a custom object that overwrites Fatal() to log the error to Kubernetes
 // error logs file
 type Logger struct {
