@@ -48,7 +48,7 @@ func (s *Server) Start() error {
 	http.HandleFunc("/webhook", s.webhookHandler)
 	server := &http.Server{
 		Addr:              s.BindAddress,
-		ReadHeaderTimeout: 2 * time.Minute,
+		ReadHeaderTimeout: 30 * time.Second,
 	}
 	if err := server.ListenAndServe(); err != nil {
 		return err
