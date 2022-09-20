@@ -36,6 +36,7 @@ var (
 	k8sClient  client.Client
 	k8sManager ctrl.Manager
 	testEnv    *envtest.Environment
+	CAData     = "_cert_data_"
 )
 
 func TestWebhook(t *testing.T) {
@@ -72,7 +73,7 @@ var _ = BeforeSuite(func() {
 		Log:    ctrl.Log.WithName("controllers").WithName("Cluster"),
 		Scheme: k8sManager.GetScheme(),
 		Queue:  sqs.NewFakeProducer(metrics),
-		CAData: "_cert_data_",
+		CAData: CAData,
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
