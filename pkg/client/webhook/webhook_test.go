@@ -23,6 +23,7 @@ import (
 
 	configv1 "github.com/adobe/cluster-registry/pkg/api/config/v1"
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
+	"github.com/adobe/cluster-registry/pkg/client/controllers"
 	monitoring "github.com/adobe/cluster-registry/pkg/monitoring/client"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -220,6 +221,19 @@ var _ = Describe("Webhook Server", func() {
 				return err == nil
 			}, timeout, interval).Should(BeTrue())
 
+			// Wait for the post creation updates from the ClusterReconciler
+			updatedCluster := &registryv1.Cluster{}
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, clusterLookupKey, updatedCluster)
+				if updatedCluster.Annotations[controllers.HashAnnotation] == "" {
+					return false
+				}
+				if updatedCluster.Spec.APIServer.CertificateAuthorityData != CAData {
+					return false
+				}
+				return err == nil
+			}, timeout, interval).Should(BeTrue())
+
 			By("Firing an alert and having it be mapped correctly")
 			req := httptest.NewRequest(
 				http.MethodGet,
@@ -230,7 +244,7 @@ var _ = Describe("Webhook Server", func() {
 			server.webhookHandler(w, req)
 			Expect(w.Result().StatusCode).To(Equal(http.StatusOK))
 
-			updatedCluster := &registryv1.Cluster{}
+			updatedCluster = &registryv1.Cluster{}
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, clusterLookupKey, updatedCluster)
 				if err != nil {

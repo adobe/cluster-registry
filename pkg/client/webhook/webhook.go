@@ -19,6 +19,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 
 	configv1 "github.com/adobe/cluster-registry/pkg/api/config/v1"
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
@@ -45,7 +46,11 @@ const (
 // Start starts the webhook server
 func (s *Server) Start() error {
 	http.HandleFunc("/webhook", s.webhookHandler)
-	if err := http.ListenAndServe(s.BindAddress, nil); err != nil {
+	server := &http.Server{
+		Addr:              s.BindAddress,
+		ReadHeaderTimeout: 30 * time.Second,
+	}
+	if err := server.ListenAndServe(); err != nil {
 		return err
 	}
 
@@ -83,7 +88,6 @@ func (s *Server) webhookHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) process(alert Alert) error {
-
 	// DeadMansSwitchAlert should always fire
 	if alert.CommonLabels.Alertname == DeadMansSwitchAlertName && alert.Status == AlertStatusFiring {
 		s.Metrics.RecordDMSLastTimestamp()
@@ -110,42 +114,60 @@ func (s *Server) process(alert Alert) error {
 			return fmt.Errorf("invalid alert status")
 		}
 
-		clusterList := &registryv1.ClusterList{}
-		err := s.Client.List(context.TODO(), clusterList, &client.ListOptions{Namespace: s.Namespace})
-		if err != nil {
-			return err
-		}
-
-		for i := range clusterList.Items {
-			var excludedTagsAnnotation string
-			var excludedTags []string
-			cluster := &clusterList.Items[i]
-
-			if cluster.Spec.Tags == nil {
-				cluster.Spec.Tags = make(map[string]string)
-			}
-
-			excludedTagsAnnotation = cluster.Annotations["registry.ethos.adobe.com/excluded-tags"]
-
-			if excludedTagsAnnotation != "" {
-				excludedTags = strings.Split(excludedTagsAnnotation, ",")
-			}
-
-			// skip processing tags which are in excluded-tags list
-			for key, value := range tag {
-				if contains(key, excludedTags) {
-					continue
-				}
-				cluster.Spec.Tags[key] = value
-			}
-
-			if err := s.Client.Update(context.TODO(), &clusterList.Items[i], &client.UpdateOptions{}); err != nil {
-				return err
-			}
-		}
-		return nil
+		return retry(s.updateClusterTags, tag, 3)
 	}
 	return fmt.Errorf("unmapped alert received via webhook")
+}
+
+func (s *Server) updateClusterTags(tag map[string]string) error {
+
+	clusterList := &registryv1.ClusterList{}
+	err := s.Client.List(context.TODO(), clusterList, &client.ListOptions{Namespace: s.Namespace})
+	if err != nil {
+		return err
+	}
+
+	for i := range clusterList.Items {
+		var excludedTagsAnnotation string
+		var excludedTags []string
+		cluster := &clusterList.Items[i]
+
+		if cluster.Spec.Tags == nil {
+			cluster.Spec.Tags = make(map[string]string)
+		}
+
+		excludedTagsAnnotation = cluster.Annotations["registry.ethos.adobe.com/excluded-tags"]
+
+		if excludedTagsAnnotation != "" {
+			excludedTags = strings.Split(excludedTagsAnnotation, ",")
+		}
+
+		// skip processing tags which are in excluded-tags list
+		for key, value := range tag {
+			if contains(key, excludedTags) {
+				continue
+			}
+			cluster.Spec.Tags[key] = value
+		}
+
+		if err := s.Client.Update(context.TODO(), &clusterList.Items[i], &client.UpdateOptions{}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Retry function for updateClusterTags
+func retry(f func(map[string]string) error, params map[string]string, attempts int) error {
+	var err error
+	for i := 0; i < attempts; i++ {
+		err = f(params)
+		if err == nil {
+			return nil
+		}
+		time.Sleep(time.Second * 2)
+	}
+	return fmt.Errorf("after %d attempts, last error: %s", attempts, err)
 }
 
 func contains(item string, slice []string) bool {
