@@ -1,3 +1,12 @@
+# 1.2.0
+
+## cluster-registry-api
+- Added new request time test for the SLTs (#42)
+
+## cluster-registry-client
+- Fixed webhook tests (#43)
+- Updated the webhook with reties (#43)
+
 # 1.1.4
 
 ## cluster-registry-api
