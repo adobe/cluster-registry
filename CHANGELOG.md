@@ -1,3 +1,11 @@
+# 1.2.1
+
+## cluster-registry-api
+- Update the metrics buckets for request duration tests (#45)
+
+## cluster-registry-client
+- N/A
+
 # 1.2.0
 
 ## cluster-registry-api
