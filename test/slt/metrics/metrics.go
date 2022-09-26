@@ -21,7 +21,7 @@ var logger echo.Logger
 
 const metricsPrefix = "cluster_registry_slt"
 
-var reqDurBuckets = []float64{.25, .5, 1, 3, 5, 10, 15, 20}
+var reqDurBuckets = []float64{.01, .05, .1, .2, .3, .5, .75, 1, 3, 5, 10, 15, 20, 40, 60}
 
 var TestStatus = prometheus.NewGaugeVec(
 	prometheus.GaugeOpts{
