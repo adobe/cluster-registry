@@ -33,23 +33,24 @@ func main() {
 }
 ```
 
-#### SLT test
+### Synthetic tests
 
-This is an end to end test that consists of a service that serves the /metrics endpoint for Prometheus to scrape the test metrics, and the test itself that runs in a loop and updates the metrics.
+There are two synthetic tests for Cluster Registry ran in a goroutine by a service and serves metrics using the `/metrics` endpoint for Prometheus to scrape. One e2e test that checks if an update of the of the `cluster` custom resource gets propagated to the CR API, and another test that checks the two main endpoints: `/api/v1/clusters/[cluster]` and `/api/v1/clusters`.
+#### E2e synthetic test
 
 ```mermaid
 sequenceDiagram
-    participant SLTService
+    participant TestService
     participant ClusterRegistryClient
 	participant ClusterRegistryAPI
 	participant CRD
 	participant Prometheus
-	Note left of SLTService: CR API Token
-    SLTService->>CRD: Modify `update-slt` tag
+	Note left of TestService: CR API Token
+    TestService->>CRD: Modify `update-slt` tag
     ClusterRegistryClient->>CRD: Check crd change
     ClusterRegistryClient->>ClusterRegistryAPI: Push change to database
-    SLTService->>ClusterRegistryAPI: Check change in database
-	Prometheus->>SLTService: Scrape /metrics endpoint
+    TestService->>ClusterRegistryAPI: Check change in database
+	Prometheus->>TestService: Scrape /metrics endpoint
 ```
 
 The test and consists of the following stages with it's following logs:
@@ -62,3 +63,20 @@ The test and consists of the following stages with it's following logs:
     - `Waiting for the Cluster Registry API to update the database...`
     - `Checking the API for the update (check 1/3)... (reties 3 times at a 11s interval)`
     - `Update confirmed`
+
+#### Get endpoints synthetic test
+
+```mermaid
+sequenceDiagram
+    participant TestService
+	participant ClusterRegistryAPI
+	participant Prometheus
+	Note left of TestService: CR API Token
+    TestService->>ClusterRegistryAPI: GET request on one of the endpoints
+	Prometheus->>TestService: Scrape /metrics endpoint
+```
+
+The test and consists of the following stages with it's following logs:
+1. Get a token to authenticate to Cluster Registry.
+2. Make a GET on one of the endpoints
+3. Check response code to be `200` and validate the payload
