@@ -78,5 +78,7 @@ sequenceDiagram
 
 The test and consists of the following stages with it's following logs:
 1. Get a token to authenticate to Cluster Registry.
-2. Make a GET on one of the endpoints
+2. Make a GET on one of the endpoints. Logs ex:
+   - `timing the request that gets a cluster...`
+   - `timing completed for the request that gets a cluster: took 0.017150s`
 3. Check response code to be `200` and validate the payload
