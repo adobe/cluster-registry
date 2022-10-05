@@ -35,25 +35,25 @@ func main() {
 
 ### Synthetic tests
 
-There are two synthetic tests for Cluster Registry ran in a goroutine by a service and serves metrics using the `/metrics` endpoint for Prometheus to scrape. One e2e test that checks if an update of the of the `cluster` custom resource gets propagated to the CR API, and another test that checks the two main endpoints: `/api/v1/clusters/[cluster]` and `/api/v1/clusters`.
+There are two synthetic tests for Cluster Registry ran in a goroutine by a service and serves metrics using the `/metrics` endpoint for Prometheus to scrape. One e2e test that checks if an update of the `cluster` custom resource gets propagated to the CR API, and another test that checks the two main endpoints: `/api/v1/clusters/[cluster]` and `/api/v1/clusters`.
 #### E2e synthetic test
 
 ```mermaid
 sequenceDiagram
-    participant TestService
-    participant ClusterRegistryClient
+	participant TestService
+	participant ClusterRegistryClient
 	participant ClusterRegistryAPI
 	participant CRD
 	participant Prometheus
 	Note left of TestService: CR API Token
-    TestService->>CRD: Modify `update-slt` tag
-    ClusterRegistryClient->>CRD: Check crd change
-    ClusterRegistryClient->>ClusterRegistryAPI: Push change to database
-    TestService->>ClusterRegistryAPI: Check change in database
+	TestService->>CRD: Modify `update-slt` tag
+	ClusterRegistryClient->>CRD: Check crd change
+	ClusterRegistryClient->>ClusterRegistryAPI: Push change to database
+	TestService->>ClusterRegistryAPI: Check change in database
 	Prometheus->>TestService: Scrape /metrics endpoint
 ```
 
-The test and consists of the following stages with it's following logs:
+The test consists of the following stages with it's following logs:
 1. Get a token to authenticate to Cluster Registry.
 2. Makes an update on the cluster custom object by adding new `Tag` named `update-slt` with the value `Tick` or `Tack`. Logs in order:
     - `Updating the Cluster Registry CRD...`
@@ -68,15 +68,15 @@ The test and consists of the following stages with it's following logs:
 
 ```mermaid
 sequenceDiagram
-    participant TestService
+	participant TestService
 	participant ClusterRegistryAPI
 	participant Prometheus
 	Note left of TestService: CR API Token
-    TestService->>ClusterRegistryAPI: GET request on one of the endpoints
+	TestService->>ClusterRegistryAPI: GET request on one of the endpoints
 	Prometheus->>TestService: Scrape /metrics endpoint
 ```
 
-The test and consists of the following stages with it's following logs:
+The test consists of the following stages with it's following logs:
 1. Get a token to authenticate to Cluster Registry.
 2. Make a GET on one of the endpoints. Logs ex:
    - `timing the request that gets a cluster...`
