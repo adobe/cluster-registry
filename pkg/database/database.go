@@ -15,6 +15,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"github.com/gusaul/go-dynamock"
 	"time"
 
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
@@ -33,13 +34,15 @@ const (
 	egressTarget = "database"
 )
 
-// Db provides an interface for interacting with dynamonDb
+// Db provides an interface for interacting with dynamoDb
 type Db interface {
 	GetCluster(name string) (*registryv1.Cluster, error)
 	ListClusters(offset int, limit int, environment string, region string, status string, lastUpdated string) ([]registryv1.Cluster, int, bool, error)
+	ListClustersWithFilter(offset int, limit int, filter *DynamoDBFilter) ([]registryv1.Cluster, int, bool, error)
 	PutCluster(cluster *registryv1.Cluster) error
 	DeleteCluster(name string) error
 	Status() error
+	Mock() *dynamock.DynaMock
 }
 
 // db struct
@@ -96,6 +99,12 @@ func NewDb(appConfig *config.AppConfig, m monitoring.MetricsI) Db {
 	}
 
 	return dbInst
+}
+
+func (d *db) Mock() *dynamock.DynaMock {
+	var mock *dynamock.DynaMock
+	d.dbAPI, mock = dynamock.New()
+	return mock
 }
 
 // Status checks if the database is reachable with a 5 sec timeout
@@ -239,6 +248,75 @@ func (d *db) ListClusters(offset int, limit int, region string, environment stri
 			break
 		}
 		queryInput.ExclusiveStartKey = result.LastEvaluatedKey
+	}
+
+	count := len(clusters)
+	startIndex := offset
+	endIndex := offset + limit
+	more := false
+
+	if endIndex > count {
+		endIndex = count
+	}
+	if endIndex < count {
+		more = true
+	}
+
+	return clusters[startIndex:endIndex], endIndex - startIndex, more, err
+}
+
+func (d *db) ListClustersWithFilter(offset int, limit int, filter *DynamoDBFilter) ([]registryv1.Cluster, int, bool, error) {
+	var clusters []registryv1.Cluster = []registryv1.Cluster{}
+	var scanInput *dynamodb.ScanInput
+	var expr expression.Expression
+	var err error
+
+	f, err := filter.Build()
+	expr, err = expression.NewBuilder().WithFilter(f.(expression.ConditionBuilder)).Build()
+
+	if err != nil {
+		msg := fmt.Sprintf("Building dynamodb scan expersion failed: '%v'.", err)
+		log.Errorf(msg)
+		return nil, 0, false, fmt.Errorf(msg)
+	}
+
+	scanInput = &dynamodb.ScanInput{
+		IndexName:                 &d.index.name,
+		TableName:                 &d.table.name,
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+		FilterExpression:          expr.Filter(),
+	}
+
+	for {
+		start := time.Now()
+		result, err := d.dbAPI.Scan(scanInput)
+		elapsed := float64(time.Since(start)) / float64(time.Second)
+
+		d.metrics.RecordEgressRequestCnt(egressTarget)
+		d.metrics.RecordEgressRequestDur(egressTarget, elapsed)
+
+		if err != nil {
+			msg := fmt.Sprintf("DynamoDB API scan call failed: '%v'.", err.Error())
+			log.Errorf(msg)
+			return nil, 0, false, fmt.Errorf(msg)
+		}
+
+		for _, i := range result.Items {
+			var item ClusterDb
+
+			err = dynamodbattribute.UnmarshalMap(i, &item)
+			if err != nil {
+				msg := fmt.Sprintf("Error when trying to unmarshal cluster: '%v'.", err.Error())
+				log.Errorf(msg)
+				return nil, 0, false, fmt.Errorf(msg)
+			}
+			clusters = append(clusters, *item.Cluster)
+		}
+		if result.LastEvaluatedKey == nil {
+			break
+		}
+		scanInput.ExclusiveStartKey = result.LastEvaluatedKey
 	}
 
 	count := len(clusters)
