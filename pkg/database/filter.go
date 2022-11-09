@@ -8,6 +8,8 @@ import (
 	"strings"
 )
 
+const FieldPrefix = "crd.spec."
+
 type DynamoDBFilter struct {
 	conditions []models.FilterCondition
 }
@@ -24,7 +26,7 @@ func (f *DynamoDBFilter) Build() (interface{}, error) {
 	filter = expression.Name("status").NotEqual(expression.Value(""))
 
 	for _, c := range f.conditions {
-		field := expression.Name(c.Field)
+		field := expression.Name(fmt.Sprintf("%s%s", FieldPrefix, strings.TrimRight(c.Field, FieldPrefix)))
 		value := expression.Value(c.Value)
 		switch c.Operand {
 		case "=":
