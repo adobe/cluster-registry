@@ -52,12 +52,12 @@ func NewHandler(appConfig *config.AppConfig, d database.Db, m monitoring.Metrics
 	return h
 }
 
-func (h *handler) Register(v1 *echo.Group) {
+func (h *handler) Register(v2 *echo.Group) {
 	a, err := auth.NewAuthenticator(h.appConfig, h.metrics)
 	if err != nil {
 		log.Fatalf("Failed to initialize authenticator: %v", err)
 	}
-	clusters := v1.Group("/clusters", a.VerifyToken(), web.RateLimiter(h.appConfig))
+	clusters := v2.Group("/clusters", a.VerifyToken(), web.RateLimiter(h.appConfig))
 	clusters.GET("/:name", h.GetCluster)
 	clusters.GET("", h.ListClusters)
 }
