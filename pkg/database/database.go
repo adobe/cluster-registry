@@ -272,7 +272,7 @@ func (d *db) ListClustersWithFilter(offset int, limit int, filter *DynamoDBFilte
 	var err error
 
 	f, err := filter.Build()
-	expr, err = expression.NewBuilder().WithFilter(f.(expression.ConditionBuilder)).Build()
+	expr, err = expression.NewBuilder().WithFilter(f).Build()
 
 	if err != nil {
 		msg := fmt.Sprintf("Building dynamodb scan expersion failed: '%v'.", err)

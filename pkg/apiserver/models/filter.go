@@ -12,7 +12,6 @@ var AllowedOperands = []string{"<", "<=", "=", ">=", ">"}
 type Filter interface {
 	Build() (interface{}, error)
 	AddCondition(condition FilterCondition) error
-	Conditions() []FilterCondition
 }
 
 type FilterCondition struct {

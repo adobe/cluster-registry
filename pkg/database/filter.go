@@ -1,11 +1,11 @@
 package database
 
 import (
-	"errors"
 	"fmt"
 	"github.com/adobe/cluster-registry/pkg/apiserver/models"
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 	"strings"
+	"time"
 )
 
 const FieldPrefix = "crd.spec."
@@ -20,15 +20,28 @@ func NewDynamoDBFilter() *DynamoDBFilter {
 	}
 }
 
-func (f *DynamoDBFilter) Build() (interface{}, error) {
+func (f *DynamoDBFilter) Build() (expression.ConditionBuilder, error) {
 	var filter expression.ConditionBuilder
 
 	filter = expression.Name("status").NotEqual(expression.Value(""))
 
 	for _, c := range f.conditions {
-		field := expression.Name(fmt.Sprintf("%s%s", FieldPrefix, strings.TrimRight(c.Field, FieldPrefix)))
-		value := expression.Value(c.Value)
-		switch c.Operand {
+		field, err := parseField(c.Field)
+		if err != nil {
+			return filter, fmt.Errorf("failed to parse field %s: %v", c.Field, err)
+		}
+
+		operand, err := parseOperand(c.Operand)
+		if err != nil {
+			return filter, fmt.Errorf("failed to parse operand %s: %v", c.Operand, err)
+		}
+
+		value, err := parseValue(c.Value, c.Operand)
+		if err != nil {
+			return filter, fmt.Errorf("failed to parse value %s: %v", c.Value, err)
+		}
+
+		switch operand {
 		case "=":
 			filter = filter.And(field.Equal(value))
 		case ">=":
@@ -45,18 +58,9 @@ func (f *DynamoDBFilter) Build() (interface{}, error) {
 	return filter, nil
 }
 
-func (f *DynamoDBFilter) AddCondition(condition *models.FilterCondition) error {
-	if !contains(condition.Operand, models.AllowedOperands) {
-		return errors.New(fmt.Sprintf("invalid operand, must use one of %s", strings.Join(models.AllowedOperands, ",")))
-	}
-
+func (f *DynamoDBFilter) AddCondition(condition *models.FilterCondition) *DynamoDBFilter {
 	f.conditions = append(f.conditions, *condition)
-
-	return nil
-}
-
-func (f *DynamoDBFilter) Conditions() []models.FilterCondition {
-	return f.conditions
+	return f
 }
 
 func contains(item string, slice []string) bool {
@@ -66,4 +70,30 @@ func contains(item string, slice []string) bool {
 		}
 	}
 	return false
+}
+
+func parseField(field string) (expression.NameBuilder, error) {
+	// TODO: check if field is a valid nested property of Cluster CRD
+	if !strings.HasPrefix(field, FieldPrefix) {
+		field = fmt.Sprintf("%s%s", FieldPrefix, field)
+	}
+	return expression.Name(field), nil
+}
+
+func parseOperand(operand string) (string, error) {
+	if !contains(operand, models.AllowedOperands) {
+		return operand, fmt.Errorf("invalid operand, must use one of %s", strings.Join(models.AllowedOperands, ", "))
+	}
+	return operand, nil
+}
+
+func parseValue(value, operand string) (expression.ValueBuilder, error) {
+	if contains(operand, []string{"<", "<=", ">=", ">"}) {
+		date, err := time.Parse(time.RFC3339, value)
+		if err == nil {
+			return expression.Value(date.String()), nil
+		}
+	}
+
+	return expression.Value(value), nil
 }
