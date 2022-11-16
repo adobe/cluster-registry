@@ -24,8 +24,8 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 
 	"gopkg.in/square/go-jose.v2"
 )
@@ -47,7 +47,7 @@ type Keys struct {
 
 func main() {
 
-	data, err := ioutil.ReadFile("../../test/testdata/dummycertificate.pem")
+	data, err := os.ReadFile("../../test/testdata/dummycertificate.pem")
 
 	if err != nil {
 		log.Panicf("Failed to read file: %v", err.Error())

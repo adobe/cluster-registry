@@ -16,7 +16,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -62,7 +62,7 @@ func (s *Server) webhookHandler(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
 
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		s.Log.Error(err, "unable to read response body")
 		w.WriteHeader(http.StatusInternalServerError)

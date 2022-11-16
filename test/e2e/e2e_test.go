@@ -17,9 +17,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
@@ -90,7 +91,7 @@ func (s *e2eTestSuite) Test_EndToEnd_GetClusters() {
 		s.T().Fatalf("Cannot list clusters: %s", resp.Status)
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		s.T().Fatalf("Cannot read response body: %v", err.Error())
 	}
@@ -109,7 +110,7 @@ func (s *e2eTestSuite) Test_EndToEnd_CreateCluster() {
 	var outputCluster registryv1.ClusterSpec
 
 	input_file := "../testdata/cluster05-prod-useast1.json"
-	data, err := ioutil.ReadFile(input_file)
+	data, err := os.ReadFile(input_file)
 	if err != nil {
 		s.T().Fatalf("Failed to read data from file %s.", input_file)
 	}
@@ -170,7 +171,7 @@ func (s *e2eTestSuite) Test_EndToEnd_CreateCluster() {
 		s.T().Fatalf("Cannot list clusters: %s", resp.Status)
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		s.T().Fatalf("Failed read response body: %v", err.Error())
 	}
@@ -221,7 +222,7 @@ func (s *e2eTestSuite) TBD_Test_EndToEnd_UpdateCluster() {
 	}
 
 	input_file := "../testdata/cluster05-prod-useast1-update.json"
-	data, err := ioutil.ReadFile(input_file)
+	data, err := os.ReadFile(input_file)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -275,7 +276,7 @@ func (s *e2eTestSuite) TBD_Test_EndToEnd_UpdateCluster() {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatal(err)
 	}

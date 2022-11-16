@@ -272,6 +272,9 @@ func (d *db) ListClustersWithFilter(offset int, limit int, filter *DynamoDBFilte
 	var err error
 
 	f, err := filter.Build()
+	if err != nil {
+		return nil, 0, false, err
+	}
 	expr, err = expression.NewBuilder().WithFilter(f).Build()
 
 	if err != nil {

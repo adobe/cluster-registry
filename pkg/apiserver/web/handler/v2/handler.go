@@ -130,13 +130,9 @@ func (h *handler) ListClusters(ctx echo.Context) error {
 	for _, qc := range queryConditions {
 		condition, err := models.NewFilterConditionFromQuery(qc)
 		if err != nil {
-			//
-		} else {
-			addErr := filter.AddCondition(condition)
-			if addErr != nil {
-				//
-			}
+			return ctx.JSON(http.StatusBadRequest, errors.NewError(err))
 		}
+		filter.AddCondition(condition)
 	}
 
 	clusters, count, more, _ := h.db.ListClustersWithFilter(offset, limit, filter)

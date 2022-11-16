@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/adobe/cluster-registry/pkg/config"
@@ -88,7 +88,7 @@ func GenerateSignedToken(appConfig *config.AppConfig, expiredToken bool, signing
 func GetSigningKey(signingKeyFile string, rsaKeyType string) *jose.JSONWebKey {
 	var key *jose.JSONWebKey
 
-	rsaPrivateKey, err := ioutil.ReadFile(signingKeyFile)
+	rsaPrivateKey, err := os.ReadFile(signingKeyFile)
 	if err != nil {
 		panic("Failed to read file " + signingKeyFile)
 	}

@@ -14,9 +14,8 @@ package web
 
 import (
 	"fmt"
-	"io/ioutil"
-
 	"github.com/labstack/gommon/log"
+	"os"
 )
 
 // Logger is a custom object that overwrites Fatal() to log the error to Kubernetes
@@ -28,7 +27,7 @@ type Logger struct {
 
 // Fatal ...
 func (l *Logger) Fatal(i ...interface{}) {
-	err := ioutil.WriteFile(l.filePath, []byte(fmt.Sprint(i...)), 0777)
+	err := os.WriteFile(l.filePath, []byte(fmt.Sprint(i...)), 0777)
 	if err != nil {
 		l.Logger.Warnf("Failed to open and write to the logging file: %s", err)
 	}
@@ -37,7 +36,7 @@ func (l *Logger) Fatal(i ...interface{}) {
 
 // Fatalf ...
 func (l *Logger) Fatalf(format string, args ...interface{}) {
-	err := ioutil.WriteFile(l.filePath, []byte(fmt.Sprintf(format, args...)), 0777)
+	err := os.WriteFile(l.filePath, []byte(fmt.Sprintf(format, args...)), 0777)
 	if err != nil {
 		l.Logger.Errorf("Failed to open and write to the logging file: %s", err)
 	}

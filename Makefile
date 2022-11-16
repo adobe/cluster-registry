@@ -134,7 +134,7 @@ golangci-lint:
 GOSEC = $(shell pwd)/bin/gosec
 .PHONY: go-sec
 go-sec:
-	@[ -f $(GOSEC) ] || GOBIN=$(shell pwd)/bin go get "github.com/securego/gosec/v2/cmd/gosec";
+	@[ -f $(GOSEC) ] || GOBIN=$(shell pwd)/bin go install "github.com/securego/gosec/v2/cmd/gosec";
 	@echo 'Checking source code for security problems...'
 	$(GOSEC)  ./pkg/...
 	@echo 'No security problems found in go codebase!'	

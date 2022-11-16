@@ -16,8 +16,8 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
 	"github.com/adobe/cluster-registry/pkg/config"
@@ -40,7 +40,7 @@ func main() {
 	input_file := flag.String("input-file", "dummy-data.yaml", "yaml file path")
 	flag.Parse()
 
-	data, err := ioutil.ReadFile(*input_file)
+	data, err := os.ReadFile(*input_file)
 	if err != nil {
 		log.Fatalf("Unable to read input file %s: '%v'", *input_file, err.Error())
 	}

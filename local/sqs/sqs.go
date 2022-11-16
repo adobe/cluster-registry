@@ -16,8 +16,8 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"time"
 
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
@@ -44,7 +44,7 @@ func main() {
 	input_file := flag.String("input-file", "../db/dummy-data.yaml", "yaml file path")
 	flag.Parse()
 
-	data, err := ioutil.ReadFile(*input_file)
+	data, err := os.ReadFile(*input_file)
 	if err != nil {
 		log.Panicf("Error while trying to read file: %v", err.Error())
 	}
