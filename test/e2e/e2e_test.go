@@ -209,7 +209,7 @@ func (s *e2eTestSuite) Test_EndToEnd_CreateCluster() {
 		})
 }
 
-//fix patch to k8s api
+// fix patch to k8s api
 func (s *e2eTestSuite) TBD_Test_EndToEnd_UpdateCluster() {
 
 	var inputCluster registryv1.Cluster
