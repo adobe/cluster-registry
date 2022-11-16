@@ -121,6 +121,12 @@ func (h *handler) ListClusters(ctx echo.Context) error {
 
 	filter := database.NewDynamoDBFilter()
 	queryConditions := getQueryConditions(ctx)
+
+	if len(queryConditions) == 0 {
+		clusters, count, more, _ := h.db.ListClusters(offset, limit, "", "", "", "")
+		return ctx.JSON(http.StatusOK, newClusterListResponse(clusters, count, offset, limit, more))
+	}
+
 	for _, qc := range queryConditions {
 		condition, err := models.NewFilterConditionFromQuery(qc)
 		if err != nil {
@@ -132,6 +138,7 @@ func (h *handler) ListClusters(ctx echo.Context) error {
 			}
 		}
 	}
+
 	clusters, count, more, _ := h.db.ListClustersWithFilter(offset, limit, filter)
 	return ctx.JSON(http.StatusOK, newClusterListResponse(clusters, count, offset, limit, more))
 }

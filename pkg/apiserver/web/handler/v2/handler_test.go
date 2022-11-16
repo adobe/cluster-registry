@@ -224,10 +224,17 @@ func TestListClusters(t *testing.T) {
 			expectedItems = append(expectedItems, item)
 		}
 
-		expectedResult := dynamodb.ScanOutput{
-			Items: expectedItems,
+		if len(tc.filter) > 0 {
+			expectedResult := dynamodb.ScanOutput{
+				Items: expectedItems,
+			}
+			dbMock.ExpectScan().WillReturns(expectedResult)
+		} else {
+			expectedResult := dynamodb.QueryOutput{
+				Items: expectedItems,
+			}
+			dbMock.ExpectQuery().WillReturns(expectedResult)
 		}
-		dbMock.ExpectScan().WillReturns(expectedResult)
 
 		t.Logf("\tTest %s:\tWhen checking for status code %d and number of items %d", tc.name, tc.expectedStatus, tc.expectedItems)
 
