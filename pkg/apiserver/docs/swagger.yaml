@@ -21,7 +21,37 @@ definitions:
       offset:
         type: integer
     type: object
+  github.com_adobe_cluster-registry_pkg_apiserver_web_handler_v2.clusterList:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/v1.ClusterSpec'
+        type: array
+      itemsCount:
+        type: integer
+      limit:
+        type: integer
+      more:
+        type: boolean
+      offset:
+        type: integer
+    type: object
   pkg_apiserver_web_handler_v1.clusterList:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/v1.ClusterSpec'
+        type: array
+      itemsCount:
+        type: integer
+      limit:
+        type: integer
+      more:
+        type: boolean
+      offset:
+        type: integer
+    type: object
+  pkg_apiserver_web_handler_v2.clusterList:
     properties:
       items:
         items:
@@ -340,7 +370,7 @@ paths:
       - application/json
       description: List all clusters. Use query parameters to filter results. Auth
         is required
-      operationId: get-clusters
+      operationId: v1-get-clusters
       parameters:
       - description: Filter by region
         in: query
@@ -387,7 +417,78 @@ paths:
       consumes:
       - application/json
       description: Get an cluster. Auth is required
-      operationId: get-cluster
+      operationId: v1-get-cluster
+      parameters:
+      - description: Name of the cluster to get
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.ClusterSpec'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.Error'
+      security:
+      - bearerAuth: []
+      summary: Get an cluster
+      tags:
+      - cluster
+  /v2/clusters:
+    get:
+      consumes:
+      - application/json
+      description: List all or a subset of clusters. Use conditions to filter clusters
+        based on their fields.
+      operationId: v2-get-clusters
+      parameters:
+      - collectionFormat: multi
+        description: Filter conditions
+        in: query
+        items:
+          type: string
+        name: conditions
+        type: array
+      - description: Offset to start pagination search results (default is 0)
+        in: query
+        name: offset
+        type: integer
+      - description: The number of results per page (default is 200)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg_apiserver_web_handler_v2.clusterList'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.Error'
+      security:
+      - bearerAuth: []
+      summary: List clusters
+      tags:
+      - cluster
+  /v2/clusters/{name}:
+    get:
+      consumes:
+      - application/json
+      description: Get an cluster. Auth is required
+      operationId: v2-get-cluster
       parameters:
       - description: Name of the cluster to get
         in: path

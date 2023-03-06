@@ -31,7 +31,7 @@
                     "cluster"
                 ],
                 "summary": "List all clusters",
-                "operationId": "get-clusters",
+                "operationId": "v1-get-clusters",
                 "parameters": [
                     {
                         "type": "string",
@@ -104,7 +104,116 @@
                     "cluster"
                 ],
                 "summary": "Get an cluster",
-                "operationId": "get-cluster",
+                "operationId": "v1-get-cluster",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Name of the cluster to get",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ClusterSpec"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/clusters": {
+            "get": {
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "description": "List all or a subset of clusters. Use conditions to filter clusters based on their fields.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cluster"
+                ],
+                "summary": "List clusters",
+                "operationId": "v2-get-clusters",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "multi",
+                        "description": "Filter conditions",
+                        "name": "conditions",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset to start pagination search results (default is 0)",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "The number of results per page (default is 200)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/pkg_apiserver_web_handler_v2.clusterList"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/clusters/{name}": {
+            "get": {
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "description": "Get an cluster. Auth is required",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cluster"
+                ],
+                "summary": "Get an cluster",
+                "operationId": "v2-get-cluster",
                 "parameters": [
                     {
                         "type": "string",
@@ -170,7 +279,53 @@
                 }
             }
         },
+        "github.com_adobe_cluster-registry_pkg_apiserver_web_handler_v2.clusterList": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ClusterSpec"
+                    }
+                },
+                "itemsCount": {
+                    "type": "integer"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "more": {
+                    "type": "boolean"
+                },
+                "offset": {
+                    "type": "integer"
+                }
+            }
+        },
         "pkg_apiserver_web_handler_v1.clusterList": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ClusterSpec"
+                    }
+                },
+                "itemsCount": {
+                    "type": "integer"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "more": {
+                    "type": "boolean"
+                },
+                "offset": {
+                    "type": "integer"
+                }
+            }
+        },
+        "pkg_apiserver_web_handler_v2.clusterList": {
             "type": "object",
             "properties": {
                 "items": {

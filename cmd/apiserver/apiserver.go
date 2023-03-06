@@ -18,6 +18,7 @@ import (
 	"github.com/adobe/cluster-registry/pkg/apiserver/web"
 	api "github.com/adobe/cluster-registry/pkg/apiserver/web"
 	apiv1 "github.com/adobe/cluster-registry/pkg/apiserver/web/handler/v1"
+	apiv2 "github.com/adobe/cluster-registry/pkg/apiserver/web/handler/v2"
 	"github.com/adobe/cluster-registry/pkg/config"
 	"github.com/adobe/cluster-registry/pkg/database"
 	monitoring "github.com/adobe/cluster-registry/pkg/monitoring/apiserver"
@@ -29,10 +30,9 @@ import (
 // Version it's passed as ldflags in the build process
 var Version = "dev"
 
-// @title Swagger Example API
+// @title Cluster Registry API
 // @version 1.0
 // @description Cluster Registry API
-// @title Cluster Registry API
 
 // @host http://127.0.0.1:8080
 // @BasePath /api
@@ -52,7 +52,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Cannot load the api configuration: '%v'", err.Error())
 	} else {
-		log.Debugf("Config loaded succesfully %+v:", appConfig)
+		log.Debugf("Config loaded successfully %+v:", appConfig)
 	}
 
 	m := monitoring.NewMetrics("cluster_registry_api", false)
@@ -77,6 +77,10 @@ func main() {
 	v1 := a.Group("/api/v1")
 	hv1 := apiv1.NewHandler(appConfig, db, m)
 	hv1.Register(v1)
+
+	v2 := a.Group("/api/v2")
+	hv2 := apiv2.NewHandler(appConfig, db, m)
+	hv2.Register(v2)
 
 	go c.Consume()
 

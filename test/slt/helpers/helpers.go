@@ -15,7 +15,7 @@ package helpers
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"net/http"
 	"os"
@@ -106,7 +106,7 @@ func reqGet(endpoint, bearer string) (*[]byte, int, error) {
 	}
 
 	if resp.StatusCode != 200 {
-		message, err := ioutil.ReadAll(resp.Body)
+		message, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, resp.StatusCode, fmt.Errorf("status code %d: could "+
 				"not read response body: %s", resp.StatusCode, err.Error())
@@ -115,7 +115,7 @@ func reqGet(endpoint, bearer string) (*[]byte, int, error) {
 			"code %d, body:%s", resp.StatusCode, string(message))
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, resp.StatusCode, fmt.Errorf("cannot read response body: %s", err.Error())
 	}

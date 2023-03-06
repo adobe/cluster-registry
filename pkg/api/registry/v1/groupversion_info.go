@@ -11,8 +11,8 @@ governing permissions and limitations under the License.
 */
 
 // Package v1 contains API Schema definitions for the registry v1 API group
-//+kubebuilder:object:generate=true
-//+groupName=registry.ethos.adobe.com
+// +kubebuilder:object:generate=true
+// +groupName=registry.ethos.adobe.com
 package v1
 
 import (

@@ -10,9 +10,10 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-package v1
+package v2
 
 import (
+	"github.com/adobe/cluster-registry/pkg/apiserver/models"
 	"net/http"
 	"strconv"
 
@@ -51,12 +52,12 @@ func NewHandler(appConfig *config.AppConfig, d database.Db, m monitoring.Metrics
 	return h
 }
 
-func (h *handler) Register(v1 *echo.Group) {
+func (h *handler) Register(v2 *echo.Group) {
 	a, err := auth.NewAuthenticator(h.appConfig, h.metrics)
 	if err != nil {
 		log.Fatalf("Failed to initialize authenticator: %v", err)
 	}
-	clusters := v1.Group("/clusters", a.VerifyToken(), web.RateLimiter(h.appConfig))
+	clusters := v2.Group("/clusters", a.VerifyToken(), web.RateLimiter(h.appConfig))
 	clusters.GET("/:name", h.GetCluster)
 	clusters.GET("", h.ListClusters)
 }
@@ -64,7 +65,7 @@ func (h *handler) Register(v1 *echo.Group) {
 // GetCluster godoc
 // @Summary Get an cluster
 // @Description Get an cluster. Auth is required
-// @ID v1-get-cluster
+// @ID v2-get-cluster
 // @Tags cluster
 // @Accept  json
 // @Produce  json
@@ -73,7 +74,7 @@ func (h *handler) Register(v1 *echo.Group) {
 // @Failure 400 {object} errors.Error
 // @Failure 500 {object} errors.Error
 // @Security bearerAuth
-// @Router /v1/clusters/{name} [get]
+// @Router /v2/clusters/{name} [get]
 func (h *handler) GetCluster(ctx echo.Context) error {
 
 	name := ctx.Param("name")
@@ -90,32 +91,23 @@ func (h *handler) GetCluster(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, newClusterResponse(ctx, c))
 }
 
-// ListClusters godoc
-// @Summary List all clusters
-// @Description List all clusters. Use query parameters to filter results. Auth is required
-// @ID v1-get-clusters
+// ListClusters
+// @Summary List clusters
+// @Description List all or a subset of clusters. Use conditions to filter clusters based on their fields.
+// @ID v2-get-clusters
 // @Tags cluster
 // @Accept  json
 // @Produce  json
-// @Param region query string false "Filter by region"
-// @Param environment query string false "Filter by environment"
-// @Param status query string false "Filter by status"
-// @Param lastUpdated query string false "Filter since last updated (RFC3339)"
+// @Param conditions query []string false "Filter conditions" collectionFormat(multi)
 // @Param offset query integer false "Offset to start pagination search results (default is 0)"
 // @Param limit query integer false "The number of results per page (default is 200)"
 // @Success 200 {object} clusterList
 // @Failure 500 {object} errors.Error
 // @Security bearerAuth
-// @Router /v1/clusters [get]
+// @Router /v2/clusters [get]
 func (h *handler) ListClusters(ctx echo.Context) error {
-
 	var clusters []registryv1.Cluster
 	var count int
-
-	environment := ctx.QueryParam("environment")
-	region := ctx.QueryParam("region")
-	status := ctx.QueryParam("status")
-	lastUpdated := ctx.QueryParam("lastUpdated")
 
 	offset, err := strconv.Atoi(ctx.QueryParam("offset"))
 	if err != nil {
@@ -127,7 +119,23 @@ func (h *handler) ListClusters(ctx echo.Context) error {
 		limit = 200
 	}
 
-	clusters, count, more, _ := h.db.ListClusters(offset, limit, region, environment, status, lastUpdated)
+	filter := database.NewDynamoDBFilter()
+	queryConditions := getQueryConditions(ctx)
+
+	if len(queryConditions) == 0 {
+		clusters, count, more, _ := h.db.ListClusters(offset, limit, "", "", "", "")
+		return ctx.JSON(http.StatusOK, newClusterListResponse(clusters, count, offset, limit, more))
+	}
+
+	for _, qc := range queryConditions {
+		condition, err := models.NewFilterConditionFromQuery(qc)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, errors.NewError(err))
+		}
+		filter.AddCondition(condition)
+	}
+
+	clusters, count, more, _ := h.db.ListClustersWithFilter(offset, limit, filter)
 	return ctx.JSON(http.StatusOK, newClusterListResponse(clusters, count, offset, limit, more))
 }
 
@@ -154,4 +162,13 @@ func getCluster(db database.Db, name string) (*registryv1.Cluster, error) {
 		}
 	}
 	return c, nil
+}
+
+func getQueryConditions(ctx echo.Context) []string {
+	for k, v := range ctx.QueryParams() {
+		if k == "conditions" {
+			return v
+		}
+	}
+	return []string{}
 }

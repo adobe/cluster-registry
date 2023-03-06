@@ -31,7 +31,7 @@ func Sum(input []float64) (sum float64, err error) {
 	return sum, nil
 }
 
-//Median returns the median
+// Median returns the median
 func Median(input []float64) (median float64, err error) {
 
 	// Start by sorting a copy of the slice

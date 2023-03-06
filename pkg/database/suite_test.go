@@ -16,7 +16,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -143,7 +142,7 @@ func deleteTable(endpoint string, tableName string) error {
 func importData(db Db) error {
 	var clusters []registryv1.Cluster
 
-	data, err := ioutil.ReadFile("testdata/clusters.yaml")
+	data, err := os.ReadFile("testdata/clusters.yaml")
 	if err != nil {
 		return err
 	}

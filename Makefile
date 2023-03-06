@@ -129,12 +129,12 @@ lint-fix: golangci-lint
 GOLANGCI_LINT = $(shell pwd)/bin/golangci-lint
 GOLANGCI_LINT_VERSION = "v1.46.2"
 golangci-lint:
-	@[ -f $(GOLANGCI_LINT) ] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell dirname $(GOLANGCI_LINT)) $(GOLANGCI_LINT_VERSION);
+	@[ -f $(GOLANGCI_LINT) ] || GOBIN=$(shell pwd)/bin go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION);
 
 GOSEC = $(shell pwd)/bin/gosec
 .PHONY: go-sec
 go-sec:
-	@[ -f $(GOSEC) ] || GOBIN=$(shell pwd)/bin go get "github.com/securego/gosec/v2/cmd/gosec";
+	@[ -f $(GOSEC) ] || GOBIN=$(shell pwd)/bin go install "github.com/securego/gosec/v2/cmd/gosec";
 	@echo 'Checking source code for security problems...'
 	$(GOSEC)  ./pkg/...
 	@echo 'No security problems found in go codebase!'	
