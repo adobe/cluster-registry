@@ -33,6 +33,21 @@ PKGS += $(shell go list ./cmd/...)
 .PHONY: all
 all: format generate build test test-e2e
 
+###############
+# Local setup #
+###############
+
+SETUP_CMD ?= "./local/setup.sh"
+ifeq ($(API),true)
+	ifeq ($(CLIENT),)
+		SETUP_CMD += "1 0"
+	endif
+else ifeq ($(API),)
+	ifeq ($(CLIENT),true)
+		SETUP_CMD += "0 1"
+	endif
+endif
+
 .PHONY: clean
 clean:
 	# Remove all files and directories ignored by git.
@@ -40,6 +55,10 @@ clean:
 	git clean -Xfd .
 	./local/cleanup.sh
 
+.PHONY: setup
+setup:
+	@echo "Running local setup..."
+	@ $(SETUP_CMD)
 
 ############
 # Building #

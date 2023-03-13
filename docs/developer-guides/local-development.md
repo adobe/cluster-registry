@@ -15,7 +15,7 @@ Cluster Registry development stack consist of the following applications that ru
 
 If you want to test one of the Cluster Registry components call directly setup script by specifying to/not to run that component:
 
-* run the stack without cluster registry api: `local/setup.sh 0 1`
-* run the stack without cluster registry client: `local/setup.sh 0 1`
+* run the stack without cluster registry api: `CLIENT=true make setup`
+* run the stack without cluster registry client: `API=true make setup`
 
 Open your IDE. If you are using VSCode just type: `code .`
