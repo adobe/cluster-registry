@@ -17,5 +17,6 @@ If you want to test one of the Cluster Registry components call directly setup s
 
 * run the stack without cluster registry api: `CLIENT=true make setup`
 * run the stack without cluster registry client: `API=true make setup`
+* run the stach with cluster registry api and client: `make setup` or `CLIENT=true API=true make setup`
 
 Open your IDE. If you are using VSCode just type: `code .`
