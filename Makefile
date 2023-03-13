@@ -37,7 +37,7 @@ all: format generate build test test-e2e
 # Local setup #
 ###############
 
-SETUP_CMD ?= "./local/setup.sh"
+SETUP_CMD = "./local/setup.sh"
 ifeq ($(API),true)
 	ifeq ($(CLIENT),)
 		SETUP_CMD += "1 0"
