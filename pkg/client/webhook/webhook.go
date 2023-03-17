@@ -60,7 +60,12 @@ func (s *Server) Start() error {
 func (s *Server) webhookHandler(w http.ResponseWriter, r *http.Request) {
 	var alert Alert
 
-	defer r.Body.Close()
+	defer func(body io.ReadCloser) {
+		err := body.Close()
+		if err != nil {
+			s.Log.Error(err, "failed to close response body")
+		}
+	}(r.Body)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
