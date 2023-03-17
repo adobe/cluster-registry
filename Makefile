@@ -33,6 +33,21 @@ PKGS += $(shell go list ./cmd/...)
 .PHONY: all
 all: format generate build test test-e2e
 
+###############
+# Local setup #
+###############
+
+SETUP_CMD = "./local/setup.sh"
+ifeq ($(API),true)
+	ifeq ($(CLIENT),)
+		SETUP_CMD += "1 0"
+	endif
+else ifeq ($(API),)
+	ifeq ($(CLIENT),true)
+		SETUP_CMD += "0 1"
+	endif
+endif
+
 .PHONY: clean
 clean:
 	# Remove all files and directories ignored by git.
@@ -40,6 +55,10 @@ clean:
 	git clean -Xfd .
 	./local/cleanup.sh
 
+.PHONY: setup
+setup:
+	@echo "Running local setup..."
+	@ $(SETUP_CMD)
 
 ############
 # Building #
@@ -110,7 +129,7 @@ format: format-prereq go-fmt go-vet go-lint go-sec check-license
 go-fmt:
 	@echo 'Formatting go code...'
 	@gofmt -s -w .
-	@echo 'Not formating issues found in go codebase!'
+	@echo 'No formating issues found in go codebase!'
 
 .PHONY: check-license
 check-license:
@@ -120,7 +139,7 @@ check-license:
 go-lint: golangci-lint
 	@echo 'Linting go code...'
 	$(GOLANGCI_LINT) run -v --timeout 5m
-	@echo 'Not linting issues found in go codebase!'
+	@echo 'No linting issues found in go codebase!'
 
 .PHONY: lint-fix
 lint-fix: golangci-lint
@@ -143,7 +162,7 @@ go-sec:
 go-vet:
 	@echo 'Vetting go code and identify subtle source code issues...'
 	@go vet $(shell pwd)/pkg/apiserver/...
-	@echo 'Not issues found in go codebase!'
+	@echo 'No issues found in go codebase!'
 
 
 ###########
