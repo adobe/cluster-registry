@@ -87,6 +87,10 @@
       gitSha: 1e8cbd109d7a77909f627ec5247520b70cc209e9
       lastUpdated: "2021-03-22T11:55:41Z"
       release: 2021-W06-0-116-gd0c7e403
+    capacity:
+      clusterCapacity: 50
+      clusterProvisioning: 30
+      lastUpdated: "2023-03-22T11:55:41Z"
     status: Active
     phase: Running
     tags:
@@ -158,6 +162,10 @@
       gitSha: 1e8cbd109d7a77909f627ec5247520b70cc209e9
       lastUpdated: "2021-03-22T11:55:41Z"
       release: 2021-W06-0-116-gd0c7e403
+    capacity:
+      clusterCapacity: 50
+      clusterProvisioning: 20
+      lastUpdated: "2023-03-22T11:55:41Z"
     status: Active
     phase: Upgrading
     tags:
@@ -238,6 +246,10 @@
       gitSha: 110bb4f33b2142dde01e74a9bae7148534c2685b
       lastUpdated: "2021-03-22T11:55:41Z"
       release: 2021-W06-0-116-gd0c7e403
+    capacity:
+      clusterCapacity: 30
+      clusterProvisioning: 30
+      lastUpdated: "2023-03-22T11:55:41Z"
     status: Active
     phase: Running
     tags:

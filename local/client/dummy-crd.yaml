@@ -84,6 +84,10 @@ spec:
     gitSha: 1e8cbd109d7a77909f627ec5247520b70cc209e9
     lastUpdated: "2021-03-22T11:55:41Z"
     release: 2021-W06-0-116-gd0c7e403
+  capacity:
+    clusterCapacity: 50
+    clusterProvisioning: 30
+    lastUpdated: "2023-03-22T11:55:41Z"
   status: Active
   phase: Running
   tags:
