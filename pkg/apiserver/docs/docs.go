@@ -77,7 +77,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github.com_adobe_cluster-registry_pkg_apiserver_web_handler_v1.clusterList"
+                            "$ref": "#/definitions/v1.clusterList"
                         }
                     },
                     "500": {
@@ -186,7 +186,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/pkg_apiserver_web_handler_v2.clusterList"
+                            "$ref": "#/definitions/v2.clusterList"
                         }
                     },
                     "500": {
@@ -259,98 +259,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github.com_adobe_cluster-registry_pkg_apiserver_web_handler_v1.clusterList": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.ClusterSpec"
-                    }
-                },
-                "itemsCount": {
-                    "type": "integer"
-                },
-                "limit": {
-                    "type": "integer"
-                },
-                "more": {
-                    "type": "boolean"
-                },
-                "offset": {
-                    "type": "integer"
-                }
-            }
-        },
-        "github.com_adobe_cluster-registry_pkg_apiserver_web_handler_v2.clusterList": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.ClusterSpec"
-                    }
-                },
-                "itemsCount": {
-                    "type": "integer"
-                },
-                "limit": {
-                    "type": "integer"
-                },
-                "more": {
-                    "type": "boolean"
-                },
-                "offset": {
-                    "type": "integer"
-                }
-            }
-        },
-        "pkg_apiserver_web_handler_v1.clusterList": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.ClusterSpec"
-                    }
-                },
-                "itemsCount": {
-                    "type": "integer"
-                },
-                "limit": {
-                    "type": "integer"
-                },
-                "more": {
-                    "type": "boolean"
-                },
-                "offset": {
-                    "type": "integer"
-                }
-            }
-        },
-        "pkg_apiserver_web_handler_v2.clusterList": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.ClusterSpec"
-                    }
-                },
-                "itemsCount": {
-                    "type": "integer"
-                },
-                "limit": {
-                    "type": "integer"
-                },
-                "more": {
-                    "type": "boolean"
-                },
-                "offset": {
-                    "type": "integer"
-                }
-            }
-        },
         "v1.APIServer": {
             "type": "object",
             "properties": {
@@ -387,6 +295,20 @@ const docTemplate = `{
                 }
             }
         },
+        "v1.Capacity": {
+            "type": "object",
+            "properties": {
+                "clusterCapacity": {
+                    "type": "integer"
+                },
+                "clusterProvisioning": {
+                    "type": "integer"
+                },
+                "lastUpdated": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.ClusterSpec": {
             "type": "object",
             "properties": {
@@ -415,6 +337,10 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "capacity": {
+                    "description": "Capacity cluster information",
+                    "$ref": "#/definitions/v1.Capacity"
                 },
                 "cloudProviderRegion": {
                     "description": "The cloud provider standard region\n+kubebuilder:validation:Required",
@@ -663,6 +589,52 @@ const docTemplate = `{
                 "id": {
                     "description": "Virtual private network Id\n+kubebuilder:validation:Required",
                     "type": "string"
+                }
+            }
+        },
+        "v1.clusterList": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ClusterSpec"
+                    }
+                },
+                "itemsCount": {
+                    "type": "integer"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "more": {
+                    "type": "boolean"
+                },
+                "offset": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v2.clusterList": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ClusterSpec"
+                    }
+                },
+                "itemsCount": {
+                    "type": "integer"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "more": {
+                    "type": "boolean"
+                },
+                "offset": {
+                    "type": "integer"
                 }
             }
         }

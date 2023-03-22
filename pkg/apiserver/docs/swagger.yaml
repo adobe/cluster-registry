@@ -6,66 +6,6 @@ definitions:
         additionalProperties: true
         type: object
     type: object
-  github.com_adobe_cluster-registry_pkg_apiserver_web_handler_v1.clusterList:
-    properties:
-      items:
-        items:
-          $ref: '#/definitions/v1.ClusterSpec'
-        type: array
-      itemsCount:
-        type: integer
-      limit:
-        type: integer
-      more:
-        type: boolean
-      offset:
-        type: integer
-    type: object
-  github.com_adobe_cluster-registry_pkg_apiserver_web_handler_v2.clusterList:
-    properties:
-      items:
-        items:
-          $ref: '#/definitions/v1.ClusterSpec'
-        type: array
-      itemsCount:
-        type: integer
-      limit:
-        type: integer
-      more:
-        type: boolean
-      offset:
-        type: integer
-    type: object
-  pkg_apiserver_web_handler_v1.clusterList:
-    properties:
-      items:
-        items:
-          $ref: '#/definitions/v1.ClusterSpec'
-        type: array
-      itemsCount:
-        type: integer
-      limit:
-        type: integer
-      more:
-        type: boolean
-      offset:
-        type: integer
-    type: object
-  pkg_apiserver_web_handler_v2.clusterList:
-    properties:
-      items:
-        items:
-          $ref: '#/definitions/v1.ClusterSpec'
-        type: array
-      itemsCount:
-        type: integer
-      limit:
-        type: integer
-      more:
-        type: boolean
-      offset:
-        type: integer
-    type: object
   v1.APIServer:
     properties:
       certificateAuthorityData:
@@ -93,6 +33,15 @@ definitions:
         description: |-
           Name of the team
           +kubebuilder:validation:Required
+        type: string
+    type: object
+  v1.Capacity:
+    properties:
+      clusterCapacity:
+        type: integer
+      clusterProvisioning:
+        type: integer
+      lastUpdated:
         type: string
     type: object
   v1.ClusterSpec:
@@ -123,6 +72,9 @@ definitions:
         items:
           type: string
         type: array
+      capacity:
+        $ref: '#/definitions/v1.Capacity'
+        description: Capacity cluster information
       cloudProviderRegion:
         description: |-
           The cloud provider standard region
@@ -357,6 +309,36 @@ definitions:
           +kubebuilder:validation:Required
         type: string
     type: object
+  v1.clusterList:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/v1.ClusterSpec'
+        type: array
+      itemsCount:
+        type: integer
+      limit:
+        type: integer
+      more:
+        type: boolean
+      offset:
+        type: integer
+    type: object
+  v2.clusterList:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/v1.ClusterSpec'
+        type: array
+      itemsCount:
+        type: integer
+      limit:
+        type: integer
+      more:
+        type: boolean
+      offset:
+        type: integer
+    type: object
 host: http://127.0.0.1:8080
 info:
   contact: {}
@@ -402,7 +384,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github.com_adobe_cluster-registry_pkg_apiserver_web_handler_v1.clusterList'
+            $ref: '#/definitions/v1.clusterList'
         "500":
           description: Internal Server Error
           schema:
@@ -473,7 +455,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/pkg_apiserver_web_handler_v2.clusterList'
+            $ref: '#/definitions/v2.clusterList'
         "500":
           description: Internal Server Error
           schema:

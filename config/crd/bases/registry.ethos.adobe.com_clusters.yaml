@@ -84,6 +84,16 @@ spec:
                 items:
                   type: string
                 type: array
+              capacity:
+                description: Capacity information updated by the Capacity Recommender
+                properties:
+                  clusterCapacity:
+                    type: integer
+                  clusterProvisioning:
+                    type: integer
+                  lastUpdated:
+                    type: string
+                type: object
               cloudProviderRegion:
                 description: The cloud provider standard region
                 type: string
