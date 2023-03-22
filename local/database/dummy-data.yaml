@@ -11,12 +11,13 @@
       certificateAuthorityData: LS0tLS1CRUdJTiBDRVJUSUZJ==
     region: useast1
     cloudType: azure
+    cloudProviderRegion: useast1
     environment: Prod
     type: Shared
     businessUnit: BU1
     offering:
-    - caas
-    - paas
+    - CaaS
+    - PaaS
     allowedTeams:
     - name: my-team
       gitTeams:
@@ -52,17 +53,17 @@
         endpoint: xyz
     tiers:
     - name: worker
+      containerRuntime: cri-o
       instanceType: c5.9xlarge
       maxCapacity: 1000
       minCapacity: 3
-      rootDeviceSize: 200
     - name: workerMemoryOptimized
+      containerRuntime: cri-o
       instanceType: r5.8xlarge
       labels:
         node.kubernetes.io/workload.memory-optimized: "true"
       maxCapacity: 100
       minCapacity: 0
-      rootDeviceSize: 200
       taints:
       - workload=memory-optimized:NoSchedule
     accountId: "11111-2222-3333-4444-555555555"
@@ -81,6 +82,7 @@
       ownerID: ownerxxx
     registeredAt: "2021-12-13T05:50:07.492Z"
     lastUpdated: "2021-12-13T05:50:07.492Z"
+    managingOrg: Ethos
     k8sInfraRelease:
       gitSha: 1e8cbd109d7a77909f627ec5247520b70cc209e9
       lastUpdated: "2021-03-22T11:55:41Z"
@@ -103,12 +105,13 @@
       certificateAuthorityData: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0==
     region: euwest1	
     cloudType: azure
+    cloudProviderRegion: euwest1
     environment: Prod
     type: Dedicated
     businessUnit: BU2
     offering:
-    - caas
-    - paas
+    - CaaS
+    - PaaS
     allowedTeams:
     - name: my-team
       gitTeams:
@@ -130,17 +133,17 @@
         public: cluster02-prod-euwest1.example.com
     tiers:
     - name: worker
+      containerRuntime: cri-o
       instanceType: c5.9xlarge
       maxCapacity: 1000
       minCapacity: 3
-      rootDeviceSize: 200
     - name: workerMemoryOptimized
+      containerRuntime: cri-o
       instanceType: r5.8xlarge
       labels:
         node.kubernetes.io/workload.memory-optimized: "true"
       maxCapacity: 100
       minCapacity: 0
-      rootDeviceSize: 200
       taints:
       - workload=memory-optimized:NoSchedule
     accountId: "11111-2222-3333-4444-55555555"
@@ -150,6 +153,7 @@
       - 10.3.0.0/24
     registeredAt: "2019-02-10T06:15:32Z"
     lastUpdated: "2020-02-10T06:15:32Z"
+    managingOrg: Ethos
     k8sInfraRelease:
       gitSha: 1e8cbd109d7a77909f627ec5247520b70cc209e9
       lastUpdated: "2021-03-22T11:55:41Z"
@@ -172,11 +176,12 @@
       certificateAuthorityData: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS==
     region: uswest1
     cloudType: aws
+    cloudProviderRegion: uswest1
     environment: Prod
     type: Dedicated
     businessUnit: BU1
     offering:
-    - paas
+    - PaaS
     allowedTeams:
     - name: my-team
       gitTeams:
@@ -210,17 +215,17 @@
         isDefault: true
     tiers:
     - name: proxy
+      containerRuntime: cri-o
       instanceType: r5a.4xlarge
       maxCapacity: 200
       minCapacity: 3
-      rootDeviceSize: 200
     - name: worker
+      containerRuntime: cri-o
       instanceType: c5.9xlarge
       labels:
         node.kubernetes.io/workload.memory-optimized: "true"
       maxCapacity: 1000
       minCapacity: 3
-      rootDeviceSize: 200
     accountId: "12345678"
     virtualNetworks:
     - id: vpc-123456
@@ -228,6 +233,7 @@
       - 10.0.22.0/8
     registeredAt: "2020-03-19T07:55:46.132Z"
     lastUpdated: "2020-03-20T07:55:46.132Z"
+    managingOrg: Ethos
     k8sInfraRelease:
       gitSha: 110bb4f33b2142dde01e74a9bae7148534c2685b
       lastUpdated: "2021-03-22T11:55:41Z"

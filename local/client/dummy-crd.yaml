@@ -1,0 +1,91 @@
+apiVersion: registry.ethos.adobe.com/v1
+kind: Cluster
+metadata:
+  name: cluster01-local-useast1
+  namespace: cluster-registry
+spec:
+  name: cluster01-local-useast1
+  shortName: cluster01localuseast1
+  apiServer:
+    endpoint: https://cluster01-local-useast1.example.com
+    certificateAuthorityData: LS0tLS1CRUdJTiBDRVJUSUZJ==
+  region: useast1
+  cloudType: azure
+  cloudProviderRegion: useast1
+  environment: local
+  type: Shared
+  businessUnit: BU1
+  offering:
+  - CaaS
+  - PaaS
+  allowedOnboardingTeams:
+  - name: my-team
+    ldapGroups:
+    - LDAP_GROUP_EXAMPLE_1:GROUP_ID1
+    - LDAP_GROUP_EXAMPLE_2:GROUP_ID2
+  capabilities:
+  - vpc-peering
+  - gpu-compute
+  extra:
+    loggingEndpoints:
+    - region: useast1
+      endpoint: splunk-us-east1.example.com
+      isDefault: "true"
+    - region: useast2
+      endpoint: splunk-us-east2.example.com
+      isDefault: "false"
+    domainName: example.com
+    ecrIamArns:
+      iamRoles:
+      - "arn:aws:iam::account-id:role/xxx"
+      - "arn:aws:iam::account-id:role/yyy"
+      iamUser:
+      - "arn:aws:iam::111222333:user/ecr-login"
+    lbEndpoints:
+      public: cluster01-local-useast1.example.com
+    egressPorts: "1024-65535"
+    nfsInfo:
+    - name: xxxss5
+      basePath: xyz
+      endpoint: xyz
+  tiers:
+  - name: worker
+    containerRuntime: cri-o
+    instanceType: c5.9xlarge
+    maxCapacity: 1000
+    minCapacity: 3
+  - name: workerMemoryOptimized
+    containerRuntime: docker
+    instanceType: r5.8xlarge
+    labels:
+      node.kubernetes.io/workload.memory-optimized: "true"
+    maxCapacity: 100
+    minCapacity: 0
+    taints:
+    - workload=memory-optimized:NoSchedule
+  accountId: "11111-2222-3333-4444-555555555"
+  virtualNetworks:
+  - id: "/subscriptions/11111-2222-3333-4444-555555555/resourceGroups/cluster01_local_network/providers/Microsoft.Network/virtualNetworks/cluster01_local_useast1-vnet/subnets/cluster01_local_useast1_master_network_10_0_0_0_24"
+    cidrs:
+    - 10.0.0.0/24
+  - id: "/subscriptions/11111-2222-3333-4444-555555555/resourceGroups/cluster01_local_network/providers/Microsoft.Network/virtualNetworks/cluster01_local_useast1-vnet/subnets/cluster01_local_useast1_worker_network_10_1_0_0_24"
+    cidrs:
+    - 10.1.0.0/24
+  peerVirtualNetworks:
+  - id: 123r
+    cidrs:
+    - 10.2.0.1/23
+    - 10.3.0.1/24
+    ownerID: ownerxxx
+  registeredAt: "2021-12-13T05:50:07.492Z"
+  lastUpdated: "2021-12-13T05:50:07.492Z"
+  managingOrg: Ethos
+  k8sInfraRelease:
+    gitSha: 1e8cbd109d7a77909f627ec5247520b70cc209e9
+    lastUpdated: "2021-03-22T11:55:41Z"
+    release: 2021-W06-0-116-gd0c7e403
+  status: Active
+  phase: Running
+  tags:
+    onboarding: "off"
+    scaling: "off"
