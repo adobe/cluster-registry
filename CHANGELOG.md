@@ -1,14 +1,3 @@
-# 1.3.0
-
-## cluster-registry-api
-- Add Capacity fields for Capacity Forecaster (#49)
-- Add a make target for local setup (#48)
-- Improved cluster filtering (#47)
-- Add documentation to the e2e test (#41)
-
-## cluster-registry-client
-- N/A
-
 # 1.2.1
 
 ## cluster-registry-api
