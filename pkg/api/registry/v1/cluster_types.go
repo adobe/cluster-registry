@@ -113,6 +113,9 @@ type ClusterSpec struct {
 
 	// Cluster tags that were applied
 	Tags map[string]string `json:"tags,omitempty"`
+
+	// Capacity cluster information
+	Capacity Capacity `json:"capacity,omitempty"`
 }
 
 // Offering the cluster is meant for
@@ -244,6 +247,13 @@ type K8sInfraRelease struct {
 
 	// Release name
 	Release string `json:"release"`
+}
+
+// Capacity cluster information
+type Capacity struct {
+	LastUpdated         string `json:"lastUpdated"`
+	ClusterCapacity     int    `json:"clusterCapacity"`
+	ClusterProvisioning int    `json:"clusterProvisioning"`
 }
 
 // ClusterStatus defines the observed state of Cluster
