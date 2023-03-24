@@ -85,7 +85,7 @@ spec:
                   type: string
                 type: array
               capacity:
-                description: Capacity information updated by the Capacity Recommender
+                description: Capacity cluster information
                 properties:
                   clusterCapacity:
                     type: integer
@@ -93,6 +93,10 @@ spec:
                     type: integer
                   lastUpdated:
                     type: string
+                required:
+                - clusterCapacity
+                - clusterProvisioning
+                - lastUpdated
                 type: object
               cloudProviderRegion:
                 description: The cloud provider standard region
