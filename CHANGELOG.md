@@ -1,3 +1,12 @@
+# 1.3.1
+
+## cluster-registry-api
+- N/A
+
+## cluster-registry-client
+- Update local crds (#50)
+- Fix generate CRD (#55)
+
 # 1.3.0
 
 ## cluster-registry-api
