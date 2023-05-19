@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    {{- include "cluster-registry-client.labels" . | nindent 4 }}
+  name: {{ include "cluster-registry-client.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  ports:
+    {{- range $_, $port := .Values.ports }}
+    - name: {{ $port.name }}
+      port: {{ $port.port }}
+      targetPort: {{ $port.name }}
+    {{- else }}
+      {{ fail "No ports defined" }}
+    {{- end }}
+  selector:
+    {{- include "cluster-registry-client.appLabels" . | nindent 4 }}

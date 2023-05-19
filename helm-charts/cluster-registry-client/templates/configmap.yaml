@@ -1,0 +1,39 @@
+{{- if .Values.clusterRegistryClient }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "client-config"
+  labels:
+    {{- include "cluster-registry-client.labels" . | nindent 4 }}
+data:
+  config.yaml: |-
+    apiVersion: config.registry.ethos.adobe.com/v1
+    kind: ClientConfig
+    health:
+      healthProbeBindAddress: {{ .Values.clusterRegistryClient.health.healthProbeBindAddress }}
+    metrics:
+      bindAddress: {{ .Values.clusterRegistryClient.metrics.bindAddress }}
+    webhook:
+      port: {{ .Values.clusterRegistryClient.webhook.port }}
+    leaderElection:
+      leaderElect: {{ .Values.clusterRegistryClient.leaderElection.leaderElect }}
+      resourceNamespace: {{ .Release.Namespace }}
+      resourceName:  {{ .Values.clusterRegistryClient.leaderElection.resourceName }}
+    namespace: {{ .Release.Namespace }}
+    alertmanagerWebhook:
+      bindAddress: {{ .Values.clusterRegistryClient.alertmanagerWebhook.bindAddress }}
+      {{- if gt (len .Values.clusterRegistryClient.alertmanagerWebhook.alertMap) 0 }}
+      alertMap:
+      {{- range $_, $am := .Values.clusterRegistryClient.alertmanagerWebhook.alertMap }} 
+        - alertName: {{ $am.alertName }}
+          onFiring:
+          {{- toYaml $am.onFiring | nindent 12 }}
+          onResolved:
+          {{- toYaml $am.onResolved | nindent 12 }}
+      {{- end }}
+      {{- else }}
+      alertMap: []
+      {{- end }}
+{{- end }}
+
+
