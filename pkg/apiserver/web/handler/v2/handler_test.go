@@ -297,7 +297,7 @@ func TestPatchCluster(t *testing.T) {
 		r := web.NewRouter()
 		h := NewHandler(appConfig, db, m)
 
-		patch, err := json.Marshal(tc.clusterPatch)
+		patch, _ := json.Marshal(tc.clusterPatch)
 		body := strings.NewReader(string(patch))
 		req := httptest.NewRequest(echo.PATCH, "/api/v2/clusters/:name", body)
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)

@@ -129,12 +129,12 @@ func (a *Authenticator) VerifyGroupAccess(group string) echo.MiddlewareFunc {
 			oid := c.Get("oid").(string)
 
 			if c.Get("groups") == nil {
-				return c.JSON(http.StatusForbidden, NewError(errors.New(fmt.Sprintf("identity %s is not authorized to perform this request", oid))))
+				return c.JSON(http.StatusForbidden, NewError(fmt.Errorf("identity %s is not authorized to perform this request", oid)))
 			}
 			groups := c.Get("groups").([]string)
 
 			if !contains(groups, group) {
-				return c.JSON(http.StatusForbidden, NewError(errors.New(fmt.Sprintf("identity %s is not authorized to perform this request", oid))))
+				return c.JSON(http.StatusForbidden, NewError(fmt.Errorf("identity %s is not authorized to perform this request", oid)))
 			}
 
 			return next(c)
