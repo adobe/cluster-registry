@@ -6,6 +6,66 @@ definitions:
         additionalProperties: true
         type: object
     type: object
+  github.com_adobe_cluster-registry_pkg_apiserver_web_handler_v1.clusterList:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/v1.ClusterSpec'
+        type: array
+      itemsCount:
+        type: integer
+      limit:
+        type: integer
+      more:
+        type: boolean
+      offset:
+        type: integer
+    type: object
+  github.com_adobe_cluster-registry_pkg_apiserver_web_handler_v2.clusterList:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/v1.ClusterSpec'
+        type: array
+      itemsCount:
+        type: integer
+      limit:
+        type: integer
+      more:
+        type: boolean
+      offset:
+        type: integer
+    type: object
+  pkg_apiserver_web_handler_v1.clusterList:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/v1.ClusterSpec'
+        type: array
+      itemsCount:
+        type: integer
+      limit:
+        type: integer
+      more:
+        type: boolean
+      offset:
+        type: integer
+    type: object
+  pkg_apiserver_web_handler_v2.clusterList:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/v1.ClusterSpec'
+        type: array
+      itemsCount:
+        type: integer
+      limit:
+        type: integer
+      more:
+        type: boolean
+      offset:
+        type: integer
+    type: object
   v1.APIServer:
     properties:
       certificateAuthorityData:
@@ -309,36 +369,6 @@ definitions:
           +kubebuilder:validation:Required
         type: string
     type: object
-  v1.clusterList:
-    properties:
-      items:
-        items:
-          $ref: '#/definitions/v1.ClusterSpec'
-        type: array
-      itemsCount:
-        type: integer
-      limit:
-        type: integer
-      more:
-        type: boolean
-      offset:
-        type: integer
-    type: object
-  v2.clusterList:
-    properties:
-      items:
-        items:
-          $ref: '#/definitions/v1.ClusterSpec'
-        type: array
-      itemsCount:
-        type: integer
-      limit:
-        type: integer
-      more:
-        type: boolean
-      offset:
-        type: integer
-    type: object
 host: http://127.0.0.1:8080
 info:
   contact: {}
@@ -384,7 +414,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.clusterList'
+            $ref: '#/definitions/pkg_apiserver_web_handler_v1.clusterList'
         "500":
           description: Internal Server Error
           schema:
@@ -455,7 +485,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v2.clusterList'
+            $ref: '#/definitions/pkg_apiserver_web_handler_v2.clusterList'
         "500":
           description: Internal Server Error
           schema:
@@ -495,6 +525,37 @@ paths:
       security:
       - bearerAuth: []
       summary: Get an cluster
+      tags:
+      - cluster
+    patch:
+      consumes:
+      - application/json
+      description: Update a cluster. Auth is required
+      operationId: v2-patch-cluster
+      parameters:
+      - description: Name of the cluster to patch
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.ClusterSpec'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.Error'
+      security:
+      - bearerAuth: []
+      summary: Patch a cluster
       tags:
       - cluster
 schemes:

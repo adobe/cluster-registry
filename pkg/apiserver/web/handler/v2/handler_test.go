@@ -252,3 +252,78 @@ func TestListClusters(t *testing.T) {
 		}
 	}
 }
+
+func TestPatchCluster(t *testing.T) {
+	test := assert.New(t)
+
+	t.Log("Test patching a cluster.")
+
+	tcs := []struct {
+		name            string
+		clusterName     string
+		clusterPatch    ClusterPatch
+		expectedCluster *registryv1.Cluster
+		expectedStatus  int
+	}{
+		{
+			name:        "patch status existing cluster",
+			clusterName: "cluster1",
+			clusterPatch: ClusterPatch{
+				Status: "Active",
+			},
+			expectedCluster: &registryv1.Cluster{
+				Spec: registryv1.ClusterSpec{
+					Name:         "cluster1",
+					LastUpdated:  "2020-02-14T06:15:32Z",
+					RegisteredAt: "2019-02-14T06:15:32Z",
+					Status:       "Active",
+					Phase:        "Running",
+					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
+				}},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:        "patch non-existing cluster",
+			clusterName: "cluster2",
+			clusterPatch: ClusterPatch{
+				Status: "Active",
+			},
+			expectedCluster: nil,
+			expectedStatus:  http.StatusNotFound,
+		},
+	}
+
+	for _, tc := range tcs {
+		r := web.NewRouter()
+		h := NewHandler(appConfig, db, m)
+
+		patch, err := json.Marshal(tc.clusterPatch)
+		body := strings.NewReader(string(patch))
+		req := httptest.NewRequest(echo.PATCH, "/api/v2/clusters/:name", body)
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+
+		ctx := r.NewContext(req, rec)
+		ctx.SetPath("/api/v2/clusters/:name")
+		ctx.SetParamNames("name")
+		ctx.SetParamValues(tc.clusterName)
+
+		expectedItem, err := dynamodbattribute.MarshalMap(
+			database.ClusterDb{
+				Cluster: tc.expectedCluster,
+			})
+		test.NoError(err)
+
+		expectedResult := dynamodb.GetItemOutput{
+			Item: expectedItem,
+		}
+		dbMock.ExpectGetItem().WillReturns(expectedResult)
+
+		t.Logf("\tTest %s:\tWhen checking for cluster %s and http status code %d", tc.name, tc.clusterName, tc.expectedStatus)
+
+		err = h.GetCluster(ctx)
+		test.NoError(err)
+
+		test.Equal(tc.expectedStatus, rec.Code)
+	}
+}

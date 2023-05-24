@@ -13,7 +13,11 @@ governing permissions and limitations under the License.
 package v2
 
 import (
+	"context"
+	"encoding/json"
 	"github.com/adobe/cluster-registry/pkg/apiserver/models"
+	"github.com/adobe/cluster-registry/pkg/k8s"
+	"k8s.io/apimachinery/pkg/types"
 	"net/http"
 	"strconv"
 
@@ -33,6 +37,12 @@ type Handler interface {
 	GetCluster(echo.Context) error
 	ListClusters(echo.Context) error
 	Register(*echo.Group)
+}
+
+// ClusterPatch is the struct for updating a cluster's dynamic fields
+type ClusterPatch struct {
+	Status string `json:"status" validate:"oneof=Inactive Active Deprecated Deleted"`
+	// TODO: add all dynamic fields
 }
 
 // handler struct
@@ -59,6 +69,7 @@ func (h *handler) Register(v2 *echo.Group) {
 	}
 	clusters := v2.Group("/clusters", a.VerifyToken(), web.RateLimiter(h.appConfig))
 	clusters.GET("/:name", h.GetCluster)
+	clusters.PATCH("/:name", h.PatchCluster, a.VerifyGroupAccess(h.appConfig.ApiAuthorizedGroupId))
 	clusters.GET("", h.ListClusters)
 }
 
@@ -78,7 +89,7 @@ func (h *handler) Register(v2 *echo.Group) {
 func (h *handler) GetCluster(ctx echo.Context) error {
 
 	name := ctx.Param("name")
-	c, err := getCluster(h.db, name)
+	c, err := h.getCluster(h.db, name)
 
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, errors.NewError(err))
@@ -139,8 +150,52 @@ func (h *handler) ListClusters(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, newClusterListResponse(clusters, count, offset, limit, more))
 }
 
+// PatchCluster godoc
+// @Summary Patch a cluster
+// @Description Update a cluster. Auth is required
+// @ID v2-patch-cluster
+// @Tags cluster
+// @Accept  json
+// @Produce  json
+// @Param name path string true "Name of the cluster to patch"
+// @Success 200 {object} registryv1.ClusterSpec
+// @Failure 400 {object} errors.Error
+// @Failure 500 {object} errors.Error
+// @Security bearerAuth
+// @Router /v2/clusters/{name} [patch]
+func (h *handler) PatchCluster(ctx echo.Context) error {
+
+	name := ctx.Param("name")
+	c, err := h.getCluster(h.db, name)
+
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, errors.NewError(err))
+	}
+
+	if c == nil {
+		return ctx.JSON(http.StatusNotFound, errors.NotFound())
+	}
+
+	var clusterPatch ClusterPatch
+
+	if err = ctx.Bind(&clusterPatch); err != nil {
+		return ctx.JSON(http.StatusBadRequest, errors.NewError(err))
+	}
+
+	if err = ctx.Validate(clusterPatch); err != nil {
+		return ctx.JSON(http.StatusBadRequest, errors.NewError(err))
+	}
+
+	err = h.patchCluster(c, clusterPatch)
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, errors.NewError(err))
+	}
+
+	return ctx.JSON(http.StatusOK, newClusterResponse(ctx, c))
+}
+
 // getCluster by standard name or short name
-func getCluster(db database.Db, name string) (*registryv1.Cluster, error) {
+func (h *handler) getCluster(db database.Db, name string) (*registryv1.Cluster, error) {
 
 	var c *registryv1.Cluster
 	var err error
@@ -162,6 +217,41 @@ func getCluster(db database.Db, name string) (*registryv1.Cluster, error) {
 		}
 	}
 	return c, nil
+}
+
+// patchCluster
+func (h *handler) patchCluster(cluster *registryv1.Cluster, patch ClusterPatch) error {
+	client, err := k8s.Client(cluster, k8s.AzureSPCredentials{
+		ClientID:     h.appConfig.ApiClientId,
+		ClientSecret: h.appConfig.ApiClientSecret,
+		TenantID:     h.appConfig.ApiTenantId,
+		ResourceID:   h.appConfig.K8sResourceId,
+	})
+	if err != nil {
+		return err
+	}
+
+	jsonPatch, err := json.Marshal(patch)
+	if err != nil {
+		return err
+	}
+
+	res, err := client.CoreV1().RESTClient().
+		Patch(types.MergePatchType).
+		AbsPath("/apis/registry.ethos.adobe.com/v1").
+		Namespace("cluster-registry").
+		Resource("clusters").
+		Name(cluster.Spec.Name).
+		Body(jsonPatch).
+		DoRaw(context.TODO())
+
+	log.Infof("Patch response: %s", string(res))
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func getQueryConditions(ctx echo.Context) []string {

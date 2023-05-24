@@ -77,7 +77,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.clusterList"
+                            "$ref": "#/definitions/pkg_apiserver_web_handler_v1.clusterList"
                         }
                     },
                     "500": {
@@ -186,7 +186,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v2.clusterList"
+                            "$ref": "#/definitions/pkg_apiserver_web_handler_v2.clusterList"
                         }
                     },
                     "500": {
@@ -246,6 +246,54 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "description": "Update a cluster. Auth is required",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cluster"
+                ],
+                "summary": "Patch a cluster",
+                "operationId": "v2-patch-cluster",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Name of the cluster to patch",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ClusterSpec"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.Error"
+                        }
+                    }
+                }
             }
         }
     },
@@ -256,6 +304,98 @@ const docTemplate = `{
                 "errors": {
                     "type": "object",
                     "additionalProperties": true
+                }
+            }
+        },
+        "github.com_adobe_cluster-registry_pkg_apiserver_web_handler_v1.clusterList": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ClusterSpec"
+                    }
+                },
+                "itemsCount": {
+                    "type": "integer"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "more": {
+                    "type": "boolean"
+                },
+                "offset": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github.com_adobe_cluster-registry_pkg_apiserver_web_handler_v2.clusterList": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ClusterSpec"
+                    }
+                },
+                "itemsCount": {
+                    "type": "integer"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "more": {
+                    "type": "boolean"
+                },
+                "offset": {
+                    "type": "integer"
+                }
+            }
+        },
+        "pkg_apiserver_web_handler_v1.clusterList": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ClusterSpec"
+                    }
+                },
+                "itemsCount": {
+                    "type": "integer"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "more": {
+                    "type": "boolean"
+                },
+                "offset": {
+                    "type": "integer"
+                }
+            }
+        },
+        "pkg_apiserver_web_handler_v2.clusterList": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ClusterSpec"
+                    }
+                },
+                "itemsCount": {
+                    "type": "integer"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "more": {
+                    "type": "boolean"
+                },
+                "offset": {
+                    "type": "integer"
                 }
             }
         },
@@ -589,52 +729,6 @@ const docTemplate = `{
                 "id": {
                     "description": "Virtual private network Id\n+kubebuilder:validation:Required",
                     "type": "string"
-                }
-            }
-        },
-        "v1.clusterList": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.ClusterSpec"
-                    }
-                },
-                "itemsCount": {
-                    "type": "integer"
-                },
-                "limit": {
-                    "type": "integer"
-                },
-                "more": {
-                    "type": "boolean"
-                },
-                "offset": {
-                    "type": "integer"
-                }
-            }
-        },
-        "v2.clusterList": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.ClusterSpec"
-                    }
-                },
-                "itemsCount": {
-                    "type": "integer"
-                },
-                "limit": {
-                    "type": "integer"
-                },
-                "more": {
-                    "type": "boolean"
-                },
-                "offset": {
-                    "type": "integer"
                 }
             }
         }

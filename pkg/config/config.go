@@ -33,54 +33,59 @@ type AppConfig struct {
 	SqsEndpoint           string
 	SqsAwsRegion          string
 	SqsQueueName          string
+	K8sResourceId         string
+	ApiTenantId           string
+	ApiClientId           string
+	ApiClientSecret       string
+	ApiAuthorizedGroupId  string
 }
 
 func LoadApiConfig() (*AppConfig, error) {
 	awsRegion := getEnv("AWS_REGION", "")
 	if awsRegion == "" {
-		return nil, fmt.Errorf("Environment variable AWS_REGION is not set.")
+		return nil, fmt.Errorf("environment variable AWS_REGION is not set")
 	}
 
 	dbAwsRegion := getEnv("DB_AWS_REGION", "")
 	if dbAwsRegion == "" {
-		return nil, fmt.Errorf("Environment variable DB_AWS_REGION is not set.")
+		return nil, fmt.Errorf("environment variable DB_AWS_REGION is not set")
 	}
 
 	dbEndpoint := getEnv("DB_ENDPOINT", "")
 	if dbEndpoint == "" {
-		return nil, fmt.Errorf("Environment variable DB_ENDPOINT is not set.")
+		return nil, fmt.Errorf("environment variable DB_ENDPOINT is not set")
 	}
 
 	dbTableName := getEnv("DB_TABLE_NAME", "")
 	if dbTableName == "" {
-		return nil, fmt.Errorf("Environment variable DB_TABLE_NAME is not set.")
+		return nil, fmt.Errorf("environment variable DB_TABLE_NAME is not set")
 	}
 
 	dbIndexName := getEnv("DB_INDEX_NAME", "")
 
 	sqsEndpoint := getEnv("SQS_ENDPOINT", "")
 	if sqsEndpoint == "" {
-		return nil, fmt.Errorf("Environment variable SQS_ENDPOINT is not set.")
+		return nil, fmt.Errorf("environment variable SQS_ENDPOINT is not set")
 	}
 
 	sqsAwsRegion := getEnv("SQS_AWS_REGION", "")
 	if sqsAwsRegion == "" {
-		return nil, fmt.Errorf("Environment variable SQS_AWS_REGION is not set.")
+		return nil, fmt.Errorf("environment variable SQS_AWS_REGION is not set")
 	}
 
 	sqsQueueName := getEnv("SQS_QUEUE_NAME", "")
 	if sqsQueueName == "" {
-		return nil, fmt.Errorf("Environment variable SQS_QUEUE_NAME is not set.")
+		return nil, fmt.Errorf("environment variable SQS_QUEUE_NAME is not set")
 	}
 
 	oidcClientId := getEnv("OIDC_CLIENT_ID", "")
 	if oidcClientId == "" {
-		return nil, fmt.Errorf("Environment variable OIDC_CLIENT_ID is not set.")
+		return nil, fmt.Errorf("environment variable OIDC_CLIENT_ID is not set")
 	}
 
 	oidcIssuerUrl := getEnv("OIDC_ISSUER_URL", "")
 	if oidcIssuerUrl == "" {
-		return nil, fmt.Errorf("Environment variable OIDC_ISSUER_URL is not set.")
+		return nil, fmt.Errorf("environment variable OIDC_ISSUER_URL is not set")
 	}
 
 	apiRateLimiterEnabled := false
@@ -99,6 +104,31 @@ func LoadApiConfig() (*AppConfig, error) {
 
 	apiHost := getEnv("API_HOST", "0.0.0.0:8080")
 
+	k8sResourceId := getEnv("K8S_RESOURCE_ID", "")
+	if k8sResourceId == "" {
+		return nil, fmt.Errorf("environment variable K8S_RESOURCE_ID is not set")
+	}
+
+	apiTenantId := getEnv("API_TENANT_ID", "")
+	if apiTenantId == "" {
+		return nil, fmt.Errorf("environment variable API_TENANT_ID is not set")
+	}
+
+	apiClientId := getEnv("API_CLIENT_ID", "")
+	if apiClientId == "" {
+		return nil, fmt.Errorf("environment variable API_CLIENT_ID is not set")
+	}
+
+	apiClientSecret := getEnv("API_CLIENT_SECRET", "")
+	if apiClientSecret == "" {
+		return nil, fmt.Errorf("environment variable API_CLIENT_SECRET is not set")
+	}
+
+	authorizedGroupId := getEnv("API_AUTHORIZED_GROUP_ID", "")
+	if authorizedGroupId == "" {
+		return nil, fmt.Errorf("environment variable API_AUTHORIZED_GROUP_ID is not set")
+	}
+
 	return &AppConfig{
 		AwsRegion:             awsRegion,
 		DbEndpoint:            dbEndpoint,
@@ -113,6 +143,11 @@ func LoadApiConfig() (*AppConfig, error) {
 		ApiRateLimiterEnabled: apiRateLimiterEnabled,
 		LogLevel:              logLevel,
 		ApiHost:               apiHost,
+		K8sResourceId:         k8sResourceId,
+		ApiTenantId:           apiTenantId,
+		ApiClientId:           apiClientId,
+		ApiClientSecret:       apiClientSecret,
+		ApiAuthorizedGroupId:  authorizedGroupId,
 	}, nil
 }
 
