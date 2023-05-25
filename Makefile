@@ -50,9 +50,7 @@ endif
 
 .PHONY: clean
 clean:
-	# Remove all files and directories ignored by git.
-	# Stop all local containers.
-	git clean -Xfd .
+	@echo "Cleaning local environment..."
 	./local/cleanup.sh
 
 .PHONY: setup
