@@ -279,7 +279,10 @@ var _ = Describe("Webhook Server", func() {
 				return err == nil
 			}, timeout, interval).Should(BeTrue())
 			cluster.Annotations = map[string]string{"registry.ethos.adobe.com/excluded-tags": "other-tag,my-tag"}
-			Expect(k8sClient.Update(ctx, cluster)).Should(Succeed())
+			Eventually(func() bool {
+				err := k8sClient.Update(ctx, cluster)
+				return err == nil
+			}, timeout, interval).Should(BeTrue())
 
 			// give controller-runtime time to propagagte data into etcd
 			time.Sleep(2 * time.Second)
