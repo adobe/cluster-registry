@@ -1,4 +1,7 @@
 {
+    "produces": [
+        "application/json"
+    ],
     "schemes": [
         "http",
         "https"
@@ -80,7 +83,7 @@
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/errors.Error"
+                            "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_apiserver_errors.Error"
                         }
                     }
                 }
@@ -118,19 +121,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.ClusterSpec"
+                            "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.ClusterSpec"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/errors.Error"
+                            "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_apiserver_errors.Error"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/errors.Error"
+                            "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_apiserver_errors.Error"
                         }
                     }
                 }
@@ -189,7 +192,7 @@
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/errors.Error"
+                            "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_apiserver_errors.Error"
                         }
                     }
                 }
@@ -227,19 +230,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.ClusterSpec"
+                            "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.ClusterSpec"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/errors.Error"
+                            "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_apiserver_errors.Error"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/errors.Error"
+                            "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_apiserver_errors.Error"
                         }
                     }
                 }
@@ -275,19 +278,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.ClusterSpec"
+                            "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.ClusterSpec"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/errors.Error"
+                            "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_apiserver_errors.Error"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/errors.Error"
+                            "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_apiserver_errors.Error"
                         }
                     }
                 }
@@ -295,108 +298,7 @@
         }
     },
     "definitions": {
-        "errors.Error": {
-            "type": "object",
-            "properties": {
-                "errors": {
-                    "type": "object",
-                    "additionalProperties": true
-                }
-            }
-        },
-        "github.com_adobe_cluster-registry_pkg_apiserver_web_handler_v1.clusterList": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.ClusterSpec"
-                    }
-                },
-                "itemsCount": {
-                    "type": "integer"
-                },
-                "limit": {
-                    "type": "integer"
-                },
-                "more": {
-                    "type": "boolean"
-                },
-                "offset": {
-                    "type": "integer"
-                }
-            }
-        },
-        "github.com_adobe_cluster-registry_pkg_apiserver_web_handler_v2.clusterList": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.ClusterSpec"
-                    }
-                },
-                "itemsCount": {
-                    "type": "integer"
-                },
-                "limit": {
-                    "type": "integer"
-                },
-                "more": {
-                    "type": "boolean"
-                },
-                "offset": {
-                    "type": "integer"
-                }
-            }
-        },
-        "pkg_apiserver_web_handler_v1.clusterList": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.ClusterSpec"
-                    }
-                },
-                "itemsCount": {
-                    "type": "integer"
-                },
-                "limit": {
-                    "type": "integer"
-                },
-                "more": {
-                    "type": "boolean"
-                },
-                "offset": {
-                    "type": "integer"
-                }
-            }
-        },
-        "pkg_apiserver_web_handler_v2.clusterList": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.ClusterSpec"
-                    }
-                },
-                "itemsCount": {
-                    "type": "integer"
-                },
-                "limit": {
-                    "type": "integer"
-                },
-                "more": {
-                    "type": "boolean"
-                },
-                "offset": {
-                    "type": "integer"
-                }
-            }
-        },
-        "v1.APIServer": {
+        "github_com_adobe_cluster-registry_pkg_api_registry_v1.APIServer": {
             "type": "object",
             "properties": {
                 "certificateAuthorityData": {
@@ -409,7 +311,7 @@
                 }
             }
         },
-        "v1.AllowedOnboardingTeam": {
+        "github_com_adobe_cluster-registry_pkg_api_registry_v1.AllowedOnboardingTeam": {
             "type": "object",
             "properties": {
                 "gitTeams": {
@@ -432,7 +334,7 @@
                 }
             }
         },
-        "v1.Capacity": {
+        "github_com_adobe_cluster-registry_pkg_api_registry_v1.Capacity": {
             "type": "object",
             "properties": {
                 "clusterCapacity": {
@@ -446,7 +348,7 @@
                 }
             }
         },
-        "v1.ClusterSpec": {
+        "github_com_adobe_cluster-registry_pkg_api_registry_v1.ClusterSpec": {
             "type": "object",
             "properties": {
                 "accountId": {
@@ -457,12 +359,16 @@
                     "description": "Git teams and/or LDAP groups that are allowed to onboard and deploy on the cluster",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.AllowedOnboardingTeam"
+                        "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.AllowedOnboardingTeam"
                     }
                 },
                 "apiServer": {
                     "description": "Information about K8s API endpoint and CA cert\n+kubebuilder:validation:Required",
-                    "$ref": "#/definitions/v1.APIServer"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.APIServer"
+                        }
+                    ]
                 },
                 "businessUnit": {
                     "description": "The BU that owns the cluster\n+kubebuilder:validation:Required",
@@ -477,7 +383,11 @@
                 },
                 "capacity": {
                     "description": "Capacity cluster information",
-                    "$ref": "#/definitions/v1.Capacity"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.Capacity"
+                        }
+                    ]
                 },
                 "cloudProviderRegion": {
                     "description": "The cloud provider standard region\n+kubebuilder:validation:Required",
@@ -493,11 +403,19 @@
                 },
                 "extra": {
                     "description": "Extra information, not necessary related to the cluster",
-                    "$ref": "#/definitions/v1.Extra"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.Extra"
+                        }
+                    ]
                 },
                 "k8sInfraRelease": {
                     "description": "K8s Infrastructure release information\n+kubebuilder:validation:Required",
-                    "$ref": "#/definitions/v1.K8sInfraRelease"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.K8sInfraRelease"
+                        }
+                    ]
                 },
                 "lastUpdated": {
                     "description": "Timestamp when cluster information was updated",
@@ -522,7 +440,7 @@
                     "description": "Information about Virtual Networks manual peered with the cluster",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.PeerVirtualNetwork"
+                        "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.PeerVirtualNetwork"
                     }
                 },
                 "phase": {
@@ -556,7 +474,7 @@
                     "description": "List of tiers with their associated information\n+kubebuilder:validation:Required",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.Tier"
+                        "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.Tier"
                     }
                 },
                 "type": {
@@ -567,12 +485,12 @@
                     "description": "Virtual Private Networks information\n+kubebuilder:validation:Required",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.VirtualNetwork"
+                        "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.VirtualNetwork"
                     }
                 }
             }
         },
-        "v1.Extra": {
+        "github_com_adobe_cluster-registry_pkg_api_registry_v1.Extra": {
             "type": "object",
             "properties": {
                 "domainName": {
@@ -626,7 +544,7 @@
                 }
             }
         },
-        "v1.K8sInfraRelease": {
+        "github_com_adobe_cluster-registry_pkg_api_registry_v1.K8sInfraRelease": {
             "type": "object",
             "properties": {
                 "gitSha": {
@@ -643,7 +561,7 @@
                 }
             }
         },
-        "v1.PeerVirtualNetwork": {
+        "github_com_adobe_cluster-registry_pkg_api_registry_v1.PeerVirtualNetwork": {
             "type": "object",
             "properties": {
                 "cidrs": {
@@ -663,7 +581,7 @@
                 }
             }
         },
-        "v1.Tier": {
+        "github_com_adobe_cluster-registry_pkg_api_registry_v1.Tier": {
             "type": "object",
             "properties": {
                 "containerRuntime": {
@@ -713,7 +631,7 @@
                 }
             }
         },
-        "v1.VirtualNetwork": {
+        "github_com_adobe_cluster-registry_pkg_api_registry_v1.VirtualNetwork": {
             "type": "object",
             "properties": {
                 "cidrs": {
@@ -726,6 +644,61 @@
                 "id": {
                     "description": "Virtual private network Id\n+kubebuilder:validation:Required",
                     "type": "string"
+                }
+            }
+        },
+        "github_com_adobe_cluster-registry_pkg_apiserver_errors.Error": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            }
+        },
+        "pkg_apiserver_web_handler_v1.clusterList": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.ClusterSpec"
+                    }
+                },
+                "itemsCount": {
+                    "type": "integer"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "more": {
+                    "type": "boolean"
+                },
+                "offset": {
+                    "type": "integer"
+                }
+            }
+        },
+        "pkg_apiserver_web_handler_v2.clusterList": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.ClusterSpec"
+                    }
+                },
+                "itemsCount": {
+                    "type": "integer"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "more": {
+                    "type": "boolean"
+                },
+                "offset": {
+                    "type": "integer"
                 }
             }
         }
