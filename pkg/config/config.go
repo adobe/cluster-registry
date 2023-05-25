@@ -154,17 +154,17 @@ func LoadApiConfig() (*AppConfig, error) {
 func LoadClientConfig() (*AppConfig, error) {
 	sqsEndpoint := getEnv("SQS_ENDPOINT", "")
 	if sqsEndpoint == "" {
-		return nil, fmt.Errorf("Environment variable SQS_ENDPOINT is not set.")
+		return nil, fmt.Errorf("environment variable SQS_ENDPOINT is not set")
 	}
 
 	sqsAwsRegion := getEnv("SQS_AWS_REGION", "")
 	if sqsAwsRegion == "" {
-		return nil, fmt.Errorf("Environment variable SQS_AWS_REGION is not set.")
+		return nil, fmt.Errorf("environment variable SQS_AWS_REGION is not set")
 	}
 
 	sqsQueueName := getEnv("SQS_QUEUE_NAME", "")
 	if sqsQueueName == "" {
-		return nil, fmt.Errorf("Environment variable SQS_QUEUE_NAME is not set.")
+		return nil, fmt.Errorf("environment variable SQS_QUEUE_NAME is not set")
 	}
 
 	return &AppConfig{
