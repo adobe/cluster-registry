@@ -35,6 +35,7 @@ import (
 // Handler interface
 type Handler interface {
 	GetCluster(echo.Context) error
+	PatchCluster(echo.Context) error
 	ListClusters(echo.Context) error
 	Register(*echo.Group)
 }
@@ -50,14 +51,16 @@ type handler struct {
 	db        database.Db
 	appConfig *config.AppConfig
 	metrics   monitoring.MetricsI
+	kcp       k8s.ClientProviderI
 }
 
 // NewHandler func
-func NewHandler(appConfig *config.AppConfig, d database.Db, m monitoring.MetricsI) Handler {
+func NewHandler(appConfig *config.AppConfig, d database.Db, m monitoring.MetricsI, kcp k8s.ClientProviderI) Handler {
 	h := &handler{
 		db:        d,
 		metrics:   m,
 		appConfig: appConfig,
+		kcp:       kcp,
 	}
 	return h
 }
@@ -86,20 +89,19 @@ func (h *handler) Register(v2 *echo.Group) {
 // @Failure 500 {object} errors.Error
 // @Security bearerAuth
 // @Router /v2/clusters/{name} [get]
-func (h *handler) GetCluster(ctx echo.Context) error {
-
-	name := ctx.Param("name")
-	c, err := h.getCluster(h.db, name)
+func (h *handler) GetCluster(c echo.Context) error {
+	name := c.Param("name")
+	cluster, err := h.getCluster(h.db, name)
 
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, errors.NewError(err))
+		return c.JSON(http.StatusInternalServerError, errors.NewError(err))
 	}
 
-	if c == nil {
-		return ctx.JSON(http.StatusNotFound, errors.NotFound())
+	if cluster == nil {
+		return c.JSON(http.StatusNotFound, errors.NotFound())
 	}
 
-	return ctx.JSON(http.StatusOK, newClusterResponse(ctx, c))
+	return c.JSON(http.StatusOK, newClusterResponse(c, cluster))
 }
 
 // ListClusters
@@ -116,38 +118,38 @@ func (h *handler) GetCluster(ctx echo.Context) error {
 // @Failure 500 {object} errors.Error
 // @Security bearerAuth
 // @Router /v2/clusters [get]
-func (h *handler) ListClusters(ctx echo.Context) error {
+func (h *handler) ListClusters(c echo.Context) error {
 	var clusters []registryv1.Cluster
 	var count int
 
-	offset, err := strconv.Atoi(ctx.QueryParam("offset"))
+	offset, err := strconv.Atoi(c.QueryParam("offset"))
 	if err != nil {
 		offset = 0
 	}
 
-	limit, err := strconv.Atoi(ctx.QueryParam("limit"))
+	limit, err := strconv.Atoi(c.QueryParam("limit"))
 	if err != nil {
 		limit = 200
 	}
 
 	filter := database.NewDynamoDBFilter()
-	queryConditions := getQueryConditions(ctx)
+	queryConditions := getQueryConditions(c)
 
 	if len(queryConditions) == 0 {
 		clusters, count, more, _ := h.db.ListClusters(offset, limit, "", "", "", "")
-		return ctx.JSON(http.StatusOK, newClusterListResponse(clusters, count, offset, limit, more))
+		return c.JSON(http.StatusOK, newClusterListResponse(clusters, count, offset, limit, more))
 	}
 
 	for _, qc := range queryConditions {
 		condition, err := models.NewFilterConditionFromQuery(qc)
 		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, errors.NewError(err))
+			return c.JSON(http.StatusBadRequest, errors.NewError(err))
 		}
 		filter.AddCondition(condition)
 	}
 
 	clusters, count, more, _ := h.db.ListClustersWithFilter(offset, limit, filter)
-	return ctx.JSON(http.StatusOK, newClusterListResponse(clusters, count, offset, limit, more))
+	return c.JSON(http.StatusOK, newClusterListResponse(clusters, count, offset, limit, more))
 }
 
 // PatchCluster godoc
@@ -163,70 +165,65 @@ func (h *handler) ListClusters(ctx echo.Context) error {
 // @Failure 500 {object} errors.Error
 // @Security bearerAuth
 // @Router /v2/clusters/{name} [patch]
-func (h *handler) PatchCluster(ctx echo.Context) error {
+func (h *handler) PatchCluster(c echo.Context) error {
 
-	name := ctx.Param("name")
-	c, err := h.getCluster(h.db, name)
+	name := c.Param("name")
+	cluster, err := h.getCluster(h.db, name)
 
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, errors.NewError(err))
+		return c.JSON(http.StatusInternalServerError, errors.NewError(err))
 	}
 
-	if c == nil {
-		return ctx.JSON(http.StatusNotFound, errors.NotFound())
+	if cluster == nil {
+		return c.JSON(http.StatusNotFound, errors.NotFound())
 	}
 
 	var clusterPatch ClusterPatch
 
-	if err = ctx.Bind(&clusterPatch); err != nil {
-		return ctx.JSON(http.StatusBadRequest, errors.NewError(err))
+	if err = c.Bind(&clusterPatch); err != nil {
+		return c.JSON(http.StatusBadRequest, errors.NewError(err))
 	}
 
-	if err = ctx.Validate(clusterPatch); err != nil {
-		return ctx.JSON(http.StatusBadRequest, errors.NewError(err))
+	if err = c.Validate(clusterPatch); err != nil {
+		return c.JSON(http.StatusBadRequest, errors.NewError(err))
 	}
 
-	err = h.patchCluster(c, clusterPatch)
+	err = h.patchCluster(cluster, clusterPatch)
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, errors.NewError(err))
+		return c.JSON(http.StatusInternalServerError, errors.NewError(err))
 	}
 
-	return ctx.JSON(http.StatusOK, newClusterResponse(ctx, c))
+	return c.JSON(http.StatusOK, newClusterResponse(c, cluster))
 }
 
 // getCluster by standard name or short name
 func (h *handler) getCluster(db database.Db, name string) (*registryv1.Cluster, error) {
 
-	var c *registryv1.Cluster
+	var cluster *registryv1.Cluster
 	var err error
 
-	c, err = db.GetCluster(name)
+	cluster, err = db.GetCluster(name)
 	if err != nil {
 		return nil, err
 	}
 
-	if c == nil {
+	if cluster == nil {
 		dashName, err := web.GetClusterDashName(name)
 		if err != nil {
 			log.Infof("Cluster %s is not a short name. Error: %v", name, err.Error())
 		} else {
-			c, err = db.GetCluster(dashName)
+			cluster, err = db.GetCluster(dashName)
 			if err != nil {
 				return nil, err
 			}
 		}
 	}
-	return c, nil
+	return cluster, nil
 }
 
 // patchCluster
 func (h *handler) patchCluster(cluster *registryv1.Cluster, patch ClusterPatch) error {
-	client, err := k8s.Client(cluster, k8s.AzureSPCredentials{
-		ClientID:     h.appConfig.ApiClientId,
-		ClientSecret: h.appConfig.ApiClientSecret,
-		TenantID:     h.appConfig.ApiTenantId,
-		ResourceID:   h.appConfig.K8sResourceId,
-	})
+	client, err := h.kcp.GetClient(h.appConfig, cluster)
 	if err != nil {
 		return err
 	}

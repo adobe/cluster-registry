@@ -16,6 +16,7 @@ import (
 	"encoding/base64"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
+	"github.com/adobe/cluster-registry/pkg/config"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -27,8 +28,16 @@ type AzureSPCredentials struct {
 	ResourceID   string
 }
 
-func Client(cluster *registryv1.Cluster, credentials AzureSPCredentials) (*kubernetes.Clientset, error) {
-	config, err := clientcmd.BuildConfigFromFlags(cluster.Spec.APIServer.Endpoint, "")
+type ClientProviderI interface {
+	GetClient(appConfig *config.AppConfig, cluster *registryv1.Cluster) (kubernetes.Interface, error)
+}
+
+type ClientProvider struct{}
+
+func (cp *ClientProvider) GetClient(appConfig *config.AppConfig, cluster *registryv1.Cluster) (kubernetes.Interface, error) {
+	credentials := getCredentials(appConfig)
+
+	cfg, err := clientcmd.BuildConfigFromFlags(cluster.Spec.APIServer.Endpoint, "")
 	if err != nil {
 		return nil, err
 	}
@@ -37,22 +46,31 @@ func Client(cluster *registryv1.Cluster, credentials AzureSPCredentials) (*kuber
 	if err != nil {
 		return nil, err
 	}
-	config.BearerToken = accessToken
+	cfg.BearerToken = accessToken
 
 	decodedCAData, err := base64.StdEncoding.DecodeString(cluster.Spec.APIServer.CertificateAuthorityData)
 	if err != nil {
 		return nil, err
 	}
-	config.CAData = decodedCAData
+	cfg.CAData = decodedCAData
 
-	client, err := kubernetes.NewForConfig(config)
+	client, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
 		return nil, err
 	}
 	return client, nil
 }
 
-func getToken(credentials AzureSPCredentials) (string, error) {
+func getCredentials(appConfig *config.AppConfig) *AzureSPCredentials {
+	return &AzureSPCredentials{
+		ClientID:     appConfig.ApiClientId,
+		ClientSecret: appConfig.ApiClientSecret,
+		TenantID:     appConfig.ApiTenantId,
+		ResourceID:   appConfig.K8sResourceId,
+	}
+}
+
+func getToken(credentials *AzureSPCredentials) (string, error) {
 	clientCredentials := auth.NewClientCredentialsConfig(credentials.ClientID, credentials.ClientSecret, credentials.TenantID)
 	token, err := clientCredentials.ServicePrincipalToken()
 	if err != nil {
