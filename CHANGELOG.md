@@ -1,3 +1,13 @@
+# 1.4.0
+
+## cluster-registry-api
+
+- Add patch endpoint (#58)
+
+## cluster-registry-client
+
+- N/A
+
 # 1.3.1
 
 ## cluster-registry-api
