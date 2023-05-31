@@ -1,12 +1,6 @@
 basePath: /api
 definitions:
-  errors.Error:
-    properties:
-      errors:
-        additionalProperties: true
-        type: object
-    type: object
-  v1.APIServer:
+  github_com_adobe_cluster-registry_pkg_api_registry_v1.APIServer:
     properties:
       certificateAuthorityData:
         description: Information about K8s Api CA Cert
@@ -17,7 +11,7 @@ definitions:
           +kubebuilder:validation:Required
         type: string
     type: object
-  v1.AllowedOnboardingTeam:
+  github_com_adobe_cluster-registry_pkg_api_registry_v1.AllowedOnboardingTeam:
     properties:
       gitTeams:
         description: List of git teams
@@ -35,7 +29,7 @@ definitions:
           +kubebuilder:validation:Required
         type: string
     type: object
-  v1.Capacity:
+  github_com_adobe_cluster-registry_pkg_api_registry_v1.Capacity:
     properties:
       clusterCapacity:
         type: integer
@@ -44,7 +38,7 @@ definitions:
       lastUpdated:
         type: string
     type: object
-  v1.ClusterSpec:
+  github_com_adobe_cluster-registry_pkg_api_registry_v1.ClusterSpec:
     properties:
       accountId:
         description: |-
@@ -55,10 +49,11 @@ definitions:
         description: Git teams and/or LDAP groups that are allowed to onboard and
           deploy on the cluster
         items:
-          $ref: '#/definitions/v1.AllowedOnboardingTeam'
+          $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.AllowedOnboardingTeam'
         type: array
       apiServer:
-        $ref: '#/definitions/v1.APIServer'
+        allOf:
+        - $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.APIServer'
         description: |-
           Information about K8s API endpoint and CA cert
           +kubebuilder:validation:Required
@@ -73,7 +68,8 @@ definitions:
           type: string
         type: array
       capacity:
-        $ref: '#/definitions/v1.Capacity'
+        allOf:
+        - $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.Capacity'
         description: Capacity cluster information
       cloudProviderRegion:
         description: |-
@@ -91,10 +87,12 @@ definitions:
           +kubebuilder:validation:Required
         type: string
       extra:
-        $ref: '#/definitions/v1.Extra'
+        allOf:
+        - $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.Extra'
         description: Extra information, not necessary related to the cluster
       k8sInfraRelease:
-        $ref: '#/definitions/v1.K8sInfraRelease'
+        allOf:
+        - $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.K8sInfraRelease'
         description: |-
           K8s Infrastructure release information
           +kubebuilder:validation:Required
@@ -123,7 +121,7 @@ definitions:
       peerVirtualNetworks:
         description: Information about Virtual Networks manual peered with the cluster
         items:
-          $ref: '#/definitions/v1.PeerVirtualNetwork'
+          $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.PeerVirtualNetwork'
         type: array
       phase:
         description: |-
@@ -164,7 +162,7 @@ definitions:
           List of tiers with their associated information
           +kubebuilder:validation:Required
         items:
-          $ref: '#/definitions/v1.Tier'
+          $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.Tier'
         type: array
       type:
         description: The type of the cluster
@@ -174,10 +172,10 @@ definitions:
           Virtual Private Networks information
           +kubebuilder:validation:Required
         items:
-          $ref: '#/definitions/v1.VirtualNetwork'
+          $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.VirtualNetwork'
         type: array
     type: object
-  v1.Extra:
+  github_com_adobe_cluster-registry_pkg_api_registry_v1.Extra:
     properties:
       domainName:
         description: |-
@@ -221,7 +219,7 @@ definitions:
           type: object
         type: array
     type: object
-  v1.K8sInfraRelease:
+  github_com_adobe_cluster-registry_pkg_api_registry_v1.K8sInfraRelease:
     properties:
       gitSha:
         description: GitSha of the release
@@ -233,7 +231,7 @@ definitions:
         description: Release name
         type: string
     type: object
-  v1.PeerVirtualNetwork:
+  github_com_adobe_cluster-registry_pkg_api_registry_v1.PeerVirtualNetwork:
     properties:
       cidrs:
         description: Remote Virtual Netowrk CIDRs
@@ -247,7 +245,7 @@ definitions:
         description: Cloud account of the owner
         type: string
     type: object
-  v1.Tier:
+  github_com_adobe_cluster-registry_pkg_api_registry_v1.Tier:
     properties:
       containerRuntime:
         description: |-
@@ -294,7 +292,7 @@ definitions:
           type: string
         type: array
     type: object
-  v1.VirtualNetwork:
+  github_com_adobe_cluster-registry_pkg_api_registry_v1.VirtualNetwork:
     properties:
       cidrs:
         description: |-
@@ -309,11 +307,17 @@ definitions:
           +kubebuilder:validation:Required
         type: string
     type: object
-  v1.clusterList:
+  github_com_adobe_cluster-registry_pkg_apiserver_errors.Error:
+    properties:
+      errors:
+        additionalProperties: true
+        type: object
+    type: object
+  pkg_apiserver_web_handler_v1.clusterList:
     properties:
       items:
         items:
-          $ref: '#/definitions/v1.ClusterSpec'
+          $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.ClusterSpec'
         type: array
       itemsCount:
         type: integer
@@ -324,11 +328,32 @@ definitions:
       offset:
         type: integer
     type: object
-  v2.clusterList:
+  pkg_apiserver_web_handler_v2.ClusterPatch:
+    properties:
+      phase:
+        enum:
+        - Building
+        - Testing
+        - Running
+        - Upgrading
+        type: string
+      status:
+        enum:
+        - Inactive
+        - Active
+        - Deprecated
+        - Deleted
+        type: string
+      tags:
+        additionalProperties:
+          type: string
+        type: object
+    type: object
+  pkg_apiserver_web_handler_v2.clusterList:
     properties:
       items:
         items:
-          $ref: '#/definitions/v1.ClusterSpec'
+          $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.ClusterSpec'
         type: array
       itemsCount:
         type: integer
@@ -384,11 +409,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.clusterList'
+            $ref: '#/definitions/pkg_apiserver_web_handler_v1.clusterList'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/errors.Error'
+            $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_apiserver_errors.Error'
       security:
       - bearerAuth: []
       summary: List all clusters
@@ -412,15 +437,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.ClusterSpec'
+            $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.ClusterSpec'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/errors.Error'
+            $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_apiserver_errors.Error'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/errors.Error'
+            $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_apiserver_errors.Error'
       security:
       - bearerAuth: []
       summary: Get an cluster
@@ -455,11 +480,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v2.clusterList'
+            $ref: '#/definitions/pkg_apiserver_web_handler_v2.clusterList'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/errors.Error'
+            $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_apiserver_errors.Error'
       security:
       - bearerAuth: []
       summary: List clusters
@@ -483,20 +508,59 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.ClusterSpec'
+            $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.ClusterSpec'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/errors.Error'
+            $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_apiserver_errors.Error'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/errors.Error'
+            $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_apiserver_errors.Error'
       security:
       - bearerAuth: []
       summary: Get an cluster
       tags:
       - cluster
+    patch:
+      consumes:
+      - application/json
+      description: Update a cluster. Auth is required
+      operationId: v2-patch-cluster
+      parameters:
+      - description: Name of the cluster to patch
+        in: path
+        name: name
+        required: true
+        type: string
+      - description: Request body
+        in: body
+        name: clusterPatch
+        required: true
+        schema:
+          $ref: '#/definitions/pkg_apiserver_web_handler_v2.ClusterPatch'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.ClusterSpec'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_apiserver_errors.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_apiserver_errors.Error'
+      security:
+      - bearerAuth: []
+      summary: Patch a cluster
+      tags:
+      - cluster
+produces:
+- application/json
 schemes:
 - http
 - https

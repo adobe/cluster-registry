@@ -55,7 +55,7 @@ func NewAuthenticator(appConfig *config.AppConfig, m monitoring.MetricsI) (*Auth
 		return nil, fmt.Errorf("init verifier failed: %v", err)
 	}
 
-	config := &oidc.Config{
+	cfg := &oidc.Config{
 		ClientID: appConfig.OidcClientId,
 	}
 
@@ -63,7 +63,7 @@ func NewAuthenticator(appConfig *config.AppConfig, m monitoring.MetricsI) (*Auth
 		ClientID: "spn:" + appConfig.OidcClientId,
 	}
 
-	verifier := provider.Verifier(config)
+	verifier := provider.Verifier(cfg)
 	spnVerifier := provider.Verifier(spnConfig)
 
 	return &Authenticator{
@@ -106,18 +106,49 @@ func (a *Authenticator) VerifyToken() echo.MiddlewareFunc {
 			}
 
 			var claims struct {
-				Oid string `json:"oid"`
+				Oid    string   `json:"oid"`
+				Groups []string `json:"groups"`
 			}
 			if err := token.Claims(&claims); err != nil {
 				return c.JSON(http.StatusForbidden, NewError(err))
 			}
 
 			c.Set("oid", claims.Oid)
+			c.Set("groups", claims.Groups)
 
 			log.Info("Identity logged in: ", claims.Oid)
 			return next(c)
 		}
 	}
+}
+
+// VerifyGroupAccess verifies if the identity that performed the request is part of the configured authorized group
+func (a *Authenticator) VerifyGroupAccess(group string) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			oid := c.Get("oid").(string)
+
+			if c.Get("groups") == nil {
+				return c.JSON(http.StatusForbidden, NewError(fmt.Errorf("identity %s is not authorized to perform this request", oid)))
+			}
+			groups := c.Get("groups").([]string)
+
+			if !contains(groups, group) {
+				return c.JSON(http.StatusForbidden, NewError(fmt.Errorf("identity %s is not authorized to perform this request", oid)))
+			}
+
+			return next(c)
+		}
+	}
+}
+
+func contains(groups []string, group string) bool {
+	for _, g := range groups {
+		if g == group {
+			return true
+		}
+	}
+	return false
 }
 
 // setVerifier set a custom verifier - used in testing

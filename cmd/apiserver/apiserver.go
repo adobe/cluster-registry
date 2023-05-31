@@ -21,6 +21,7 @@ import (
 	apiv2 "github.com/adobe/cluster-registry/pkg/apiserver/web/handler/v2"
 	"github.com/adobe/cluster-registry/pkg/config"
 	"github.com/adobe/cluster-registry/pkg/database"
+	"github.com/adobe/cluster-registry/pkg/k8s"
 	monitoring "github.com/adobe/cluster-registry/pkg/monitoring/apiserver"
 	"github.com/adobe/cluster-registry/pkg/sqs"
 	"github.com/labstack/gommon/log"
@@ -60,6 +61,7 @@ func main() {
 	s := sqs.NewSQS(appConfig)
 	c := sqs.NewConsumer(s, appConfig, db, m)
 	a := api.NewRouter()
+
 	status := api.StatusSessions{
 		Db:        db,
 		Consumer:  c,
@@ -79,7 +81,7 @@ func main() {
 	hv1.Register(v1)
 
 	v2 := a.Group("/api/v2")
-	hv2 := apiv2.NewHandler(appConfig, db, m)
+	hv2 := apiv2.NewHandler(appConfig, db, m, &k8s.ClientProvider{})
 	hv2.Register(v2)
 
 	go c.Consume()

@@ -13,7 +13,12 @@ governing permissions and limitations under the License.
 package v2
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
 	"github.com/adobe/cluster-registry/pkg/apiserver/models"
+	"github.com/adobe/cluster-registry/pkg/k8s"
+	"k8s.io/apimachinery/pkg/types"
 	"net/http"
 	"strconv"
 
@@ -31,8 +36,16 @@ import (
 // Handler interface
 type Handler interface {
 	GetCluster(echo.Context) error
+	PatchCluster(echo.Context) error
 	ListClusters(echo.Context) error
 	Register(*echo.Group)
+}
+
+// ClusterPatch is the struct for updating a cluster's dynamic fields
+type ClusterPatch struct {
+	Status string            `json:"status" validate:"omitempty,oneof=Inactive Active Deprecated Deleted"`
+	Phase  string            `json:"phase" validate:"omitempty,oneof=Building Testing Running Upgrading"`
+	Tags   map[string]string `json:"tags" validate:"omitempty"`
 }
 
 // handler struct
@@ -40,14 +53,16 @@ type handler struct {
 	db        database.Db
 	appConfig *config.AppConfig
 	metrics   monitoring.MetricsI
+	kcp       k8s.ClientProviderI
 }
 
 // NewHandler func
-func NewHandler(appConfig *config.AppConfig, d database.Db, m monitoring.MetricsI) Handler {
+func NewHandler(appConfig *config.AppConfig, d database.Db, m monitoring.MetricsI, kcp k8s.ClientProviderI) Handler {
 	h := &handler{
 		db:        d,
 		metrics:   m,
 		appConfig: appConfig,
+		kcp:       kcp,
 	}
 	return h
 }
@@ -59,6 +74,7 @@ func (h *handler) Register(v2 *echo.Group) {
 	}
 	clusters := v2.Group("/clusters", a.VerifyToken(), web.RateLimiter(h.appConfig))
 	clusters.GET("/:name", h.GetCluster)
+	clusters.PATCH("/:name", h.PatchCluster, a.VerifyGroupAccess(h.appConfig.ApiAuthorizedGroupId))
 	clusters.GET("", h.ListClusters)
 }
 
@@ -75,20 +91,19 @@ func (h *handler) Register(v2 *echo.Group) {
 // @Failure 500 {object} errors.Error
 // @Security bearerAuth
 // @Router /v2/clusters/{name} [get]
-func (h *handler) GetCluster(ctx echo.Context) error {
-
-	name := ctx.Param("name")
-	c, err := getCluster(h.db, name)
+func (h *handler) GetCluster(c echo.Context) error {
+	name := c.Param("name")
+	cluster, err := h.getCluster(h.db, name)
 
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, errors.NewError(err))
+		return c.JSON(http.StatusInternalServerError, errors.NewError(err))
 	}
 
-	if c == nil {
-		return ctx.JSON(http.StatusNotFound, errors.NotFound())
+	if cluster == nil {
+		return c.JSON(http.StatusNotFound, errors.NotFound())
 	}
 
-	return ctx.JSON(http.StatusOK, newClusterResponse(ctx, c))
+	return c.JSON(http.StatusOK, newClusterResponse(c, cluster))
 }
 
 // ListClusters
@@ -105,70 +120,173 @@ func (h *handler) GetCluster(ctx echo.Context) error {
 // @Failure 500 {object} errors.Error
 // @Security bearerAuth
 // @Router /v2/clusters [get]
-func (h *handler) ListClusters(ctx echo.Context) error {
+func (h *handler) ListClusters(c echo.Context) error {
 	var clusters []registryv1.Cluster
 	var count int
 
-	offset, err := strconv.Atoi(ctx.QueryParam("offset"))
+	offset, err := strconv.Atoi(c.QueryParam("offset"))
 	if err != nil {
 		offset = 0
 	}
 
-	limit, err := strconv.Atoi(ctx.QueryParam("limit"))
+	limit, err := strconv.Atoi(c.QueryParam("limit"))
 	if err != nil {
 		limit = 200
 	}
 
 	filter := database.NewDynamoDBFilter()
-	queryConditions := getQueryConditions(ctx)
+	queryConditions := getQueryConditions(c)
 
 	if len(queryConditions) == 0 {
 		clusters, count, more, _ := h.db.ListClusters(offset, limit, "", "", "", "")
-		return ctx.JSON(http.StatusOK, newClusterListResponse(clusters, count, offset, limit, more))
+		return c.JSON(http.StatusOK, newClusterListResponse(clusters, count, offset, limit, more))
 	}
 
 	for _, qc := range queryConditions {
 		condition, err := models.NewFilterConditionFromQuery(qc)
 		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, errors.NewError(err))
+			return c.JSON(http.StatusBadRequest, errors.NewError(err))
 		}
 		filter.AddCondition(condition)
 	}
 
 	clusters, count, more, _ := h.db.ListClustersWithFilter(offset, limit, filter)
-	return ctx.JSON(http.StatusOK, newClusterListResponse(clusters, count, offset, limit, more))
+	return c.JSON(http.StatusOK, newClusterListResponse(clusters, count, offset, limit, more))
+}
+
+// PatchCluster godoc
+// @Summary Patch a cluster
+// @Description Update a cluster. Auth is required
+// @ID v2-patch-cluster
+// @Tags cluster
+// @Accept  json
+// @Produce  json
+// @Param name path string true "Name of the cluster to patch"
+// @Param clusterPatch body ClusterPatch true "Request body"
+// @Success 200 {object} registryv1.ClusterSpec
+// @Failure 400 {object} errors.Error
+// @Failure 500 {object} errors.Error
+// @Security bearerAuth
+// @Router /v2/clusters/{name} [patch]
+func (h *handler) PatchCluster(c echo.Context) error {
+
+	name := c.Param("name")
+	cluster, err := h.getCluster(h.db, name)
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, errors.NewError(err))
+	}
+
+	if cluster == nil {
+		return c.JSON(http.StatusNotFound, errors.NotFound())
+	}
+
+	var clusterPatch ClusterPatch
+
+	if err = c.Bind(&clusterPatch); err != nil {
+		return c.JSON(http.StatusBadRequest, errors.NewError(err))
+	}
+
+	if err = clusterPatch.Validate(c); err != nil {
+		return c.JSON(http.StatusBadRequest, errors.NewError(err))
+	}
+
+	err = h.patchCluster(cluster, clusterPatch)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, errors.NewError(err))
+	}
+
+	return c.JSON(http.StatusOK, newClusterResponse(c, cluster))
 }
 
 // getCluster by standard name or short name
-func getCluster(db database.Db, name string) (*registryv1.Cluster, error) {
+func (h *handler) getCluster(db database.Db, name string) (*registryv1.Cluster, error) {
 
-	var c *registryv1.Cluster
+	var cluster *registryv1.Cluster
 	var err error
 
-	c, err = db.GetCluster(name)
+	cluster, err = db.GetCluster(name)
 	if err != nil {
 		return nil, err
 	}
 
-	if c == nil {
+	if cluster == nil {
 		dashName, err := web.GetClusterDashName(name)
 		if err != nil {
-			log.Infof("Cluster %s is not a short name. Error: %v", name, err.Error())
+			log.Warnf("Cluster %s is not a short name. Error: %v", name, err.Error())
 		} else {
-			c, err = db.GetCluster(dashName)
+			cluster, err = db.GetCluster(dashName)
 			if err != nil {
 				return nil, err
 			}
 		}
 	}
-	return c, nil
+	return cluster, nil
 }
 
-func getQueryConditions(ctx echo.Context) []string {
-	for k, v := range ctx.QueryParams() {
+// patchCluster
+func (h *handler) patchCluster(cluster *registryv1.Cluster, patch ClusterPatch) error {
+	client, err := h.kcp.GetClient(h.appConfig, cluster)
+	if err != nil {
+		return fmt.Errorf("failed to get client for cluster %s: %v", cluster.Spec.Name, err)
+	}
+
+	jsonPatch, err := json.Marshal(patch)
+	if err != nil {
+		return err
+	}
+
+	res, err := client.CoreV1().RESTClient().
+		Patch(types.MergePatchType).
+		AbsPath("/apis/registry.ethos.adobe.com/v1").
+		Namespace("cluster-registry").
+		Resource("clusters").
+		Name(cluster.Spec.Name).
+		Body(jsonPatch).
+		DoRaw(context.TODO())
+
+	log.Debugf("Patch response: %s", string(res))
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func getQueryConditions(c echo.Context) []string {
+	for k, v := range c.QueryParams() {
 		if k == "conditions" {
 			return v
 		}
 	}
 	return []string{}
+}
+
+func (patch *ClusterPatch) Validate(c echo.Context) error {
+	if err := c.Validate(patch); err != nil {
+		return err
+	}
+
+	if len(patch.Tags) > 0 {
+		for key, value := range patch.Tags {
+			if err := validateTag(key, value); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func validateTag(key, value string) error {
+	switch key {
+	case "onboarding", "scaling":
+		if value != "on" && value != "off" {
+			return fmt.Errorf("%s tag value must be 'on' or 'off'", key)
+		}
+	default:
+		return fmt.Errorf("invalid tag %s", key)
+	}
+	return nil
 }

@@ -16,11 +16,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/http/httptest"
-	"strings"
-	"time"
-
 	configv1 "github.com/adobe/cluster-registry/pkg/api/config/v1"
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
 	"github.com/adobe/cluster-registry/pkg/client/controllers"
@@ -31,7 +26,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"net/http"
+	"net/http/httptest"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"strings"
+	"time"
 )
 
 func newTestServer() *Server {
@@ -278,8 +278,13 @@ var _ = Describe("Webhook Server", func() {
 				err := k8sClient.Get(ctx, clusterLookupKey, cluster)
 				return err == nil
 			}, timeout, interval).Should(BeTrue())
-			cluster.Annotations = map[string]string{"registry.ethos.adobe.com/excluded-tags": "other-tag,my-tag"}
-			Expect(k8sClient.Update(ctx, cluster)).Should(Succeed())
+
+			temp := cluster.DeepCopy()
+			temp.SetAnnotations(map[string]string{"registry.ethos.adobe.com/excluded-tags": "other-tag,my-tag"})
+			Eventually(func() bool {
+				err := k8sClient.Patch(ctx, temp, client.MergeFrom(cluster))
+				return err == nil
+			}, timeout, interval).Should(BeTrue())
 
 			// give controller-runtime time to propagagte data into etcd
 			time.Sleep(2 * time.Second)

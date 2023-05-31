@@ -26,6 +26,8 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
+	"k8s.io/client-go/kubernetes"
+	testclient "k8s.io/client-go/kubernetes/fake"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -39,6 +41,12 @@ var (
 	dbMock    *dynamock.DynaMock
 )
 
+type TestClientProvider struct{}
+
+func (t *TestClientProvider) GetClient(appConfig *config.AppConfig, cluster *registryv1.Cluster) (kubernetes.Interface, error) {
+	return testclient.NewSimpleClientset(), nil
+}
+
 func init() {
 	appConfig = &config.AppConfig{}
 	m = monitoring.NewMetrics("cluster_registry_api_handler_test", true)
@@ -48,7 +56,7 @@ func init() {
 
 func TestNewHandler(t *testing.T) {
 	test := assert.New(t)
-	h := NewHandler(appConfig, db, m)
+	h := NewHandler(appConfig, db, m, &TestClientProvider{})
 	test.NotNil(h)
 }
 
@@ -101,7 +109,7 @@ func TestGetCluster(t *testing.T) {
 
 	for _, tc := range tcs {
 		r := web.NewRouter()
-		h := NewHandler(appConfig, db, m)
+		h := NewHandler(appConfig, db, m, &TestClientProvider{})
 
 		req := httptest.NewRequest(echo.GET, "/api/v2/clusters/:name", nil)
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
@@ -203,7 +211,7 @@ func TestListClusters(t *testing.T) {
 	}
 	for _, tc := range tcs {
 		r := web.NewRouter()
-		h := NewHandler(appConfig, db, m)
+		h := NewHandler(appConfig, db, m, &TestClientProvider{})
 
 		for i, v := range tc.filter {
 			tc.filter[i] = fmt.Sprintf("conditions=%s", v)
@@ -250,5 +258,156 @@ func TestListClusters(t *testing.T) {
 			test.NoError(err)
 			test.Equal(tc.expectedItems, cl.ItemsCount)
 		}
+	}
+}
+
+func TestPatchCluster(t *testing.T) {
+	test := assert.New(t)
+
+	t.Log("Test patching a cluster.")
+
+	tcs := []struct {
+		name           string
+		cluster        *registryv1.Cluster
+		clusterPatch   ClusterPatch
+		expectedStatus int
+		expectedBody   string
+	}{
+		{
+			name: "invalid status (case sensitive)",
+			cluster: &registryv1.Cluster{
+				Spec: registryv1.ClusterSpec{
+					Name:         "cluster1",
+					LastUpdated:  "2020-02-14T06:15:32Z",
+					RegisteredAt: "2019-02-14T06:15:32Z",
+					Status:       "Active",
+					Phase:        "Running",
+					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
+				},
+			},
+			clusterPatch: ClusterPatch{
+				Status: "inactive",
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"errors":{"body":"Key: 'ClusterPatch.Status' Error:Field validation for 'Status' failed on the 'oneof' tag"}}`,
+		},
+		{
+			name: "invalid phase (case sensitive)",
+			cluster: &registryv1.Cluster{
+				Spec: registryv1.ClusterSpec{
+					Name:         "cluster1",
+					LastUpdated:  "2020-02-14T06:15:32Z",
+					RegisteredAt: "2019-02-14T06:15:32Z",
+					Status:       "Active",
+					Phase:        "Running",
+					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
+				},
+			},
+			clusterPatch: ClusterPatch{
+				Status: "Inactive",
+				Phase:  "upgrading",
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"errors":{"body":"Key: 'ClusterPatch.Phase' Error:Field validation for 'Phase' failed on the 'oneof' tag"}}`,
+		},
+		{
+			name: "invalid value for `scaling` tag",
+			cluster: &registryv1.Cluster{
+				Spec: registryv1.ClusterSpec{
+					Name:         "cluster1",
+					LastUpdated:  "2020-02-14T06:15:32Z",
+					RegisteredAt: "2019-02-14T06:15:32Z",
+					Status:       "Active",
+					Phase:        "Running",
+					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
+				},
+			},
+			clusterPatch: ClusterPatch{
+				Status: "Inactive",
+				Tags: map[string]string{
+					"onboarding": "off",
+					"scaling":    "enabled",
+				},
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"errors":{"body":"scaling tag value must be 'on' or 'off'"}}`,
+		},
+		{
+			name: "invalid value for `onboarding` tag",
+			cluster: &registryv1.Cluster{
+				Spec: registryv1.ClusterSpec{
+					Name:         "cluster1",
+					LastUpdated:  "2020-02-14T06:15:32Z",
+					RegisteredAt: "2019-02-14T06:15:32Z",
+					Status:       "Active",
+					Phase:        "Running",
+					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
+				},
+			},
+			clusterPatch: ClusterPatch{
+				Status: "Inactive",
+				Tags: map[string]string{
+					"onboarding": "false",
+				},
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"errors":{"body":"onboarding tag value must be 'on' or 'off'"}}`,
+		},
+		{
+			name: "invalid tag",
+			cluster: &registryv1.Cluster{
+				Spec: registryv1.ClusterSpec{
+					Name:         "cluster1",
+					LastUpdated:  "2020-02-14T06:15:32Z",
+					RegisteredAt: "2019-02-14T06:15:32Z",
+					Status:       "Active",
+					Phase:        "Running",
+					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
+				},
+			},
+			clusterPatch: ClusterPatch{
+				Status: "Inactive",
+				Tags: map[string]string{
+					"some-made-up-tag": "on",
+				},
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"errors":{"body":"invalid tag some-made-up-tag"}}`,
+		},
+		// TODO: add more test cases (success, unauthorized, etc.)
+	}
+
+	for _, tc := range tcs {
+		r := web.NewRouter()
+		h := NewHandler(appConfig, db, m, &TestClientProvider{})
+
+		patch, _ := json.Marshal(tc.clusterPatch)
+		body := strings.NewReader(string(patch))
+		req := httptest.NewRequest(echo.PATCH, "/api/v2/clusters/:name", body)
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+
+		ctx := r.NewContext(req, rec)
+		ctx.SetPath("/api/v2/clusters/:name")
+		ctx.SetParamNames("name")
+		ctx.SetParamValues(tc.cluster.Name)
+
+		expectedItem, err := dynamodbattribute.MarshalMap(
+			database.ClusterDb{
+				Cluster: tc.cluster,
+			})
+		test.NoError(err)
+		expectedResult := dynamodb.GetItemOutput{
+			Item: expectedItem,
+		}
+		dbMock.ExpectGetItem().WillReturns(expectedResult)
+
+		t.Logf("\tTest %s:\tWhen checking for cluster %s and http status code %d", tc.name, tc.cluster.Name, tc.expectedStatus)
+
+		err = h.PatchCluster(ctx)
+		test.NoError(err)
+
+		test.Equal(tc.expectedStatus, rec.Code)
+		test.Equal(tc.expectedBody, strings.TrimSpace(rec.Body.String()))
 	}
 }

@@ -50,7 +50,7 @@ func TestGetEnv(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		os.Setenv(tc.varName, tc.varValue)
+		_ = os.Setenv(tc.varName, tc.varValue)
 
 		t.Logf("\tTest %s:\tWhen getting environment variable %s", tc.name, tc.varName)
 
@@ -71,34 +71,44 @@ func TestLoadApiConfig(t *testing.T) {
 		{
 			name: "valid api config",
 			envVars: map[string]string{
-				"AWS_REGION":       "aws-region",
-				"DB_ENDPOINT":      "http://localhost:8000",
-				"DB_AWS_REGION":    "db-aws-region",
-				"DB_TABLE_NAME":    "cluster-registry-local",
-				"DB_INDEX_NAME":    "search-index-local",
-				"SQS_ENDPOINT":     "http://localhost:9324",
-				"SQS_AWS_REGION":   "sqs-aws-region",
-				"SQS_QUEUE_NAME":   "cluster-registry-local",
-				"OIDC_CLIENT_ID":   "oidc-client-id",
-				"OIDC_ISSUER_URL":  "http://fake-oidc-provider",
-				"API_RATE_LIMITER": "enabled",
-				"LOG_LEVEL":        "DEBUG",
-				"API_HOST":         "custom-host:8080",
+				"AWS_REGION":              "aws-region",
+				"DB_ENDPOINT":             "http://localhost:8000",
+				"DB_AWS_REGION":           "db-aws-region",
+				"DB_TABLE_NAME":           "cluster-registry-local",
+				"DB_INDEX_NAME":           "search-index-local",
+				"SQS_ENDPOINT":            "http://localhost:9324",
+				"SQS_AWS_REGION":          "sqs-aws-region",
+				"SQS_QUEUE_NAME":          "cluster-registry-local",
+				"OIDC_CLIENT_ID":          "oidc-client-id",
+				"OIDC_ISSUER_URL":         "http://fake-oidc-provider",
+				"API_RATE_LIMITER":        "enabled",
+				"LOG_LEVEL":               "DEBUG",
+				"API_HOST":                "custom-host:8080",
+				"K8S_RESOURCE_ID":         "k8s-resource-id",
+				"API_TENANT_ID":           "api-tenant-id",
+				"API_CLIENT_ID":           "api-client-id",
+				"API_CLIENT_SECRET":       "api-client-secret",
+				"API_AUTHORIZED_GROUP_ID": "api-authorized-group-id",
 			},
 			expectedAppConfig: &AppConfig{
+				ApiRateLimiterEnabled: true,
+				ApiHost:               "custom-host:8080",
 				AwsRegion:             "aws-region",
 				DbEndpoint:            "http://localhost:8000",
 				DbAwsRegion:           "db-aws-region",
 				DbTableName:           "cluster-registry-local",
 				DbIndexName:           "search-index-local",
+				LogLevel:              log.DEBUG,
+				OidcClientId:          "oidc-client-id",
+				OidcIssuerUrl:         "http://fake-oidc-provider",
 				SqsEndpoint:           "http://localhost:9324",
 				SqsAwsRegion:          "sqs-aws-region",
 				SqsQueueName:          "cluster-registry-local",
-				OidcClientId:          "oidc-client-id",
-				OidcIssuerUrl:         "http://fake-oidc-provider",
-				ApiRateLimiterEnabled: true,
-				LogLevel:              log.DEBUG,
-				ApiHost:               "custom-host:8080",
+				K8sResourceId:         "k8s-resource-id",
+				ApiTenantId:           "api-tenant-id",
+				ApiClientId:           "api-client-id",
+				ApiClientSecret:       "api-client-secret",
+				ApiAuthorizedGroupId:  "api-authorized-group-id",
 			},
 			expectedError: nil,
 		},
@@ -116,26 +126,32 @@ func TestLoadApiConfig(t *testing.T) {
 				"OIDC_CLIENT_ID": "oidc-client-id",
 			},
 			expectedAppConfig: &AppConfig{
-				AwsRegion:     "aws-region",
-				DbEndpoint:    "http://localhost:8000",
-				DbAwsRegion:   "db-aws-region",
-				DbTableName:   "cluster-registry-local",
-				DbIndexName:   "search-index-local",
-				SqsEndpoint:   "http://localhost:9324",
-				SqsAwsRegion:  "sqs-aws-region",
-				SqsQueueName:  "cluster-registry-local",
-				OidcClientId:  "oidc-client-id",
-				OidcIssuerUrl: "http://fake-oidc-provider",
-				ApiHost:       "0.0.0.0:8080",
+				ApiRateLimiterEnabled: true,
+				ApiHost:               "custom-host:8080",
+				AwsRegion:             "aws-region",
+				DbEndpoint:            "http://localhost:8000",
+				DbAwsRegion:           "db-aws-region",
+				DbTableName:           "cluster-registry-local",
+				DbIndexName:           "search-index-local",
+				LogLevel:              log.DEBUG,
+				OidcClientId:          "oidc-client-id",
+				SqsEndpoint:           "http://localhost:9324",
+				SqsAwsRegion:          "sqs-aws-region",
+				SqsQueueName:          "cluster-registry-local",
+				K8sResourceId:         "k8s-resource-id",
+				ApiTenantId:           "api-tenant-id",
+				ApiClientId:           "api-client-id",
+				ApiClientSecret:       "api-client-secret",
+				ApiAuthorizedGroupId:  "api-authorized-group-id",
 			},
-			expectedError: fmt.Errorf("Environment variable OIDC_ISSUER_URL is not set."),
+			expectedError: fmt.Errorf("environment variable OIDC_ISSUER_URL is not set"),
 		},
 	}
 
 	for _, tc := range tcs {
 
 		for k, v := range tc.envVars {
-			os.Setenv(k, v)
+			_ = os.Setenv(k, v)
 		}
 
 		t.Logf("\tTest %s:\tWhen loading api environment variable", tc.name)
@@ -150,7 +166,7 @@ func TestLoadApiConfig(t *testing.T) {
 		}
 
 		for k := range tc.envVars {
-			os.Unsetenv(k)
+			_ = os.Unsetenv(k)
 		}
 	}
 }
@@ -188,14 +204,14 @@ func TestLoadClientConfig(t *testing.T) {
 				SqsEndpoint:  "http://localhost:9324",
 				SqsAwsRegion: "sqs-aws-region",
 			},
-			expectedError: fmt.Errorf("Environment variable SQS_QUEUE_NAME is not set."),
+			expectedError: fmt.Errorf("environment variable SQS_QUEUE_NAME is not set"),
 		},
 	}
 
 	for _, tc := range tcs {
 
 		for k, v := range tc.envVars {
-			os.Setenv(k, v)
+			_ = os.Setenv(k, v)
 		}
 
 		t.Logf("\tTest %s:\tWhen loading api environment variable", tc.name)
@@ -210,7 +226,7 @@ func TestLoadClientConfig(t *testing.T) {
 		}
 
 		for k := range tc.envVars {
-			os.Unsetenv(k)
+			_ = os.Unsetenv(k)
 		}
 	}
 }

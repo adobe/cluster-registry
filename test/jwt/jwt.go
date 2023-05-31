@@ -39,7 +39,7 @@ const (
 
 type Claim struct {
 	Key   string
-	Value string
+	Value interface{}
 }
 
 // BuildAuthHeader builds the authorization header with a JWT bearer token
@@ -120,14 +120,14 @@ func GetSigningKey(signingKeyFile string, rsaKeyType string) *jose.JSONWebKey {
 
 // dummyToken represent the token claims
 type dummyToken struct {
-	claims         map[string]string
+	claims         map[string]interface{}
 	signingKeyFile string
 	signingKeyType string
 }
 
 // newDummyToken
 func newDummyToken(appConfig *config.AppConfig, signingKeyFile string, signingKeyType string) *dummyToken {
-	claims := make(map[string]string)
+	claims := make(map[string]interface{})
 	claims["exp"] = fmt.Sprint(time.Now().Add(1 * time.Hour).Unix())
 	claims["iat"] = fmt.Sprint(time.Now().Unix())
 	claims["iss"] = appConfig.OidcIssuerUrl
