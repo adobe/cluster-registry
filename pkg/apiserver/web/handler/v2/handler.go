@@ -15,6 +15,7 @@ package v2
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/adobe/cluster-registry/pkg/apiserver/models"
 	"github.com/adobe/cluster-registry/pkg/k8s"
 	"k8s.io/apimachinery/pkg/types"
@@ -42,8 +43,9 @@ type Handler interface {
 
 // ClusterPatch is the struct for updating a cluster's dynamic fields
 type ClusterPatch struct {
-	Status string `json:"status" validate:"oneof=Inactive Active Deprecated Deleted"`
-	// TODO: add all dynamic fields
+	Status string            `json:"status" validate:"omitempty,oneof=Inactive Active Deprecated Deleted"`
+	Phase  string            `json:"phase" validate:"omitempty,oneof=Building Testing Running Upgrading"`
+	Tags   map[string]string `json:"tags" validate:"omitempty"`
 }
 
 // handler struct
@@ -160,6 +162,7 @@ func (h *handler) ListClusters(c echo.Context) error {
 // @Accept  json
 // @Produce  json
 // @Param name path string true "Name of the cluster to patch"
+// @Param clusterPatch body ClusterPatch true "Request body"
 // @Success 200 {object} registryv1.ClusterSpec
 // @Failure 400 {object} errors.Error
 // @Failure 500 {object} errors.Error
@@ -184,7 +187,7 @@ func (h *handler) PatchCluster(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, errors.NewError(err))
 	}
 
-	if err = c.Validate(clusterPatch); err != nil {
+	if err = clusterPatch.Validate(c); err != nil {
 		return c.JSON(http.StatusBadRequest, errors.NewError(err))
 	}
 
@@ -210,7 +213,7 @@ func (h *handler) getCluster(db database.Db, name string) (*registryv1.Cluster, 
 	if cluster == nil {
 		dashName, err := web.GetClusterDashName(name)
 		if err != nil {
-			log.Infof("Cluster %s is not a short name. Error: %v", name, err.Error())
+			log.Warnf("Cluster %s is not a short name. Error: %v", name, err.Error())
 		} else {
 			cluster, err = db.GetCluster(dashName)
 			if err != nil {
@@ -225,7 +228,7 @@ func (h *handler) getCluster(db database.Db, name string) (*registryv1.Cluster, 
 func (h *handler) patchCluster(cluster *registryv1.Cluster, patch ClusterPatch) error {
 	client, err := h.kcp.GetClient(h.appConfig, cluster)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get client for cluster %s: %v", cluster.Spec.Name, err)
 	}
 
 	jsonPatch, err := json.Marshal(patch)
@@ -242,7 +245,7 @@ func (h *handler) patchCluster(cluster *registryv1.Cluster, patch ClusterPatch) 
 		Body(jsonPatch).
 		DoRaw(context.TODO())
 
-	log.Infof("Patch response: %s", string(res))
+	log.Debugf("Patch response: %s", string(res))
 
 	if err != nil {
 		return err
@@ -251,11 +254,39 @@ func (h *handler) patchCluster(cluster *registryv1.Cluster, patch ClusterPatch) 
 	return nil
 }
 
-func getQueryConditions(ctx echo.Context) []string {
-	for k, v := range ctx.QueryParams() {
+func getQueryConditions(c echo.Context) []string {
+	for k, v := range c.QueryParams() {
 		if k == "conditions" {
 			return v
 		}
 	}
 	return []string{}
+}
+
+func (patch *ClusterPatch) Validate(c echo.Context) error {
+	if err := c.Validate(patch); err != nil {
+		return err
+	}
+
+	if len(patch.Tags) > 0 {
+		for key, value := range patch.Tags {
+			if err := validateTag(key, value); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func validateTag(key, value string) error {
+	switch key {
+	case "onboarding", "scaling":
+		if value != "on" && value != "off" {
+			return fmt.Errorf("%s tag value must be 'on' or 'off'", key)
+		}
+	default:
+		return fmt.Errorf("invalid tag %s", key)
+	}
+	return nil
 }

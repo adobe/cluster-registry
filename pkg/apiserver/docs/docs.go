@@ -275,6 +275,15 @@ const docTemplate = `{
                         "name": "name",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "Request body",
+                        "name": "clusterPatch",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/pkg_apiserver_web_handler_v2.ClusterPatch"
+                        }
                     }
                 ],
                 "responses": {
@@ -679,6 +688,35 @@ const docTemplate = `{
                 },
                 "offset": {
                     "type": "integer"
+                }
+            }
+        },
+        "pkg_apiserver_web_handler_v2.ClusterPatch": {
+            "type": "object",
+            "properties": {
+                "phase": {
+                    "type": "string",
+                    "enum": [
+                        "Building",
+                        "Testing",
+                        "Running",
+                        "Upgrading"
+                    ]
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "Inactive",
+                        "Active",
+                        "Deprecated",
+                        "Deleted"
+                    ]
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
                 }
             }
         },

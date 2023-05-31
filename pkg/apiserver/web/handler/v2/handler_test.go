@@ -262,26 +262,20 @@ func TestListClusters(t *testing.T) {
 }
 
 func TestPatchCluster(t *testing.T) {
-	t.Skip("TODO: fix this test")
-
 	test := assert.New(t)
 
 	t.Log("Test patching a cluster.")
 
 	tcs := []struct {
-		name            string
-		clusterName     string
-		clusterPatch    ClusterPatch
-		expectedCluster *registryv1.Cluster
-		expectedStatus  int
+		name           string
+		cluster        *registryv1.Cluster
+		clusterPatch   ClusterPatch
+		expectedStatus int
+		expectedBody   string
 	}{
 		{
-			name:        "patch status existing cluster",
-			clusterName: "cluster1",
-			clusterPatch: ClusterPatch{
-				Status: "Active",
-			},
-			expectedCluster: &registryv1.Cluster{
+			name: "invalid status (case sensitive)",
+			cluster: &registryv1.Cluster{
 				Spec: registryv1.ClusterSpec{
 					Name:         "cluster1",
 					LastUpdated:  "2020-02-14T06:15:32Z",
@@ -289,18 +283,98 @@ func TestPatchCluster(t *testing.T) {
 					Status:       "Active",
 					Phase:        "Running",
 					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
-				}},
-			expectedStatus: http.StatusOK,
+				},
+			},
+			clusterPatch: ClusterPatch{
+				Status: "inactive",
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"errors":{"body":"Key: 'ClusterPatch.Status' Error:Field validation for 'Status' failed on the 'oneof' tag"}}`,
 		},
 		{
-			name:        "patch non-existing cluster",
-			clusterName: "cluster2",
-			clusterPatch: ClusterPatch{
-				Status: "Active",
+			name: "invalid phase (case sensitive)",
+			cluster: &registryv1.Cluster{
+				Spec: registryv1.ClusterSpec{
+					Name:         "cluster1",
+					LastUpdated:  "2020-02-14T06:15:32Z",
+					RegisteredAt: "2019-02-14T06:15:32Z",
+					Status:       "Active",
+					Phase:        "Running",
+					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
+				},
 			},
-			expectedCluster: nil,
-			expectedStatus:  http.StatusNotFound,
+			clusterPatch: ClusterPatch{
+				Status: "Inactive",
+				Phase:  "upgrading",
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"errors":{"body":"Key: 'ClusterPatch.Phase' Error:Field validation for 'Phase' failed on the 'oneof' tag"}}`,
 		},
+		{
+			name: "invalid value for `scaling` tag",
+			cluster: &registryv1.Cluster{
+				Spec: registryv1.ClusterSpec{
+					Name:         "cluster1",
+					LastUpdated:  "2020-02-14T06:15:32Z",
+					RegisteredAt: "2019-02-14T06:15:32Z",
+					Status:       "Active",
+					Phase:        "Running",
+					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
+				},
+			},
+			clusterPatch: ClusterPatch{
+				Status: "Inactive",
+				Tags: map[string]string{
+					"onboarding": "off",
+					"scaling":    "enabled",
+				},
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"errors":{"body":"scaling tag value must be 'on' or 'off'"}}`,
+		},
+		{
+			name: "invalid value for `onboarding` tag",
+			cluster: &registryv1.Cluster{
+				Spec: registryv1.ClusterSpec{
+					Name:         "cluster1",
+					LastUpdated:  "2020-02-14T06:15:32Z",
+					RegisteredAt: "2019-02-14T06:15:32Z",
+					Status:       "Active",
+					Phase:        "Running",
+					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
+				},
+			},
+			clusterPatch: ClusterPatch{
+				Status: "Inactive",
+				Tags: map[string]string{
+					"onboarding": "false",
+				},
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"errors":{"body":"onboarding tag value must be 'on' or 'off'"}}`,
+		},
+		{
+			name: "invalid tag",
+			cluster: &registryv1.Cluster{
+				Spec: registryv1.ClusterSpec{
+					Name:         "cluster1",
+					LastUpdated:  "2020-02-14T06:15:32Z",
+					RegisteredAt: "2019-02-14T06:15:32Z",
+					Status:       "Active",
+					Phase:        "Running",
+					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
+				},
+			},
+			clusterPatch: ClusterPatch{
+				Status: "Inactive",
+				Tags: map[string]string{
+					"some-made-up-tag": "on",
+				},
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"errors":{"body":"invalid tag some-made-up-tag"}}`,
+		},
+		// TODO: add more test cases (success, unauthorized, etc.)
 	}
 
 	for _, tc := range tcs {
@@ -316,24 +390,24 @@ func TestPatchCluster(t *testing.T) {
 		ctx := r.NewContext(req, rec)
 		ctx.SetPath("/api/v2/clusters/:name")
 		ctx.SetParamNames("name")
-		ctx.SetParamValues(tc.clusterName)
+		ctx.SetParamValues(tc.cluster.Name)
 
 		expectedItem, err := dynamodbattribute.MarshalMap(
 			database.ClusterDb{
-				Cluster: tc.expectedCluster,
+				Cluster: tc.cluster,
 			})
 		test.NoError(err)
-
 		expectedResult := dynamodb.GetItemOutput{
 			Item: expectedItem,
 		}
 		dbMock.ExpectGetItem().WillReturns(expectedResult)
 
-		t.Logf("\tTest %s:\tWhen checking for cluster %s and http status code %d", tc.name, tc.clusterName, tc.expectedStatus)
+		t.Logf("\tTest %s:\tWhen checking for cluster %s and http status code %d", tc.name, tc.cluster.Name, tc.expectedStatus)
 
 		err = h.PatchCluster(ctx)
 		test.NoError(err)
 
 		test.Equal(tc.expectedStatus, rec.Code)
+		test.Equal(tc.expectedBody, strings.TrimSpace(rec.Body.String()))
 	}
 }

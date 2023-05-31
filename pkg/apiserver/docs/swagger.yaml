@@ -328,6 +328,27 @@ definitions:
       offset:
         type: integer
     type: object
+  pkg_apiserver_web_handler_v2.ClusterPatch:
+    properties:
+      phase:
+        enum:
+        - Building
+        - Testing
+        - Running
+        - Upgrading
+        type: string
+      status:
+        enum:
+        - Inactive
+        - Active
+        - Deprecated
+        - Deleted
+        type: string
+      tags:
+        additionalProperties:
+          type: string
+        type: object
+    type: object
   pkg_apiserver_web_handler_v2.clusterList:
     properties:
       items:
@@ -512,6 +533,12 @@ paths:
         name: name
         required: true
         type: string
+      - description: Request body
+        in: body
+        name: clusterPatch
+        required: true
+        schema:
+          $ref: '#/definitions/pkg_apiserver_web_handler_v2.ClusterPatch'
       produces:
       - application/json
       responses:
