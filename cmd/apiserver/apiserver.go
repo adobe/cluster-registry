@@ -48,13 +48,11 @@ var Version = "dev"
 func main() {
 
 	appConfig, err := config.LoadApiConfig()
-	log.SetLevel(appConfig.LogLevel)
-
 	if err != nil {
 		log.Fatalf("Cannot load the api configuration: '%v'", err.Error())
-	} else {
-		log.Debugf("Config loaded successfully %+v:", appConfig)
 	}
+	log.SetLevel(appConfig.LogLevel)
+	log.Debugf("Config loaded successfully %+v:", appConfig)
 
 	m := monitoring.NewMetrics("cluster_registry_api", false)
 	db := database.NewDb(appConfig, m)

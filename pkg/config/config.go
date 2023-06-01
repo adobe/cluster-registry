@@ -95,7 +95,7 @@ func LoadApiConfig() (*AppConfig, error) {
 	}
 
 	logLevel := log.WARN
-	configLogLevel := getEnv("LOG_LEVEL", "")
+	configLogLevel := getEnv("LOG_LEVEL", "INFO")
 	if configLogLevel == "DEBUG" {
 		logLevel = log.DEBUG
 	} else if configLogLevel == "INFO" {
