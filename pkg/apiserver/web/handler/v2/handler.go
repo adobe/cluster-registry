@@ -41,11 +41,15 @@ type Handler interface {
 	Register(*echo.Group)
 }
 
-// ClusterPatch is the struct for updating a cluster's dynamic fields
+// ClusterSpec is the struct for updating a cluster's dynamic fields
+type ClusterSpec struct {
+	Status *string            `json:"status,omitempty" validate:"omitempty,oneof=Inactive Active Deprecated Deleted"`
+	Phase  *string            `json:"phase,omitempty" validate:"omitempty,oneof=Building Testing Running Upgrading"`
+	Tags   *map[string]string `json:"tags,omitempty" validate:"omitempty"`
+}
+
 type ClusterPatch struct {
-	Status string            `json:"status" validate:"omitempty,oneof=Inactive Active Deprecated Deleted"`
-	Phase  string            `json:"phase" validate:"omitempty,oneof=Building Testing Running Upgrading"`
-	Tags   map[string]string `json:"tags" validate:"omitempty"`
+	Spec ClusterSpec `json:"spec" validate:"required"`
 }
 
 // handler struct
@@ -162,7 +166,7 @@ func (h *handler) ListClusters(c echo.Context) error {
 // @Accept  json
 // @Produce  json
 // @Param name path string true "Name of the cluster to patch"
-// @Param clusterPatch body ClusterPatch true "Request body"
+// @Param clusterSpec body ClusterSpec true "Request body"
 // @Success 200 {object} registryv1.ClusterSpec
 // @Failure 400 {object} errors.Error
 // @Failure 500 {object} errors.Error
@@ -181,17 +185,17 @@ func (h *handler) PatchCluster(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, errors.NotFound())
 	}
 
-	var clusterPatch ClusterPatch
+	var clusterSpec ClusterSpec
 
-	if err = c.Bind(&clusterPatch); err != nil {
+	if err = c.Bind(&clusterSpec); err != nil {
 		return c.JSON(http.StatusBadRequest, errors.NewError(err))
 	}
 
-	if err = clusterPatch.Validate(c); err != nil {
+	if err = clusterSpec.Validate(c); err != nil {
 		return c.JSON(http.StatusBadRequest, errors.NewError(err))
 	}
 
-	err = h.patchCluster(cluster, clusterPatch)
+	err = h.patchCluster(cluster, clusterSpec)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, errors.NewError(err))
 	}
@@ -225,13 +229,13 @@ func (h *handler) getCluster(db database.Db, name string) (*registryv1.Cluster, 
 }
 
 // patchCluster
-func (h *handler) patchCluster(cluster *registryv1.Cluster, patch ClusterPatch) error {
+func (h *handler) patchCluster(cluster *registryv1.Cluster, spec ClusterSpec) error {
 	client, err := h.kcp.GetClient(h.appConfig, cluster)
 	if err != nil {
 		return fmt.Errorf("failed to get client for cluster %s: %v", cluster.Spec.Name, err)
 	}
 
-	jsonPatch, err := json.Marshal(patch)
+	patch, err := json.Marshal(&ClusterPatch{Spec: spec})
 	if err != nil {
 		return err
 	}
@@ -242,7 +246,7 @@ func (h *handler) patchCluster(cluster *registryv1.Cluster, patch ClusterPatch) 
 		Namespace("cluster-registry").
 		Resource("clusters").
 		Name(cluster.Spec.Name).
-		Body(jsonPatch).
+		Body(patch).
 		DoRaw(context.TODO())
 
 	log.Debugf("Patch response: %s", string(res))
@@ -263,13 +267,13 @@ func getQueryConditions(c echo.Context) []string {
 	return []string{}
 }
 
-func (patch *ClusterPatch) Validate(c echo.Context) error {
+func (patch *ClusterSpec) Validate(c echo.Context) error {
 	if err := c.Validate(patch); err != nil {
 		return err
 	}
 
-	if len(patch.Tags) > 0 {
-		for key, value := range patch.Tags {
+	if patch.Tags != nil && len(*patch.Tags) > 0 {
+		for key, value := range *patch.Tags {
 			if err := validateTag(key, value); err != nil {
 				return err
 			}

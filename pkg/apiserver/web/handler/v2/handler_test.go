@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/kubernetes"
 	testclient "k8s.io/client-go/kubernetes/fake"
+	"k8s.io/utils/pointer"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -269,7 +270,7 @@ func TestPatchCluster(t *testing.T) {
 	tcs := []struct {
 		name           string
 		cluster        *registryv1.Cluster
-		clusterPatch   ClusterPatch
+		clusterSpec    ClusterSpec
 		expectedStatus int
 		expectedBody   string
 	}{
@@ -285,11 +286,11 @@ func TestPatchCluster(t *testing.T) {
 					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
 				},
 			},
-			clusterPatch: ClusterPatch{
-				Status: "inactive",
+			clusterSpec: ClusterSpec{
+				Status: pointer.String("inactive"),
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   `{"errors":{"body":"Key: 'ClusterPatch.Status' Error:Field validation for 'Status' failed on the 'oneof' tag"}}`,
+			expectedBody:   `{"errors":{"body":"Key: 'ClusterSpec.Status' Error:Field validation for 'Status' failed on the 'oneof' tag"}}`,
 		},
 		{
 			name: "invalid phase (case sensitive)",
@@ -303,12 +304,12 @@ func TestPatchCluster(t *testing.T) {
 					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
 				},
 			},
-			clusterPatch: ClusterPatch{
-				Status: "Inactive",
-				Phase:  "upgrading",
+			clusterSpec: ClusterSpec{
+				Status: pointer.String("Inactive"),
+				Phase:  pointer.String("upgrading"),
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   `{"errors":{"body":"Key: 'ClusterPatch.Phase' Error:Field validation for 'Phase' failed on the 'oneof' tag"}}`,
+			expectedBody:   `{"errors":{"body":"Key: 'ClusterSpec.Phase' Error:Field validation for 'Phase' failed on the 'oneof' tag"}}`,
 		},
 		{
 			name: "invalid value for `scaling` tag",
@@ -322,9 +323,9 @@ func TestPatchCluster(t *testing.T) {
 					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
 				},
 			},
-			clusterPatch: ClusterPatch{
-				Status: "Inactive",
-				Tags: map[string]string{
+			clusterSpec: ClusterSpec{
+				Status: pointer.String("Inactive"),
+				Tags: &map[string]string{
 					"onboarding": "off",
 					"scaling":    "enabled",
 				},
@@ -344,9 +345,9 @@ func TestPatchCluster(t *testing.T) {
 					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
 				},
 			},
-			clusterPatch: ClusterPatch{
-				Status: "Inactive",
-				Tags: map[string]string{
+			clusterSpec: ClusterSpec{
+				Status: pointer.String("Inactive"),
+				Tags: &map[string]string{
 					"onboarding": "false",
 				},
 			},
@@ -365,9 +366,9 @@ func TestPatchCluster(t *testing.T) {
 					Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
 				},
 			},
-			clusterPatch: ClusterPatch{
-				Status: "Inactive",
-				Tags: map[string]string{
+			clusterSpec: ClusterSpec{
+				Status: pointer.String("Inactive"),
+				Tags: &map[string]string{
 					"some-made-up-tag": "on",
 				},
 			},
@@ -381,7 +382,7 @@ func TestPatchCluster(t *testing.T) {
 		r := web.NewRouter()
 		h := NewHandler(appConfig, db, m, &TestClientProvider{})
 
-		patch, _ := json.Marshal(tc.clusterPatch)
+		patch, _ := json.Marshal(tc.clusterSpec)
 		body := strings.NewReader(string(patch))
 		req := httptest.NewRequest(echo.PATCH, "/api/v2/clusters/:name", body)
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
