@@ -6,6 +6,13 @@ Helm chart for Cluster Registry Client.
 
 **Homepage:** <https://github.com/adobe/cluster-registry>
 
+## Maintainers
+
+| Name | Email | Url |
+| ---- | ------ | --- |
+| aalexandru |  |  |
+| radu-catalina |  |  |
+
 ## Values
 
 | Key | Type | Default | Description |
