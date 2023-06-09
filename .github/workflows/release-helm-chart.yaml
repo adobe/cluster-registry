@@ -1,4 +1,3 @@
-# https://helm.sh/docs/howto/chart_releaser_action/
 name: Release Charts
 
 on:
