@@ -1,3 +1,13 @@
+# 1.4.1
+
+## cluster-registry-api
+
+- N/A
+
+## cluster-registry-client
+
+- Convert to helm (#57)
+
 # 1.4.0
 
 ## cluster-registry-api
