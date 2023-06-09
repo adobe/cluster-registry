@@ -6,7 +6,9 @@ home: https://github.com/adobe/cluster-registry
 
 maintainers:
 - name: aalexandru
+  email: aalexand@adobe.com
 - name: radu-catalina
+  email: caradu@adobe.com
 
 version: 0.1.0
 appVersion: "v1.4.0"

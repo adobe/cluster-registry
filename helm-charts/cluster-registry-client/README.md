@@ -10,8 +10,8 @@ Helm chart for Cluster Registry Client.
 
 | Name | Email | Url |
 | ---- | ------ | --- |
-| aalexandru |  |  |
-| radu-catalina |  |  |
+| aalexandru | <aalexand@adobe.com> |  |
+| radu-catalina | <caradu@adobe.com> |  |
 
 ## Values
 
