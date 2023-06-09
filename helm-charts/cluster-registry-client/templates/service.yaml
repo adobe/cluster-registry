@@ -9,7 +9,7 @@ spec:
   ports:
     {{- range $_, $port := .Values.ports }}
     - name: {{ $port.name }}
-      port: {{ $port.port }}
+      port: {{ $port.containerPort }}
       targetPort: {{ $port.name }}
     {{- else }}
       {{ fail "No ports defined" }}

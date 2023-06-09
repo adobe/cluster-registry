@@ -5,7 +5,7 @@ metadata:
   name: {{ include "cluster-registry-client.fullname" . }}
   namespace: {{ .Release.Namespace }}
 spec:
-  replicas: {{ .Values.replicaCount | quote | required ".Values.replicaCount is required" }}
+  replicas: {{ .Values.replicaCount | required ".Values.replicaCount is required" }}
   selector:
     matchLabels:
       app: cluster-registry-client
@@ -81,4 +81,4 @@ spec:
           configMap:
             name: client-config
       serviceAccountName: {{ include "cluster-registry-client.serviceAccountName" . }}
-      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds | quote | required ".Values.terminationGracePeriodSeconds is required"  }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds | required ".Values.terminationGracePeriodSeconds is required"  }}
