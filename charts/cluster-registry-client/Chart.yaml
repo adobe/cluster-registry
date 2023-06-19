@@ -1,9 +1,8 @@
 apiVersion: v2
 name: cluster-registry-client
-description: Cluster Registry is a Rest API representing the source of record for all Kubernetes clusters in the infrastructure fleet. All clusters are automatically registered, and the information is accurately reflected in the Cluster Registry using a client-server architecture.
+description: Cluster Registry is a Rest API representing the source of record for all Kubernetes clusters in the infrastructure fleet.
 
 type: application
-home: https://github.com/adobe/cluster-registry
 
 maintainers:
 - name: aalexandru
