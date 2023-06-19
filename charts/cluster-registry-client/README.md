@@ -1,8 +1,8 @@
 # cluster-registry-client
 
-![Version: 0.1.2](https://img.shields.io/badge/Version-0.1.2-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: v1.4.1](https://img.shields.io/badge/AppVersion-v1.4.1-informational?style=flat-square)
+![Version: 0.1.3](https://img.shields.io/badge/Version-0.1.3-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: v1.4.1](https://img.shields.io/badge/AppVersion-v1.4.1-informational?style=flat-square)
 
-Cluster Registry is a Rest API representing the source of record for all Kubernetes clusters in the infrastructure fleet. All clusters are automatically registered, and the information is accurately reflected in the Cluster Registry using a client-server architecture.
+Cluster Registry is a Rest API representing the source of record for all Kubernetes clusters in your infrastructure fleet. All clusters are automatically registered, and the information is accurately reflected in the Cluster Registry using a client-server architecture.
 
 **Homepage:** <https://github.com/adobe/cluster-registry>
 
