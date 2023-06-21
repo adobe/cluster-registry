@@ -6,8 +6,8 @@ jobs:
   lint-test:
     runs-on: ubuntu-latest
     env:
-      NAMESPACE: "cluster-registry-client"
-      CLUSTER_NAME: "cluster-test"
+      NAMESPACE: "cluster-registry"
+      CLUSTER_NAME: "cluster-registry-cluster"
 
     steps:
     - name: Checkout
