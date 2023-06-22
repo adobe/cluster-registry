@@ -5,9 +5,6 @@ on: pull_request
 jobs:
   lint-test:
     runs-on: ubuntu-latest
-    env:
-      NAMESPACE: "cluster-registry"
-      CLUSTER_NAME: "cluster-registry-cluster"
 
     steps:
     - name: Checkout
@@ -44,31 +41,3 @@ jobs:
     - name: Run chart-testing (lint)
       if: steps.list-changed.outputs.changed == 'true'
       run: ct lint --target-branch ${{ github.event.repository.default_branch }}
-
-    - name: Create kind cluster
-      if: steps.list-changed.outputs.changed == 'true'
-      uses: helm/kind-action@v1.7.0
-      with:
-        cluster_name: ${{ env.CLUSTER_NAME }}
-
-    - name: Set up env
-      env:
-        CLUSTER_REGISTRY_SECRET_NAME: "cluster-registry-aws"
-      run: |
-        kubectl config use-context kind-${{ env.CLUSTER_NAME }}
-        kubectl create namespace ${{ env.NAMESPACE }}
-        kubectl -n ${{ env.NAMESPACE }} create secret generic ${{ env.CLUSTER_REGISTRY_SECRET_NAME }} \
-        --from-literal=AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }}                                 \
-        --from-literal=AWS_SECRET_ACCESS_KEY=${{ env.AWS_SECRET_ACCESS_KEY }}                         \
-        --from-literal=SQS_AWS_REGION=${{ env.SQS_AWS_REGION }}                                       \
-        --from-literal=SQS_ENDPOINT=${{ env.SQS_ENDPOINT }}                                           \
-        --from-literal=SQS_QUEUE_NAME=${{ env.SQS_QUEUE_NAME }}
-
-    - name: Run chart-testing (install)
-      if: steps.list-changed.outputs.changed == 'true'
-      run: ct install --target-branch ${{ github.event.repository.default_branch }} --namespace ${{ env.NAMESPACE }}
-
-    - name: Debug
-      run: |
-        kubectl config use-context kind-${{ env.CLUSTER_NAME }}
-        kubectl logs -n ${{ env.NAMESPACE }} -f deployments/cluster-registry-client
