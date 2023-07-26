@@ -139,6 +139,10 @@ definitions:
           Timestamp when cluster was registered in Cluster Registry
           +kubebuilder:validation:Required
         type: string
+      services:
+        allOf:
+        - $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.ServiceMetadata'
+        description: ServiceMetadata service specific metadata
       shortName:
         description: |-
           Cluster name, without dash
@@ -245,6 +249,14 @@ definitions:
         description: Cloud account of the owner
         type: string
     type: object
+  github_com_adobe_cluster-registry_pkg_api_registry_v1.ServiceMetadata:
+    additionalProperties:
+      additionalProperties:
+        additionalProperties:
+          type: string
+        type: object
+      type: object
+    type: object
   github_com_adobe_cluster-registry_pkg_api_registry_v1.Tier:
     properties:
       containerRuntime:
@@ -328,7 +340,7 @@ definitions:
       offset:
         type: integer
     type: object
-  pkg_apiserver_web_handler_v2.ClusterPatch:
+  pkg_apiserver_web_handler_v2.ClusterSpec:
     properties:
       phase:
         enum:
@@ -494,7 +506,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: Get an cluster. Auth is required
+      description: Get a cluster. Auth is required
       operationId: v2-get-cluster
       parameters:
       - description: Name of the cluster to get
@@ -519,7 +531,7 @@ paths:
             $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_apiserver_errors.Error'
       security:
       - bearerAuth: []
-      summary: Get an cluster
+      summary: Get a cluster
       tags:
       - cluster
     patch:
@@ -535,10 +547,10 @@ paths:
         type: string
       - description: Request body
         in: body
-        name: clusterPatch
+        name: clusterSpec
         required: true
         schema:
-          $ref: '#/definitions/pkg_apiserver_web_handler_v2.ClusterPatch'
+          $ref: '#/definitions/pkg_apiserver_web_handler_v2.ClusterSpec'
       produces:
       - application/json
       responses:
@@ -559,6 +571,86 @@ paths:
       summary: Patch a cluster
       tags:
       - cluster
+  /v2/services/{serviceId}:
+    get:
+      consumes:
+      - application/json
+      description: List all metadata for a service for all clusters
+      operationId: v2-get-service-metadata
+      parameters:
+      - description: SNOW Service ID
+        in: path
+        name: serviceId
+        required: true
+        type: string
+      - collectionFormat: multi
+        description: Filter conditions
+        in: query
+        items:
+          type: string
+        name: conditions
+        type: array
+      - description: Offset to start pagination search results (default is 0)
+        in: query
+        name: offset
+        type: integer
+      - description: The number of results per page (default is 200)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/pkg_apiserver_web_handler_v2.clusterList'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_apiserver_errors.Error'
+      security:
+      - bearerAuth: []
+      summary: Get service metadata
+      tags:
+      - service
+  /v2/services/{serviceId}/cluster/{clusterName}:
+    get:
+      consumes:
+      - application/json
+      description: Get metadata for a service for a specific cluster
+      operationId: v2-get-service-metadata-for-cluster
+      parameters:
+      - description: SNOW Service ID
+        in: path
+        name: serviceId
+        required: true
+        type: string
+      - description: Name of the cluster
+        in: path
+        name: clusterName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.ClusterSpec'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_apiserver_errors.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_apiserver_errors.Error'
+      security:
+      - bearerAuth: []
+      summary: Get service metadata for a specific cluster
+      tags:
+      - service
 produces:
 - application/json
 schemes:
