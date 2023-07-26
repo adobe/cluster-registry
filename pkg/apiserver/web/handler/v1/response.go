@@ -27,6 +27,7 @@ type clusterList struct {
 
 func newClusterResponse(ctx echo.Context, c *registryv1.Cluster) *registryv1.ClusterSpec {
 	cs := &c.Spec
+	cs.ServiceMetadata = nil
 	return cs
 }
 
@@ -36,6 +37,7 @@ func newClusterListResponse(clusters []registryv1.Cluster, count int, offset int
 
 	for _, c := range clusters {
 		cs := c.Spec
+		cs.ServiceMetadata = nil
 		r.Items = append(r.Items, &cs)
 	}
 
