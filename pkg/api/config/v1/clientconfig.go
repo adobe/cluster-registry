@@ -9,6 +9,7 @@ import (
 	"os"
 	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
 // fromFile provides an alternative to the deprecated ctrl.ConfigFile().AtPath(path).OfKind(&cfg)
@@ -43,19 +44,7 @@ func addTo(o *ctrl.Options, cfg *ClientConfig) {
 	if o.LivenessEndpointName == "" && cfg.Health.LivenessEndpointName != "" {
 		o.LivenessEndpointName = cfg.Health.LivenessEndpointName
 	}
-
-	if o.Port == 0 && cfg.Webhook.Port != nil {
-		o.Port = *cfg.Webhook.Port
-	}
-
-	if o.Host == "" && cfg.Webhook.Host != "" {
-		o.Host = cfg.Webhook.Host
-	}
-
-	if o.CertDir == "" && cfg.Webhook.CertDir != "" {
-		o.CertDir = cfg.Webhook.CertDir
-	}
-
+	addWebhookTo(o, cfg)
 	if cfg.Controller != nil {
 		if o.Controller.CacheSyncTimeout == 0 && cfg.Controller.CacheSyncTimeout != nil {
 			o.Controller.CacheSyncTimeout = *cfg.Controller.CacheSyncTimeout
@@ -102,6 +91,17 @@ func addLeaderElectionTo(o *ctrl.Options, cfg *ClientConfig) {
 	}
 }
 
+func addWebhookTo(o *ctrl.Options, cfg *ClientConfig) {
+	if o.WebhookServer == nil && cfg.Webhook.Host != "" && *cfg.Webhook.Port > 0 && cfg.Webhook.CertDir != "" {
+		o.WebhookServer = webhook.NewServer(webhook.Options{
+			Host:    cfg.Webhook.Host,
+			Port:    *cfg.Webhook.Port,
+			CertDir: cfg.Webhook.CertDir,
+		})
+	}
+}
+
+// Encode returns a string representation of the given ClientConfig.
 func Encode(scheme *runtime.Scheme, cfg *ClientConfig) (string, error) {
 	codecs := serializer.NewCodecFactory(scheme)
 	const mediaType = runtime.ContentTypeYAML
@@ -119,7 +119,7 @@ func Encode(scheme *runtime.Scheme, cfg *ClientConfig) (string, error) {
 }
 
 // Load returns a set of controller options and ClientConfig from the given file, if the config file path is empty
-// it used the default configapi values.
+// it uses the default values.
 func Load(scheme *runtime.Scheme, configFile string) (ctrl.Options, ClientConfig, error) {
 	var err error
 	options := ctrl.Options{
