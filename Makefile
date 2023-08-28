@@ -144,7 +144,7 @@ lint-fix: golangci-lint
 	$(GOLANGCI_LINT) run --fix
 
 GOLANGCI_LINT = $(shell pwd)/bin/golangci-lint
-GOLANGCI_LINT_VERSION = "v1.46.2"
+GOLANGCI_LINT_VERSION = "v1.54.2"
 golangci-lint:
 	@[ -f $(GOLANGCI_LINT) ] || GOBIN=$(shell pwd)/bin go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION);
 

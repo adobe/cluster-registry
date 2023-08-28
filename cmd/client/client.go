@@ -96,7 +96,7 @@ func main() {
 	}
 
 	if configFile != "" {
-		options, err = options.AndFrom(ctrl.ConfigFile().AtPath(configFile).OfKind(&clientConfig))
+		options, clientConfig, err = apply(configFile)
 		if err != nil {
 			setupLog.Error(err, "unable to load the config file")
 			os.Exit(1)
@@ -174,4 +174,19 @@ func main() {
 		setupLog.Error(err, "problem running cluster-registry-client")
 		os.Exit(1)
 	}
+}
+
+func apply(configFile string) (ctrl.Options, configv1.ClientConfig, error) {
+	options, cfg, err := configv1.Load(scheme, configFile)
+	if err != nil {
+		return options, cfg, err
+	}
+
+	cfgStr, err := configv1.Encode(scheme, &cfg)
+	if err != nil {
+		return options, cfg, err
+	}
+	setupLog.Info("Successfully loaded configuration", "config", cfgStr)
+
+	return options, cfg, nil
 }
