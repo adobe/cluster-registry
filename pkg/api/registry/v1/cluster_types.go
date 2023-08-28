@@ -116,9 +116,6 @@ type ClusterSpec struct {
 
 	// Capacity cluster information
 	Capacity Capacity `json:"capacity,omitempty"`
-
-	// ServiceMetadata service specific metadata
-	ServiceMetadata ServiceMetadata `json:"services,omitempty"`
 }
 
 // Offering the cluster is meant for
@@ -258,12 +255,6 @@ type Capacity struct {
 	ClusterCapacity     int    `json:"clusterCapacity"`
 	ClusterProvisioning int    `json:"clusterProvisioning"`
 }
-
-type ServiceMetadata map[string]ServiceMetadataItem
-
-type ServiceMetadataItem map[string]ServiceMetadataMap
-
-type ServiceMetadataMap map[string]string
 
 // ClusterStatus defines the observed state of Cluster
 type ClusterStatus struct {

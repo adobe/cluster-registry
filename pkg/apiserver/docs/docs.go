@@ -208,7 +208,7 @@ const docTemplate = `{
                         "bearerAuth": []
                     }
                 ],
-                "description": "Get a cluster. Auth is required",
+                "description": "Get an cluster. Auth is required",
                 "consumes": [
                     "application/json"
                 ],
@@ -218,7 +218,7 @@ const docTemplate = `{
                 "tags": [
                     "cluster"
                 ],
-                "summary": "Get a cluster",
+                "summary": "Get an cluster",
                 "operationId": "v2-get-cluster",
                 "parameters": [
                     {
@@ -278,135 +278,12 @@ const docTemplate = `{
                     },
                     {
                         "description": "Request body",
-                        "name": "clusterSpec",
+                        "name": "clusterPatch",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/pkg_apiserver_web_handler_v2.ClusterSpec"
+                            "$ref": "#/definitions/pkg_apiserver_web_handler_v2.ClusterPatch"
                         }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.ClusterSpec"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_apiserver_errors.Error"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_apiserver_errors.Error"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/services/{serviceId}": {
-            "get": {
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ],
-                "description": "List all metadata for a service for all clusters",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "service"
-                ],
-                "summary": "Get service metadata",
-                "operationId": "v2-get-service-metadata",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "SNOW Service ID",
-                        "name": "serviceId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "multi",
-                        "description": "Filter conditions",
-                        "name": "conditions",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Offset to start pagination search results (default is 0)",
-                        "name": "offset",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "The number of results per page (default is 200)",
-                        "name": "limit",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/pkg_apiserver_web_handler_v2.clusterList"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_apiserver_errors.Error"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/services/{serviceId}/cluster/{clusterName}": {
-            "get": {
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ],
-                "description": "Get metadata for a service for a specific cluster",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "service"
-                ],
-                "summary": "Get service metadata for a specific cluster",
-                "operationId": "v2-get-service-metadata-for-cluster",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "SNOW Service ID",
-                        "name": "serviceId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Name of the cluster",
-                        "name": "clusterName",
-                        "in": "path",
-                        "required": true
                     }
                 ],
                 "responses": {
@@ -590,14 +467,6 @@ const docTemplate = `{
                     "description": "Timestamp when cluster was registered in Cluster Registry\n+kubebuilder:validation:Required",
                     "type": "string"
                 },
-                "services": {
-                    "description": "ServiceMetadata service specific metadata",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.ServiceMetadata"
-                        }
-                    ]
-                },
                 "shortName": {
                     "description": "Cluster name, without dash\n+kubebuilder:validation:Required\n+kubebuilder:validation:MaxLength=64\n+kubebuilder:validation:MinLength=3",
                     "type": "string"
@@ -724,18 +593,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_adobe_cluster-registry_pkg_api_registry_v1.ServiceMetadata": {
-            "type": "object",
-            "additionalProperties": {
-                "type": "object",
-                "additionalProperties": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
         "github_com_adobe_cluster-registry_pkg_api_registry_v1.Tier": {
             "type": "object",
             "properties": {
@@ -834,7 +691,7 @@ const docTemplate = `{
                 }
             }
         },
-        "pkg_apiserver_web_handler_v2.ClusterSpec": {
+        "pkg_apiserver_web_handler_v2.ClusterPatch": {
             "type": "object",
             "properties": {
                 "phase": {
