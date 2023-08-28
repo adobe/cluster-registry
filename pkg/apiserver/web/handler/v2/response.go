@@ -14,6 +14,7 @@ package v2
 
 import (
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
+	"github.com/labstack/echo/v4"
 )
 
 type clusterList struct {
@@ -24,22 +25,8 @@ type clusterList struct {
 	More       bool                      `json:"more"`
 }
 
-type serviceMetadataList struct {
-	Items      []*ServiceMetadata `json:"items"`
-	ItemsCount int                `json:"itemsCount"`
-	Offset     int                `json:"offset"`
-	Limit      int                `json:"limit"`
-	More       bool               `json:"more"`
-}
-
-type ServiceMetadata struct {
-	Name            string                     `json:"name"`
-	ServiceMetadata registryv1.ServiceMetadata `json:"services"`
-}
-
-func newClusterResponse(cluster *registryv1.Cluster) *registryv1.ClusterSpec {
-	cs := &cluster.Spec
-	cs.ServiceMetadata = nil
+func newClusterResponse(ctx echo.Context, c *registryv1.Cluster) *registryv1.ClusterSpec {
+	cs := &c.Spec
 	return cs
 }
 
@@ -49,35 +36,7 @@ func newClusterListResponse(clusters []registryv1.Cluster, count int, offset int
 
 	for _, c := range clusters {
 		cs := c.Spec
-		cs.ServiceMetadata = nil
 		r.Items = append(r.Items, &cs)
-	}
-
-	r.ItemsCount = count
-	r.Offset = offset
-	r.Limit = limit
-	r.More = more
-
-	return r
-}
-
-func newServiceMetadataResponse(cluster *registryv1.Cluster) *ServiceMetadata {
-	return &ServiceMetadata{
-		Name:            cluster.Spec.Name,
-		ServiceMetadata: cluster.Spec.ServiceMetadata,
-	}
-}
-
-func newServiceMetadataListResponse(clusters []registryv1.Cluster, count int, offset int, limit int, more bool) *serviceMetadataList {
-	r := new(serviceMetadataList)
-	r.Items = make([]*ServiceMetadata, 0)
-
-	for _, c := range clusters {
-		sm := ServiceMetadata{
-			Name:            c.Spec.Name,
-			ServiceMetadata: c.Spec.ServiceMetadata,
-		}
-		r.Items = append(r.Items, &sm)
 	}
 
 	r.ItemsCount = count

@@ -96,30 +96,18 @@
     tags:
       onboarding: "off"
       scaling: "off"
-    services:
-      12345:
-        ns-team-abc:
-          key1: value1
-          key2: value2
-        ns-team-xyz:
-          key3: value3
-      98765:
-        ns-team-example:
-          some.key: some.value
-        ns-team-example2:
-          foo: bar
 - apiVersion: registry.ethos.adobe.com/v1
   kind: Cluster
   metadata:
-    name: cluster02-prod-euwest1
+    name: cluster02-prod-euwest1	
     namespace: cluster-registry
   spec:
-    name: cluster02-prod-euwest1
-    shortName: cluster02prodeuwest1
+    name: cluster02-prod-euwest1	
+    shortName: cluster02prodeuwest1	
     apiServer:
       endpoint: https://cluster02-prod-euwest1.example.com
       certificateAuthorityData: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0==
-    region: euwest1
+    region: euwest1	
     cloudType: azure
     cloudProviderRegion: euwest1
     environment: Prod
@@ -183,19 +171,6 @@
     tags:
       onboarding: "off"
       scaling: "on"
-    services:
-      12345:
-        ns-team-abc:
-          keyA: valueA
-          keyB: valueB
-      55555:
-        ns-team-foo:
-          foo: bar
-      98765:
-        ns-team-example:
-          some.other.key: some.other.value
-        ns-team-foobar:
-          foo: bar
 - apiVersion: registry.ethos.adobe.com/v1
   kind: Cluster
   metadata:

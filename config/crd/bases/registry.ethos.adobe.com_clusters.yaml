@@ -220,15 +220,6 @@ spec:
               registeredAt:
                 description: Timestamp when cluster was registered in Cluster Registry
                 type: string
-              services:
-                additionalProperties:
-                  additionalProperties:
-                    additionalProperties:
-                      type: string
-                    type: object
-                  type: object
-                description: ServiceMetadata service specific metadata
-                type: object
               shortName:
                 description: Cluster name, without dash
                 maxLength: 64
