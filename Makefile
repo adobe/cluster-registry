@@ -205,7 +205,7 @@ test-performance: ## Outputs requests/s, average req time, 99.9th percentile req
 # Development #
 ###############
 
-CRD_OPTIONS ?= "crd:trivialVersions=true,preserveUnknownFields=false"
+CRD_OPTIONS ?= "crd"
 MANAGER_ROLE ?= "cluster-registry"
 
 CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
