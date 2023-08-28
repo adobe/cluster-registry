@@ -168,7 +168,7 @@ go-vet:
 ###########
 
 KUBEBUILDER_ASSETS=$(shell pwd)/kubebuilder
-K8S_VERSION=1.21.2
+K8S_VERSION=1.25.11
 
 .PHONY: test
 test:
