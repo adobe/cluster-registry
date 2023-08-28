@@ -98,6 +98,9 @@ spec:
                 - clusterProvisioning
                 - lastUpdated
                 type: object
+              chargebackBusinessUnit:
+                description: The BU responsible for paying for the cluster.
+                type: string
               cloudProviderRegion:
                 description: The cloud provider standard region
                 type: string
@@ -148,23 +151,6 @@ spec:
                 required:
                 - domainName
                 - lbEndpoints
-                type: object
-              k8sInfraRelease:
-                description: K8s Infrastructure release information
-                properties:
-                  gitSha:
-                    description: GitSha of the release
-                    type: string
-                  lastUpdated:
-                    description: When the release was applied on the cluster
-                    type: string
-                  release:
-                    description: Release name
-                    type: string
-                required:
-                - gitSha
-                - lastUpdated
-                - release
                 type: object
               lastUpdated:
                 description: Timestamp when cluster information was updated
@@ -312,10 +298,10 @@ spec:
             - accountId
             - apiServer
             - businessUnit
+            - chargebackBusinessUnit
             - cloudProviderRegion
             - cloudType
             - environment
-            - k8sInfraRelease
             - lastUpdated
             - managingOrg
             - name

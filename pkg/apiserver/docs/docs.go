@@ -278,11 +278,11 @@ const docTemplate = `{
                     },
                     {
                         "description": "Request body",
-                        "name": "clusterPatch",
+                        "name": "clusterSpec",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/pkg_apiserver_web_handler_v2.ClusterPatch"
+                            "$ref": "#/definitions/pkg_apiserver_web_handler_v2.ClusterSpec"
                         }
                     }
                 ],
@@ -401,6 +401,10 @@ const docTemplate = `{
                         }
                     ]
                 },
+                "chargebackBusinessUnit": {
+                    "description": "The BU responsible for paying for the cluster.\n+kubebuilder:validation:Required",
+                    "type": "string"
+                },
                 "cloudProviderRegion": {
                     "description": "The cloud provider standard region\n+kubebuilder:validation:Required",
                     "type": "string"
@@ -418,14 +422,6 @@ const docTemplate = `{
                     "allOf": [
                         {
                             "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.Extra"
-                        }
-                    ]
-                },
-                "k8sInfraRelease": {
-                    "description": "K8s Infrastructure release information\n+kubebuilder:validation:Required",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.K8sInfraRelease"
                         }
                     ]
                 },
@@ -556,23 +552,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_adobe_cluster-registry_pkg_api_registry_v1.K8sInfraRelease": {
-            "type": "object",
-            "properties": {
-                "gitSha": {
-                    "description": "GitSha of the release",
-                    "type": "string"
-                },
-                "lastUpdated": {
-                    "description": "When the release was applied on the cluster",
-                    "type": "string"
-                },
-                "release": {
-                    "description": "Release name",
-                    "type": "string"
-                }
-            }
-        },
         "github_com_adobe_cluster-registry_pkg_api_registry_v1.PeerVirtualNetwork": {
             "type": "object",
             "properties": {
@@ -691,7 +670,7 @@ const docTemplate = `{
                 }
             }
         },
-        "pkg_apiserver_web_handler_v2.ClusterPatch": {
+        "pkg_apiserver_web_handler_v2.ClusterSpec": {
             "type": "object",
             "properties": {
                 "phase": {
