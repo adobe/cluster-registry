@@ -4,7 +4,7 @@ metadata:
   name: cluster-registry-client
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "cluster-registry-client.componentLabels" . | nindent 4 }}
+    {{- include "cluster-registry-client.labels" . | nindent 4 }}
 rules:
   - apiGroups:
       - registry.ethos.adobe.com
