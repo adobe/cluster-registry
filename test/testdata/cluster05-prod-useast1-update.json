@@ -11,7 +11,8 @@
             "endpoint": "https://cluster05-prod-useast1.example.com",
             "certificateAuthorityData": ""
         },
-        "businessUnit": "BU1", 
+        "businessUnit": "BU1",
+        "chargebackBusinessUnit": "BU1",
         "managingOrg": "Org1",
         "cloudType": "azure",
         "environment": "prod",
@@ -22,11 +23,6 @@
                 "internal": "internal.cluster05-prod-useast1.example.com",
                 "public": "cluster05-prod-useast1.example.com"
             }
-        },
-        "k8sInfraRelease": {
-            "gitSha": "1e8cbd109d7a77909f627ec5247520b70cc209e9",
-            "lastUpdated": "2021-03-22T11:55:41Z",
-            "release": "2021-W06-1234"
         },
         "name": "cluster05-prod-useast1",
         "offering": [

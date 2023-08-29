@@ -15,6 +15,7 @@
     environment: Prod
     type: Shared
     businessUnit: BU1
+    chargebackBusinessUnit: BU1
     offering:
     - CaaS
     - PaaS
@@ -83,10 +84,6 @@
     registeredAt: "2021-12-13T05:50:07.492Z"
     lastUpdated: "2021-12-13T05:50:07.492Z"
     managingOrg: Ethos
-    k8sInfraRelease:
-      gitSha: 1e8cbd109d7a77909f627ec5247520b70cc209e9
-      lastUpdated: "2021-03-22T11:55:41Z"
-      release: 2021-W06-0-116-gd0c7e403
     capacity:
       clusterCapacity: 50
       clusterProvisioning: 30
@@ -99,20 +96,21 @@
 - apiVersion: registry.ethos.adobe.com/v1
   kind: Cluster
   metadata:
-    name: cluster02-prod-euwest1	
+    name: cluster02-prod-euwest1
     namespace: cluster-registry
   spec:
-    name: cluster02-prod-euwest1	
-    shortName: cluster02prodeuwest1	
+    name: cluster02-prod-euwest1
+    shortName: cluster02prodeuwest1
     apiServer:
       endpoint: https://cluster02-prod-euwest1.example.com
       certificateAuthorityData: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0==
-    region: euwest1	
+    region: euwest1
     cloudType: azure
     cloudProviderRegion: euwest1
     environment: Prod
     type: Dedicated
     businessUnit: BU2
+    chargebackBusinessUnit: BU2
     offering:
     - CaaS
     - PaaS
@@ -158,10 +156,6 @@
     registeredAt: "2019-02-10T06:15:32Z"
     lastUpdated: "2020-02-10T06:15:32Z"
     managingOrg: Ethos
-    k8sInfraRelease:
-      gitSha: 1e8cbd109d7a77909f627ec5247520b70cc209e9
-      lastUpdated: "2021-03-22T11:55:41Z"
-      release: 2021-W06-0-116-gd0c7e403
     capacity:
       clusterCapacity: 50
       clusterProvisioning: 20
@@ -188,6 +182,7 @@
     environment: Prod
     type: Dedicated
     businessUnit: BU1
+    chargebackBusinessUnit: BU1
     offering:
     - PaaS
     allowedTeams:
@@ -242,10 +237,6 @@
     registeredAt: "2020-03-19T07:55:46.132Z"
     lastUpdated: "2020-03-20T07:55:46.132Z"
     managingOrg: Ethos
-    k8sInfraRelease:
-      gitSha: 110bb4f33b2142dde01e74a9bae7148534c2685b
-      lastUpdated: "2021-03-22T11:55:41Z"
-      release: 2021-W06-0-116-gd0c7e403
     capacity:
       clusterCapacity: 30
       clusterProvisioning: 30

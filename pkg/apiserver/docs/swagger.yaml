@@ -71,6 +71,11 @@ definitions:
         allOf:
         - $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.Capacity'
         description: Capacity cluster information
+      chargebackBusinessUnit:
+        description: |-
+          The BU responsible for paying for the cluster.
+          +kubebuilder:validation:Required
+        type: string
       cloudProviderRegion:
         description: |-
           The cloud provider standard region
@@ -90,12 +95,6 @@ definitions:
         allOf:
         - $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.Extra'
         description: Extra information, not necessary related to the cluster
-      k8sInfraRelease:
-        allOf:
-        - $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.K8sInfraRelease'
-        description: |-
-          K8s Infrastructure release information
-          +kubebuilder:validation:Required
       lastUpdated:
         description: Timestamp when cluster information was updated
         type: string
@@ -219,18 +218,6 @@ definitions:
           type: object
         type: array
     type: object
-  github_com_adobe_cluster-registry_pkg_api_registry_v1.K8sInfraRelease:
-    properties:
-      gitSha:
-        description: GitSha of the release
-        type: string
-      lastUpdated:
-        description: When the release was applied on the cluster
-        type: string
-      release:
-        description: Release name
-        type: string
-    type: object
   github_com_adobe_cluster-registry_pkg_api_registry_v1.PeerVirtualNetwork:
     properties:
       cidrs:
@@ -328,7 +315,7 @@ definitions:
       offset:
         type: integer
     type: object
-  pkg_apiserver_web_handler_v2.ClusterPatch:
+  pkg_apiserver_web_handler_v2.ClusterSpec:
     properties:
       phase:
         enum:
@@ -535,10 +522,10 @@ paths:
         type: string
       - description: Request body
         in: body
-        name: clusterPatch
+        name: clusterSpec
         required: true
         schema:
-          $ref: '#/definitions/pkg_apiserver_web_handler_v2.ClusterPatch'
+          $ref: '#/definitions/pkg_apiserver_web_handler_v2.ClusterSpec'
       produces:
       - application/json
       responses:

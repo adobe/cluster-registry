@@ -144,7 +144,7 @@ lint-fix: golangci-lint
 	$(GOLANGCI_LINT) run --fix
 
 GOLANGCI_LINT = $(shell pwd)/bin/golangci-lint
-GOLANGCI_LINT_VERSION = "v1.46.2"
+GOLANGCI_LINT_VERSION = "v1.54.2"
 golangci-lint:
 	@[ -f $(GOLANGCI_LINT) ] || GOBIN=$(shell pwd)/bin go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION);
 
@@ -168,7 +168,7 @@ go-vet:
 ###########
 
 KUBEBUILDER_ASSETS=$(shell pwd)/kubebuilder
-K8S_VERSION=1.21.2
+K8S_VERSION=1.25.0
 
 .PHONY: test
 test:
@@ -205,12 +205,12 @@ test-performance: ## Outputs requests/s, average req time, 99.9th percentile req
 # Development #
 ###############
 
-CRD_OPTIONS ?= "crd:trivialVersions=true,preserveUnknownFields=false"
+CRD_OPTIONS ?= "crd"
 MANAGER_ROLE ?= "cluster-registry"
 
 CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
 controller-gen: ## Download controller-gen locally if necessary.
-	@[ -f $(CONTROLLER_GEN) ] || GOBIN=$(shell pwd)/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1
+	@[ -f $(CONTROLLER_GEN) ] || GOBIN=$(shell pwd)/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.13.0
 
 KUSTOMIZE = $(shell pwd)/bin/kustomize
 kustomize: ## Download kustomize locally if necessary.

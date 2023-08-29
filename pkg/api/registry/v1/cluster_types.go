@@ -55,6 +55,10 @@ type ClusterSpec struct {
 	// +kubebuilder:validation:Required
 	BusinessUnit string `json:"businessUnit"`
 
+	// The BU responsible for paying for the cluster.
+	// +kubebuilder:validation:Required
+	ChargebackBusinessUnit string `json:"chargebackBusinessUnit"`
+
 	// The Org that is responsible for the cluster operations
 	// +kubebuilder:validation:Required
 	ManagingOrg string `json:"managingOrg"`
@@ -74,10 +78,6 @@ type ClusterSpec struct {
 	// Virtual Private Networks information
 	// +kubebuilder:validation:Required
 	VirtualNetworks []VirtualNetwork `json:"virtualNetworks"`
-
-	// K8s Infrastructure release information
-	// +kubebuilder:validation:Required
-	K8sInfraRelease K8sInfraRelease `json:"k8sInfraRelease"`
 
 	// Timestamp when cluster was registered in Cluster Registry
 	// +kubebuilder:validation:Required
@@ -234,19 +234,6 @@ type PeerVirtualNetwork struct {
 
 	// Cloud account of the owner
 	OwnerID string `json:"ownerID,omitempty"`
-}
-
-// K8sInfraRelease information
-type K8sInfraRelease struct {
-
-	// GitSha of the release
-	GitSha string `json:"gitSha"`
-
-	// When the release was applied on the cluster
-	LastUpdated string `json:"lastUpdated"`
-
-	// Release name
-	Release string `json:"release"`
 }
 
 // Capacity cluster information

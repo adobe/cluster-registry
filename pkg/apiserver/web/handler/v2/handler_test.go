@@ -28,7 +28,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/kubernetes"
 	testclient "k8s.io/client-go/kubernetes/fake"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -287,7 +287,7 @@ func TestPatchCluster(t *testing.T) {
 				},
 			},
 			clusterSpec: ClusterSpec{
-				Status: pointer.String("inactive"),
+				Status: ptr.To[string]("inactive"),
 			},
 			expectedStatus: http.StatusBadRequest,
 			expectedBody:   `{"errors":{"body":"Key: 'ClusterSpec.Status' Error:Field validation for 'Status' failed on the 'oneof' tag"}}`,
@@ -305,8 +305,8 @@ func TestPatchCluster(t *testing.T) {
 				},
 			},
 			clusterSpec: ClusterSpec{
-				Status: pointer.String("Inactive"),
-				Phase:  pointer.String("upgrading"),
+				Status: ptr.To[string]("Inactive"),
+				Phase:  ptr.To[string]("upgrading"),
 			},
 			expectedStatus: http.StatusBadRequest,
 			expectedBody:   `{"errors":{"body":"Key: 'ClusterSpec.Phase' Error:Field validation for 'Phase' failed on the 'oneof' tag"}}`,
@@ -324,7 +324,7 @@ func TestPatchCluster(t *testing.T) {
 				},
 			},
 			clusterSpec: ClusterSpec{
-				Status: pointer.String("Inactive"),
+				Status: ptr.To[string]("Inactive"),
 				Tags: &map[string]string{
 					"onboarding": "off",
 					"scaling":    "enabled",
@@ -346,7 +346,7 @@ func TestPatchCluster(t *testing.T) {
 				},
 			},
 			clusterSpec: ClusterSpec{
-				Status: pointer.String("Inactive"),
+				Status: ptr.To[string]("Inactive"),
 				Tags: &map[string]string{
 					"onboarding": "false",
 				},
@@ -367,7 +367,7 @@ func TestPatchCluster(t *testing.T) {
 				},
 			},
 			clusterSpec: ClusterSpec{
-				Status: pointer.String("Inactive"),
+				Status: ptr.To[string]("Inactive"),
 				Tags: &map[string]string{
 					"some-made-up-tag": "on",
 				},

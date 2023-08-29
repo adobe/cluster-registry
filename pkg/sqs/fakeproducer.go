@@ -20,7 +20,6 @@ import (
 )
 
 type fakeproducer struct {
-	producer
 }
 
 // NewFakeProducer creates a fake producer
