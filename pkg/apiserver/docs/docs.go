@@ -524,6 +524,10 @@ const docTemplate = `{
                         }
                     ]
                 },
+                "chargebackBusinessUnit": {
+                    "description": "The BU responsible for paying for the cluster.\n+kubebuilder:validation:Required",
+                    "type": "string"
+                },
                 "cloudProviderRegion": {
                     "description": "The cloud provider standard region\n+kubebuilder:validation:Required",
                     "type": "string"
@@ -541,14 +545,6 @@ const docTemplate = `{
                     "allOf": [
                         {
                             "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.Extra"
-                        }
-                    ]
-                },
-                "k8sInfraRelease": {
-                    "description": "K8s Infrastructure release information\n+kubebuilder:validation:Required",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.K8sInfraRelease"
                         }
                     ]
                 },
@@ -684,23 +680,6 @@ const docTemplate = `{
                             "type": "string"
                         }
                     }
-                }
-            }
-        },
-        "github_com_adobe_cluster-registry_pkg_api_registry_v1.K8sInfraRelease": {
-            "type": "object",
-            "properties": {
-                "gitSha": {
-                    "description": "GitSha of the release",
-                    "type": "string"
-                },
-                "lastUpdated": {
-                    "description": "When the release was applied on the cluster",
-                    "type": "string"
-                },
-                "release": {
-                    "description": "Release name",
-                    "type": "string"
                 }
             }
         },
