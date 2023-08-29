@@ -1,3 +1,20 @@
+# 1.4.2
+
+## cluster-registry-api
+
+- Add recommended labels to Helm chart (#71)
+- Add chargebackBusinessUnit field (#74)
+- Remove k8sInfraRelease field (#74)
+- Bump Go version to 1.21 (#74)
+
+## cluster-registry-client
+
+- Add recommended labels to Helm chart (#71)
+- Add chargebackBusinessUnit field (#74)
+- Remove k8sInfraRelease field (#74)
+- Bump Go version to 1.21 (#74)
+- Refactor deprecated clientConfig (#74)
+
 # 1.4.1
 
 ## cluster-registry-api
