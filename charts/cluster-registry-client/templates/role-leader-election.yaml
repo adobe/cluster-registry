@@ -5,7 +5,7 @@ metadata:
   name: cluster-registry-leader-election-role
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "cluster-registry-client.componentLabels" . | nindent 4 }}
+    {{- include "cluster-registry-client.labels" . | nindent 4 }}
 rules:
   - apiGroups:
       - ""
