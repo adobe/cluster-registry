@@ -9,13 +9,14 @@ webhook:
 leaderElection:
   leaderElect: true
   resourceNamespace: cluster-registry
-  resourceName: 0c4967d2.registry.ethos.adobe.com
+  resourceName: 1d5078e3.registry.ethos.adobe.com
+  resourceLock: leases
 namespace: cluster-registry
 alertmanagerWebhook:
   bindAddress: 127.0.0.1:9092
   alertMap:
     - alertName: ClusterCapacityWarning
-      onFiring: 
+      onFiring:
         onboarding: "off"
       onResolved:
         onboarding: "on"

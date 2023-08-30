@@ -14,7 +14,9 @@ package main
 
 import (
 	"flag"
+	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 
 	"github.com/adobe/cluster-registry/pkg/client/controllers"
 	"github.com/adobe/cluster-registry/pkg/config"
@@ -86,13 +88,15 @@ func main() {
 		},
 	}
 	options := ctrl.Options{
-		Scheme:                 scheme,
-		Namespace:              namespace,
-		MetricsBindAddress:     metricsAddr,
-		Port:                   9443,
-		HealthProbeBindAddress: probeAddr,
-		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "0c4967d2.registry.ethos.adobe.com",
+		Scheme: scheme,
+		Cache: cache.Options{
+			Namespaces: []string{namespace},
+		},
+		MetricsBindAddress:         metricsAddr,
+		HealthProbeBindAddress:     probeAddr,
+		LeaderElection:             enableLeaderElection,
+		LeaderElectionID:           "1d5078e3.registry.ethos.adobe.com",
+		LeaderElectionResourceLock: resourcelock.LeasesResourceLock,
 	}
 
 	if configFile != "" {
