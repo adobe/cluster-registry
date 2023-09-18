@@ -238,11 +238,15 @@ definitions:
     type: object
   github_com_adobe_cluster-registry_pkg_api_registry_v1.ServiceMetadata:
     additionalProperties:
-      additionalProperties:
-        additionalProperties:
-          type: string
-        type: object
-      type: object
+      $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.ServiceMetadataItem'
+    type: object
+  github_com_adobe_cluster-registry_pkg_api_registry_v1.ServiceMetadataItem:
+    additionalProperties:
+      $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.ServiceMetadataMap'
+    type: object
+  github_com_adobe_cluster-registry_pkg_api_registry_v1.ServiceMetadataMap:
+    additionalProperties:
+      type: string
     type: object
   github_com_adobe_cluster-registry_pkg_api_registry_v1.Tier:
     properties:
@@ -363,7 +367,7 @@ definitions:
       offset:
         type: integer
     type: object
-host: http://127.0.0.1:8080
+host: 127.0.0.1:8080
 info:
   contact: {}
   description: Cluster Registry API
