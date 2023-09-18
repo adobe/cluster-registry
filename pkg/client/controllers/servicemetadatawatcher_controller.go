@@ -74,6 +74,19 @@ func (r *ServiceMetadataWatcherReconciler) Reconcile(ctx context.Context, req ct
 		return noRequeue()
 	}
 
+	serviceId, err := r.getServiceIdFromNamespaceAnnotation(ctx, instance.GetNamespace())
+	if err != nil {
+		log.Error(err, "cannot get serviceId from namespace annotation", "namespace", instance.GetNamespace())
+		return noRequeue()
+	}
+
+	var updated bool = false
+	serviceMetadata := registryv1.ServiceMetadata{
+		serviceId: registryv1.ServiceMetadataItem{
+			instance.GetNamespace(): registryv1.ServiceMetadataMap{},
+		},
+	}
+
 	for _, wso := range instance.Spec.WatchedServiceObjects {
 		gv, err := schema.ParseGroupVersion(wso.ObjectReference.APIVersion)
 		if err != nil {
@@ -107,18 +120,6 @@ func (r *ServiceMetadataWatcherReconciler) Reconcile(ctx context.Context, req ct
 			return requeueIfError(err)
 		}
 
-		serviceId, err := r.getServiceIdFromNamespaceAnnotation(ctx, obj.GetNamespace())
-		if err != nil {
-			log.Error(err, "cannot get serviceId from namespace annotation", "namespace", obj.GetNamespace())
-			return noRequeue()
-		}
-
-		serviceMetadata := registryv1.ServiceMetadata{
-			serviceId: registryv1.ServiceMetadataItem{
-				obj.GetNamespace(): registryv1.ServiceMetadataMap{},
-			},
-		}
-
 		if len(wso.WatchedFields) == 0 {
 			// TODO: update status with error
 			return noRequeue()
@@ -139,12 +140,17 @@ func (r *ServiceMetadataWatcherReconciler) Reconcile(ctx context.Context, req ct
 			}
 
 			serviceMetadata[serviceId][obj.GetNamespace()][field.Destination] = value
+			updated = true
 		}
+	}
 
-		if err := r.updateClusterServiceMetadata(ctx, serviceMetadata); err != nil {
-			log.Error(err, "cannot update cluster service metadata")
-			return requeueIfError(err)
-		}
+	if !updated {
+		return noRequeue()
+	}
+
+	if err := r.updateClusterServiceMetadata(ctx, serviceMetadata); err != nil {
+		log.Error(err, "cannot update cluster service metadata")
+		return requeueIfError(err)
 	}
 
 	return noRequeue()
@@ -183,7 +189,7 @@ func (r *ServiceMetadataWatcherReconciler) updateClusterServiceMetadata(ctx cont
 		cluster := &clusterList.Items[i]
 		newCluster := cluster.DeepCopy()
 		newCluster.Spec.ServiceMetadata = serviceMetadata
-		patch := client.StrategicMergeFrom(cluster)
+		patch := client.MergeFrom(cluster)
 		rawPatch, err := patch.Data(newCluster)
 		if err != nil {
 			return err
