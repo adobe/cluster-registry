@@ -76,7 +76,7 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 // ReconcileCreateUpdate ...
 func (r *ClusterReconciler) ReconcileCreateUpdate(instance *registryv1.Cluster, log logr.Logger) (ctrl.Result, error) {
-	hash := Hash(instance)
+	hash := hashCluster(instance)
 
 	annotations := instance.GetAnnotations()
 	if annotations == nil {
@@ -91,19 +91,13 @@ func (r *ClusterReconciler) ReconcileCreateUpdate(instance *registryv1.Cluster, 
 		return ctrl.Result{}, err
 	}
 
-	if err := r.Client.Update(context.TODO(), instance); err != nil {
-		log.Error(err, "Cannot update the object")
-		return ctrl.Result{}, err
-	}
-	log.V(1).Info("Object updated")
-
 	return ctrl.Result{}, nil
 }
 
 func (r *ClusterReconciler) hasDifferentHash(object runtime.Object) bool {
 	instance := object.(*registryv1.Cluster)
 	oldHash := instance.GetAnnotations()[HashAnnotation]
-	newHash := Hash(instance)
+	newHash := hashCluster(instance)
 
 	if oldHash != newHash {
 		r.Log.Info("Different hash found", "old", oldHash, "new", newHash,
@@ -152,9 +146,9 @@ func (r *ClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-// Hash returns a SHA256 hash of the Cluster object, after removing the ResourceVersion,
-// ManagedFields and Hash annotation
-func Hash(instance *registryv1.Cluster) string {
+// hashCluster returns a SHA256 hash of the Cluster object, after removing the ResourceVersion,
+// ManagedFields and hashCluster annotation
+func hashCluster(instance *registryv1.Cluster) string {
 	clone := instance.DeepCopyObject().(*registryv1.Cluster)
 
 	annotations := clone.GetAnnotations()

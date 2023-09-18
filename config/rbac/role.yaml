@@ -1,9 +1,7 @@
-
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  creationTimestamp: null
   name: cluster-registry
 rules:
 - apiGroups:
@@ -28,6 +26,32 @@ rules:
   - registry.ethos.adobe.com
   resources:
   - clusters/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - registry.ethos.adobe.com
+  resources:
+  - servicemetadatawatchers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - registry.ethos.adobe.com
+  resources:
+  - servicemetadatawatchers/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - registry.ethos.adobe.com
+  resources:
+  - servicemetadatawatchers/status
   verbs:
   - get
   - patch

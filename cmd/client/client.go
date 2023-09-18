@@ -13,19 +13,17 @@ governing permissions and limitations under the License.
 package main
 
 import (
+	"encoding/base64"
 	"flag"
-	"k8s.io/client-go/tools/leaderelection/resourcelock"
-	"os"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
-
+	registryv1alpha1 "github.com/adobe/cluster-registry/pkg/api/registry/v1alpha1"
 	"github.com/adobe/cluster-registry/pkg/client/controllers"
 	"github.com/adobe/cluster-registry/pkg/config"
 	monitoring "github.com/adobe/cluster-registry/pkg/monitoring/client"
 	"github.com/adobe/cluster-registry/pkg/sqs"
-
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-
-	"encoding/base64"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/tools/leaderelection/resourcelock"
+	"os"
 
 	configv1 "github.com/adobe/cluster-registry/pkg/api/config/v1"
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
@@ -48,10 +46,13 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(registryv1.AddToScheme(scheme))
+	utilruntime.Must(registryv1alpha1.AddToScheme(scheme))
 	utilruntime.Must(configv1.AddToScheme(scheme))
 }
 
 func main() {
+	ctx := ctrl.SetupSignalHandler()
+
 	var configFile string
 	var metricsAddr string
 	var enableLeaderElection bool
@@ -86,12 +87,13 @@ func main() {
 			BindAddress: alertmanagerWebhookAddr,
 			AlertMap:    []configv1.AlertRule{},
 		},
+		ServiceMetadata: configv1.ServiceMetadataConfig{
+			WatchedGVKs:         []configv1.WatchedGVK{},
+			ServiceIdAnnotation: "adobe.serviceid",
+		},
 	}
 	options := ctrl.Options{
-		Scheme: scheme,
-		Cache: cache.Options{
-			Namespaces: []string{namespace},
-		},
+		Scheme:                     scheme,
 		MetricsBindAddress:         metricsAddr,
 		HealthProbeBindAddress:     probeAddr,
 		LeaderElection:             enableLeaderElection,
@@ -144,6 +146,27 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err = (&controllers.ServiceMetadataWatcherReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("ServiceMetadataWatcher"),
+		Scheme: mgr.GetScheme(),
+		WatchedGVKs: func(cfg configv1.ClientConfig) []schema.GroupVersionKind {
+			var GVKs []schema.GroupVersionKind
+			for _, gvk := range cfg.ServiceMetadata.WatchedGVKs {
+				GVKs = append(GVKs, schema.GroupVersionKind{
+					Group:   gvk.Group,
+					Version: gvk.Version,
+					Kind:    gvk.Kind,
+				})
+			}
+			return GVKs
+		}(clientConfig),
+		ServiceIdAnnotation: clientConfig.ServiceMetadata.ServiceIdAnnotation,
+	}).SetupWithManager(ctx, mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ServiceMetadataWatcher")
+		os.Exit(1)
+	}
+
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
 		os.Exit(1)
@@ -174,7 +197,7 @@ func main() {
 	}()
 
 	setupLog.Info("starting cluster-registry-client")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	if err := mgr.Start(ctx); err != nil {
 		setupLog.Error(err, "problem running cluster-registry-client")
 		os.Exit(1)
 	}
