@@ -25,7 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-var _ = Describe("Client Controller", func() {
+var _ = Describe("Cluster Controller", func() {
 	const (
 		timeout  = time.Second * 30
 		interval = time.Millisecond * 250

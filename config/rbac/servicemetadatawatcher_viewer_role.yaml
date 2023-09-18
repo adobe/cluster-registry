@@ -1,0 +1,27 @@
+# permissions for end users to view servicemetadatawatchers.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: servicemetadatawatcher-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: cluster-registry
+    app.kubernetes.io/part-of: cluster-registry
+    app.kubernetes.io/managed-by: kustomize
+  name: servicemetadatawatcher-viewer-role
+rules:
+- apiGroups:
+  - registry.ethos.adobe.com
+  resources:
+  - servicemetadatawatchers
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - registry.ethos.adobe.com
+  resources:
+  - servicemetadatawatchers/status
+  verbs:
+  - get
