@@ -229,5 +229,5 @@ generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and
 
 SWAGGER_CLI = $(shell pwd)/bin/swag
 swagger:
-	@[ -f $(SWAGGER_CLI) ] || GOBIN=$(shell pwd)/bin go install github.com/swaggo/swag/cmd/swag@v1.8.12
+	@[ -f $(SWAGGER_CLI) ] || GOBIN=$(shell pwd)/bin go install github.com/swaggo/swag/cmd/swag@v1.16.2
 	$(SWAGGER_CLI) init --parseDependency --parseInternal --parseDepth 2 -g cmd/apiserver/apiserver.go --output pkg/apiserver/docs/

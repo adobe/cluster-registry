@@ -35,7 +35,7 @@ var Version = "dev"
 // @version 1.0
 // @description Cluster Registry API
 
-// @host http://127.0.0.1:8080
+// @host 127.0.0.1:8080
 // @BasePath /api
 
 // @schemes http https
