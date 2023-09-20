@@ -81,7 +81,8 @@ func main() {
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	var err error
-	clientConfig := configv1.ClientConfig{
+	var clientConfig configv1.ClientConfig
+	clientConfigDefaults := configv1.ClientConfig{
 		Namespace: namespace,
 		AlertmanagerWebhook: configv1.AlertmanagerWebhookConfig{
 			BindAddress: alertmanagerWebhookAddr,
@@ -102,7 +103,7 @@ func main() {
 	}
 
 	if configFile != "" {
-		options, clientConfig, err = apply(configFile)
+		options, clientConfig, err = apply(configFile, &clientConfigDefaults)
 		if err != nil {
 			setupLog.Error(err, "unable to load the config file")
 			os.Exit(1)
@@ -203,8 +204,8 @@ func main() {
 	}
 }
 
-func apply(configFile string) (ctrl.Options, configv1.ClientConfig, error) {
-	options, cfg, err := configv1.Load(scheme, configFile)
+func apply(configFile string, clientConfigDefaults *configv1.ClientConfig) (ctrl.Options, configv1.ClientConfig, error) {
+	options, cfg, err := configv1.Load(scheme, configFile, clientConfigDefaults)
 	if err != nil {
 		return options, cfg, err
 	}
