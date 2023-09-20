@@ -17,12 +17,14 @@ import (
 	"fmt"
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
 	registryv1alpha1 "github.com/adobe/cluster-registry/pkg/api/registry/v1alpha1"
+	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/json"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	crevent "sigs.k8s.io/controller-runtime/pkg/event"
@@ -80,12 +82,7 @@ func (r *ServiceMetadataWatcherReconciler) Reconcile(ctx context.Context, req ct
 		return noRequeue()
 	}
 
-	var updated bool = false
-	serviceMetadata := registryv1.ServiceMetadata{
-		serviceId: registryv1.ServiceMetadataItem{
-			instance.GetNamespace(): registryv1.ServiceMetadataMap{},
-		},
-	}
+	var patches [][]byte
 
 	for _, wso := range instance.Spec.WatchedServiceObjects {
 		gv, err := schema.ParseGroupVersion(wso.ObjectReference.APIVersion)
@@ -131,24 +128,25 @@ func (r *ServiceMetadataWatcherReconciler) Reconcile(ctx context.Context, req ct
 			value, found, err := unstructured.NestedString(obj.Object, strings.Split(field.Source, ".")...)
 			if err != nil {
 				// TODO: update status with error
-				return requeueIfError(err)
+				log.Error(err, "cannot get field", "field", field.Source)
+				continue
 			}
 
 			if !found {
-				// TODO: update status with error
-				return requeueIfError(err)
+				log.Error(err, "field not found", "field", field.Source)
+				continue
 			}
 
-			serviceMetadata[serviceId][obj.GetNamespace()][field.Destination] = value
-			updated = true
+			patch, err := createServiceMetadataPatch(serviceId, instance.Namespace, field.Destination, value)
+			patches = append(patches, patch)
 		}
 	}
 
-	if !updated {
+	if len(patches) == 0 {
 		return noRequeue()
 	}
 
-	if err := r.updateClusterServiceMetadata(ctx, serviceMetadata); err != nil {
+	if err := r.applyServiceMetadataPatches(ctx, patches); err != nil {
 		log.Error(err, "cannot update cluster service metadata")
 		return requeueIfError(err)
 	}
@@ -178,7 +176,7 @@ func (r *ServiceMetadataWatcherReconciler) isAllowedGVK(gvk schema.GroupVersionK
 	return false
 }
 
-func (r *ServiceMetadataWatcherReconciler) updateClusterServiceMetadata(ctx context.Context, serviceMetadata registryv1.ServiceMetadata) error {
+func (r *ServiceMetadataWatcherReconciler) applyServiceMetadataPatches(ctx context.Context, patches [][]byte) error {
 	clusterList := &registryv1.ClusterList{}
 	// TODO: get namespace from config
 	if err := r.Client.List(ctx, clusterList, &client.ListOptions{Namespace: "cluster-registry"}); err != nil {
@@ -186,18 +184,11 @@ func (r *ServiceMetadataWatcherReconciler) updateClusterServiceMetadata(ctx cont
 	}
 
 	for i := range clusterList.Items {
-		cluster := &clusterList.Items[i]
-		newCluster := cluster.DeepCopy()
-		newCluster.Spec.ServiceMetadata = serviceMetadata
-		patch := client.MergeFrom(cluster)
-		rawPatch, err := patch.Data(newCluster)
-		if err != nil {
-			return err
-		} else if string(rawPatch) == "{}" {
-			return nil
-		}
-		if err := r.Client.Patch(ctx, &clusterList.Items[i], client.RawPatch(patch.Type(), rawPatch)); err != nil {
-			return err
+		for _, patch := range patches {
+			// TODO: find a better way to do this (i.e. group patches)
+			if err := r.Client.Patch(ctx, &clusterList.Items[i], client.RawPatch(types.MergePatchType, patch)); err != nil {
+				r.Log.Info("cannot patch cluster", "name", clusterList.Items[i].Name, "namespace", clusterList.Items[i].Namespace, "error", err)
+			}
 		}
 	}
 
@@ -279,4 +270,27 @@ func (r *ServiceMetadataWatcherReconciler) getServiceIdFromNamespaceAnnotation(c
 	}
 
 	return serviceId, nil
+}
+
+func createServiceMetadataPatch(serviceId string, namespace string, field string, value string) ([]byte, error) {
+	oldCluster := &registryv1.Cluster{}
+	oldClusterJSON, err := json.Marshal(oldCluster)
+	if err != nil {
+		return nil, err
+	}
+
+	newCluster := oldCluster.DeepCopy()
+	newCluster.Spec.ServiceMetadata = registryv1.ServiceMetadata{
+		serviceId: registryv1.ServiceMetadataItem{
+			namespace: registryv1.ServiceMetadataMap{
+				field: value,
+			},
+		},
+	}
+	newClusterJSON, err := json.Marshal(newCluster)
+	if err != nil {
+		return nil, err
+	}
+
+	return jsonpatch.CreateMergePatch(oldClusterJSON, newClusterJSON)
 }
