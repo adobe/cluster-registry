@@ -80,11 +80,15 @@ func (h *handler) Register(v2 *echo.Group) {
 	clusters.GET("/:name", h.GetCluster)
 	clusters.PATCH("/:name", h.PatchCluster, a.VerifyGroupAccess(h.appConfig.ApiAuthorizedGroupId))
 	clusters.GET("", h.ListClusters)
+
+	services := v2.Group("/services", a.VerifyToken(), web.RateLimiter(h.appConfig))
+	services.GET("/:serviceId", h.GetServiceMetadata)
+	services.GET("/:serviceId/cluster/:clusterName", h.GetServiceMetadataForCluster)
 }
 
 // GetCluster godoc
-// @Summary Get an cluster
-// @Description Get an cluster. Auth is required
+// @Summary Get a cluster
+// @Description Get a cluster. Auth is required
 // @ID v2-get-cluster
 // @Tags cluster
 // @Accept  json
@@ -107,7 +111,7 @@ func (h *handler) GetCluster(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, errors.NotFound())
 	}
 
-	return c.JSON(http.StatusOK, newClusterResponse(c, cluster))
+	return c.JSON(http.StatusOK, newClusterResponse(cluster))
 }
 
 // ListClusters
@@ -200,7 +204,87 @@ func (h *handler) PatchCluster(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, errors.NewError(err))
 	}
 
-	return c.JSON(http.StatusOK, newClusterResponse(c, cluster))
+	return c.JSON(http.StatusOK, newClusterResponse(cluster))
+}
+
+// GetServiceMetadata
+// @Summary Get service metadata
+// @Description List all metadata for a service for all clusters
+// @ID v2-get-service-metadata
+// @Tags service
+// @Accept  json
+// @Produce  json
+// @Param serviceId path string true "SNOW Service ID"
+// @Param conditions query []string false "Filter conditions" collectionFormat(multi)
+// @Param offset query integer false "Offset to start pagination search results (default is 0)"
+// @Param limit query integer false "The number of results per page (default is 200)"
+// @Success 200 {object} clusterList
+// @Failure 500 {object} errors.Error
+// @Security bearerAuth
+// @Router /v2/services/{serviceId} [get]
+func (h *handler) GetServiceMetadata(c echo.Context) error {
+	var clusters []registryv1.Cluster
+	var count int
+
+	serviceId := c.Param("serviceId")
+
+	offset, err := strconv.Atoi(c.QueryParam("offset"))
+	if err != nil {
+		offset = 0
+	}
+
+	limit, err := strconv.Atoi(c.QueryParam("limit"))
+	if err != nil {
+		limit = 200
+	}
+
+	filter := database.NewDynamoDBFilter()
+	queryConditions := getQueryConditions(c)
+
+	if len(queryConditions) == 0 {
+		clusters, count, more, _ := h.db.ListClustersWithService(serviceId, offset, limit, "", "", "", "")
+		return c.JSON(http.StatusOK, newServiceMetadataListResponse(clusters, count, offset, limit, more))
+	}
+
+	for _, qc := range queryConditions {
+		condition, err := models.NewFilterConditionFromQuery(qc)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, errors.NewError(err))
+		}
+		filter.AddCondition(condition)
+	}
+
+	clusters, count, more, _ := h.db.ListClustersWithServiceAndFilter(serviceId, offset, limit, filter)
+	return c.JSON(http.StatusOK, newServiceMetadataListResponse(clusters, count, offset, limit, more))
+}
+
+// GetServiceMetadataForCluster
+// @Summary Get service metadata for a specific cluster
+// @Description Get metadata for a service for a specific cluster
+// @ID v2-get-service-metadata-for-cluster
+// @Tags service
+// @Accept  json
+// @Produce  json
+// @Param serviceId path string true "SNOW Service ID"
+// @Param clusterName path string true "Name of the cluster"
+// @Success 200 {object} registryv1.ClusterSpec
+// @Failure 400 {object} errors.Error
+// @Failure 500 {object} errors.Error
+// @Security bearerAuth
+// @Router /v2/services/{serviceId}/cluster/{clusterName} [get]
+func (h *handler) GetServiceMetadataForCluster(c echo.Context) error {
+	serviceId := c.Param("serviceId")
+	clusterName := c.Param("clusterName")
+	cluster, err := h.db.GetClusterWithService(serviceId, clusterName)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, errors.NewError(err))
+	}
+
+	if cluster == nil {
+		return c.JSON(http.StatusNotFound, errors.NotFound())
+	}
+
+	return c.JSON(http.StatusOK, newServiceMetadataResponse(cluster))
 }
 
 // getCluster by standard name or short name
