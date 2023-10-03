@@ -43,6 +43,9 @@ type Db interface {
 	DeleteCluster(name string) error
 	Status() error
 	Mock() *dynamock.DynaMock
+	ListClustersWithService(serviceId string, offset int, limit int, environment string, region string, status string, lastUpdated string) ([]registryv1.Cluster, int, bool, error)
+	ListClustersWithServiceAndFilter(serviceId string, offset int, limit int, filter *DynamoDBFilter) ([]registryv1.Cluster, int, bool, error)
+	GetClusterWithService(serviceId string, clusterName string) (*registryv1.Cluster, error)
 }
 
 // db struct
@@ -419,4 +422,96 @@ func (d *db) DeleteCluster(name string) error {
 	log.Infof("Cluster %s deleted.", name)
 
 	return nil
+}
+
+// ListClustersWithService gets service metadata for a given serviceId on all clusters
+func (d *db) ListClustersWithService(serviceId string, offset int, limit int, environment string, region string, status string, lastUpdated string) ([]registryv1.Cluster, int, bool, error) {
+	clusters, _, _, err := d.ListClusters(offset, limit, environment, region, status, lastUpdated)
+
+	var clustersWithService []registryv1.Cluster
+
+	for _, cluster := range clusters {
+		var serviceMetadata = registryv1.ServiceMetadata{}
+		for service := range cluster.Spec.ServiceMetadata {
+			if service == serviceId {
+				serviceMetadata[service] = cluster.Spec.ServiceMetadata[service]
+				cluster.Spec.ServiceMetadata = serviceMetadata
+				clustersWithService = append(clustersWithService, cluster)
+			}
+		}
+	}
+
+	count := len(clustersWithService)
+	endIndex := offset + limit
+	more := false
+
+	if endIndex > count {
+		endIndex = count
+	}
+	if endIndex < count {
+		more = true
+	}
+
+	return clustersWithService, count, more, err
+}
+
+// ListClustersWithServiceAndFilter gets service metadata for a given serviceId on all clusters with additional filtering options
+func (d *db) ListClustersWithServiceAndFilter(serviceId string, offset int, limit int, filter *DynamoDBFilter) ([]registryv1.Cluster, int, bool, error) {
+	clusters, _, _, err := d.ListClustersWithFilter(offset, limit, filter)
+
+	if err != nil {
+		msg := fmt.Sprintf("Failed to list clusters with filter: '%v'.", err)
+		log.Errorf(msg)
+		return nil, 0, false, fmt.Errorf(msg)
+	}
+
+	var clustersWithService []registryv1.Cluster
+
+	for _, cluster := range clusters {
+		var serviceMetadata = registryv1.ServiceMetadata{}
+		for service := range cluster.Spec.ServiceMetadata {
+			if service == serviceId {
+				serviceMetadata[service] = cluster.Spec.ServiceMetadata[service]
+				cluster.Spec.ServiceMetadata = serviceMetadata
+				clustersWithService = append(clustersWithService, cluster)
+			}
+		}
+	}
+
+	count := len(clustersWithService)
+	endIndex := offset + limit
+	more := false
+
+	if endIndex > count {
+		endIndex = count
+	}
+	if endIndex < count {
+		more = true
+	}
+
+	return clustersWithService, count, more, err
+}
+
+// GetClusterWithService gets service metadata for a given serviceId on a given cluster
+func (d *db) GetClusterWithService(serviceId string, clusterName string) (*registryv1.Cluster, error) {
+	cluster, err := d.GetCluster(clusterName)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if cluster == nil {
+		return nil, nil
+	}
+
+	var serviceMetadata = registryv1.ServiceMetadata{}
+	for service := range cluster.Spec.ServiceMetadata {
+		if service == serviceId {
+			serviceMetadata[service] = cluster.Spec.ServiceMetadata[service]
+			cluster.Spec.ServiceMetadata = serviceMetadata
+			return cluster, nil
+		}
+	}
+
+	return nil, err
 }

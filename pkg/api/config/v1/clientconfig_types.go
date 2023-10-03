@@ -34,6 +34,8 @@ type ClientConfig struct {
 	Namespace string `json:"namespace,omitempty"`
 
 	AlertmanagerWebhook AlertmanagerWebhookConfig `json:"alertmanagerWebhook"`
+
+	ServiceMetadata ServiceMetadataConfig `json:"serviceMetadata"`
 }
 
 // ControllerManager defines the desired state of GenericControllerManagerConfiguration.
@@ -182,6 +184,17 @@ type AlertRule struct {
 	AlertName  string            `json:"alertName"`
 	OnFiring   map[string]string `json:"onFiring"`
 	OnResolved map[string]string `json:"onResolved"`
+}
+
+type ServiceMetadataConfig struct {
+	WatchedGVKs         []WatchedGVK `json:"watchedGVKs"`
+	ServiceIdAnnotation string       `json:"serviceIdAnnotation"`
+}
+
+type WatchedGVK struct {
+	Group   string `json:"group"`
+	Version string `json:"version"`
+	Kind    string `json:"kind"`
 }
 
 func init() {
