@@ -457,7 +457,13 @@ func (d *db) ListClustersWithService(serviceId string, offset int, limit int, en
 
 // ListClustersWithServiceAndFilter gets service metadata for a given serviceId on all clusters with additional filtering options
 func (d *db) ListClustersWithServiceAndFilter(serviceId string, offset int, limit int, filter *DynamoDBFilter) ([]registryv1.Cluster, int, bool, error) {
-	clusters, count, more, err := d.ListClustersWithFilter(offset, limit, filter)
+	clusters, _, _, err := d.ListClustersWithFilter(offset, limit, filter)
+
+	if err != nil {
+		msg := fmt.Sprintf("Failed to list clusters with filter: '%v'.", err)
+		log.Errorf(msg)
+		return nil, 0, false, fmt.Errorf(msg)
+	}
 
 	var clustersWithService []registryv1.Cluster
 
@@ -472,9 +478,9 @@ func (d *db) ListClustersWithServiceAndFilter(serviceId string, offset int, limi
 		}
 	}
 
-	count = len(clustersWithService)
+	count := len(clustersWithService)
 	endIndex := offset + limit
-	more = false
+	more := false
 
 	if endIndex > count {
 		endIndex = count

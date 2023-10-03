@@ -141,6 +141,10 @@ func (r *ServiceMetadataWatcherReconciler) Reconcile(ctx context.Context, req ct
 			}
 
 			patch, err := createServiceMetadataPatch(serviceId, instance.Namespace, field.Destination, value)
+			if err != nil {
+				log.Error(err, "cannot create patch")
+				continue
+			}
 			patches = append(patches, patch)
 		}
 	}
