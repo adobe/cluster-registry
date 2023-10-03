@@ -88,6 +88,7 @@ func (r *ServiceMetadataWatcherReconciler) Reconcile(ctx context.Context, req ct
 		gv, err := schema.ParseGroupVersion(wso.ObjectReference.APIVersion)
 		if err != nil {
 			log.Error(err, "cannot parse APIVersion", "apiVersion", wso.ObjectReference.APIVersion)
+			// TODO: update status with error
 			return requeueIfError(err)
 		}
 
@@ -100,6 +101,7 @@ func (r *ServiceMetadataWatcherReconciler) Reconcile(ctx context.Context, req ct
 		// check if gvk is allowed
 		if !r.isAllowedGVK(gvk) {
 			log.Info("watched object GVK is not allowed, skipping", "gvk", gvk.String())
+			// TODO: update status with error
 			return noRequeue()
 		}
 
@@ -134,6 +136,7 @@ func (r *ServiceMetadataWatcherReconciler) Reconcile(ctx context.Context, req ct
 
 			if !found {
 				log.Error(err, "field not found", "field", field.Source)
+				// TODO: update status with error
 				continue
 			}
 
@@ -161,7 +164,18 @@ func (r *ServiceMetadataWatcherReconciler) SetupWithManager(ctx context.Context,
 	for _, gvk := range r.WatchedGVKs {
 		obj := new(unstructured.Unstructured)
 		obj.SetGroupVersionKind(gvk)
-		b.Watches(obj, handler.EnqueueRequestsFromMapFunc(r.enqueueRequestsFromMapFunc(gvk)))
+		b.Watches(obj, handler.EnqueueRequestsFromMapFunc(r.enqueueRequestsFromMapFunc(gvk)), builder.WithPredicates(predicate.Funcs{
+			CreateFunc: func(e crevent.CreateEvent) bool {
+				return true
+			},
+			UpdateFunc: func(e crevent.UpdateEvent) bool {
+				return true
+			},
+			DeleteFunc: func(e crevent.DeleteEvent) bool {
+				// not interested in ServiceObject delete events (for now)
+				return false
+			},
+		}))
 	}
 	err := b.WithOptions(options).Complete(r)
 	return err

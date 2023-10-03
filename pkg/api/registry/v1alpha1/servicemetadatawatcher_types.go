@@ -32,13 +32,24 @@ type ObjectReference struct {
 	Kind       string `json:"kind"`
 }
 
+func (o *ObjectReference) String() string {
+	return o.Name + "/" + o.APIVersion + "/" + o.Kind
+}
+
 type WatchedField struct {
 	Source      string `json:"src"`
 	Destination string `json:"dst"`
 }
 
+type WatchedServiceObjectStatus struct {
+	LastUpdated     metav1.Time     `json:"lastUpdated"`
+	ObjectReference ObjectReference `json:"objectReference"`
+	Errors          []string        `json:"errors"`
+}
+
 // ServiceMetadataWatcherStatus defines the observed state of ServiceMetadataWatcher
 type ServiceMetadataWatcherStatus struct {
+	WatchedServiceObjects []WatchedServiceObjectStatus `json:"watchedServiceObjects"`
 }
 
 //+kubebuilder:object:root=true
