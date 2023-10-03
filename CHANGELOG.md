@@ -1,3 +1,13 @@
+# 1.5.0
+
+## cluster-registry-api
+
+- New endpoints for service metadata feature
+
+## cluster-registry-client
+
+- Service Metadata feature support
+
 # 1.4.2
 
 ## cluster-registry-api
