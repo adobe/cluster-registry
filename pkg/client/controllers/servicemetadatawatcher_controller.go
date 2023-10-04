@@ -25,12 +25,15 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/json"
+	"reflect"
+	"regexp"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	crevent "sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"strconv"
 	"strings"
 	"time"
 
@@ -127,7 +130,7 @@ func (r *ServiceMetadataWatcherReconciler) Reconcile(ctx context.Context, req ct
 		for _, field := range wso.WatchedFields {
 			// TODO: validate field Source & Destination somewhere
 
-			value, found, err := unstructured.NestedString(obj.Object, strings.Split(field.Source, ".")...)
+			value, found, err := getNestedString(obj.Object, strings.Split(field.Source, "."))
 			if err != nil {
 				// TODO: update status with error
 				log.Error(err, "cannot get field", "field", field.Source)
@@ -311,4 +314,50 @@ func createServiceMetadataPatch(serviceId string, namespace string, field string
 	}
 
 	return jsonpatch.CreateMergePatch(oldClusterJSON, newClusterJSON)
+}
+
+// getNestedString returns the value of a nested field in the provided object
+// path is a list of keys separated by dots, e.g. "spec.template.spec.containers[0].image"
+// if the field is a slice, the last key must be in the form of "key[index]"
+func getNestedString(object interface{}, path []string) (string, bool, error) {
+	re := regexp.MustCompile(`^(.*)\[(\d+)]$`)
+	var cpath []string
+	for i, key := range path {
+		m := re.FindStringSubmatch(key)
+		if len(m) > 0 {
+			cpath = append(cpath, m[1])
+			index, _ := strconv.Atoi(m[2])
+			slice, found, err := unstructured.NestedSlice(object.(map[string]interface{}), cpath...)
+			if !found || err != nil {
+				return "", false, err
+			}
+			if len(slice) <= index {
+				return "", false, fmt.Errorf("index out of range")
+			}
+			return getNestedString(slice[index], path[i+1:])
+		}
+		cpath = append(cpath, key)
+	}
+
+	if reflect.TypeOf(object).String() == "string" {
+		return object.(string), true, nil
+	}
+
+	if reflect.TypeOf(object).String() == "bool" {
+		return strconv.FormatBool(object.(bool)), true, nil
+	}
+
+	stringVal, found, err := unstructured.NestedString(object.(map[string]interface{}), path...)
+	if found && err == nil {
+		return stringVal, found, err
+	}
+
+	boolVal, found, err := unstructured.NestedBool(object.(map[string]interface{}), path...)
+	if found && err == nil {
+		return strconv.FormatBool(boolVal), found, err
+	}
+
+	// TODO: handle additional types?
+
+	return "", found, fmt.Errorf("invalid field type")
 }
