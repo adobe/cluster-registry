@@ -321,7 +321,7 @@ func createServiceMetadataPatch(serviceId string, namespace string, field string
 // path is a list of keys separated by dots, e.g. "spec.template.spec.containers[0].image"
 // if the field is a slice, the last key must be in the form of "key[index]"
 func getNestedString(object interface{}, path []string) (string, bool, error) {
-	re := regexp.MustCompile(`^(.*)\[(\d+)]$`)
+	re := regexp.MustCompile(`^(.*)\[(\d+|[a-z]+)]$`)
 	var cpath []string
 	for i, key := range path {
 		m := re.FindStringSubmatch(key)
