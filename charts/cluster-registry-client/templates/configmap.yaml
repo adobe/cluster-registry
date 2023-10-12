@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: "client-config"
+  name: client-config
   labels:
     {{- include "cluster-registry-client.labels" . | nindent 4 }}
 data:
@@ -24,7 +24,7 @@ data:
       bindAddress: {{ .Values.clusterRegistryClient.alertmanagerWebhook.bindAddress }}
       {{- if gt (len .Values.clusterRegistryClient.alertmanagerWebhook.alertMap) 0 }}
       alertMap:
-      {{- range $_, $am := .Values.clusterRegistryClient.alertmanagerWebhook.alertMap }} 
+      {{- range $_, $am := .Values.clusterRegistryClient.alertmanagerWebhook.alertMap }}
         - alertName: {{ $am.alertName }}
           onFiring:
           {{- toYaml $am.onFiring | nindent 12 }}
