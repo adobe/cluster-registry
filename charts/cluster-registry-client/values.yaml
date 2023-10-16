@@ -6,7 +6,7 @@ clusterRegistryClient:
     bindAddress: 0.0.0.0:9092
     alertMap: []
   health:
-    healthProbeBindAddress: :8081
+    healthProbeBindAddress: :9091
   metrics:
     bindAddress: 0.0.0.0:9090
   webhook:
