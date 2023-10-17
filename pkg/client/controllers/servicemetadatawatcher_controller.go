@@ -15,6 +15,12 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"reflect"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
+
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
 	registryv1alpha1 "github.com/adobe/cluster-registry/pkg/api/registry/v1alpha1"
 	jsonpatch "github.com/evanphx/json-patch/v5"
@@ -25,17 +31,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/json"
-	"reflect"
-	"regexp"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	crevent "sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"strconv"
-	"strings"
-	"time"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -320,16 +321,22 @@ func createServiceMetadataPatch(serviceId string, namespace string, field string
 // path is a list of keys separated by dots, e.g. "spec.template.spec.containers[0].image"
 // if the field is a slice, the last key must be in the form of "key[index]"
 func getNestedString(object interface{}, path []string) (string, bool, error) {
-	re := regexp.MustCompile(`^(.*)\[(\d+)]$`)
+	re := regexp.MustCompile(`^(.*)\[(\d+|[a-z]+)]$`)
 	var cpath []string
 	for i, key := range path {
 		m := re.FindStringSubmatch(key)
 		if len(m) > 0 {
 			cpath = append(cpath, m[1])
-			index, _ := strconv.Atoi(m[2])
 			slice, found, err := unstructured.NestedSlice(object.(map[string]interface{}), cpath...)
 			if !found || err != nil {
 				return "", false, err
+			}
+			index, err := strconv.Atoi(m[2])
+			if err != nil && m[2] != "last" {
+				return "", false, fmt.Errorf("invalid array index: %s", m[2])
+			}
+			if m[2] == "last" {
+				index = len(slice) - 1
 			}
 			if len(slice) <= index {
 				return "", false, fmt.Errorf("index out of range")
