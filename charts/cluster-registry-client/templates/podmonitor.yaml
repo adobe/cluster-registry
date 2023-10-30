@@ -1,0 +1,27 @@
+{{- if .Values.podMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  labels:
+    {{- include "cluster-registry-client.labels" . | nindent 4 }}
+    {{- if .Values.podMonitor.extraLabels }}
+    {{- toYaml .Values.podMonitor.extraLabels | nindent 4 }}
+    {{- end }}
+  name: cluster-registry-client
+  namespace: {{ .Release.Namespace }}
+spec:
+  jobLabel: app
+  namespaceSelector:
+    matchNames:
+    - {{ .Release.Namespace }}
+  podMetricsEndpoints:
+  - interval: 60s
+    path: /metrics
+    port: metrics
+  - interval: 60s
+    path: /metrics/extra
+    port: metrics
+  selector:
+    matchLabels:
+    {{- include "cluster-registry-client.selectorLabels" . | nindent 6 }}
+{{- end }}
