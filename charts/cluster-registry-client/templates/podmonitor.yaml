@@ -24,4 +24,4 @@ spec:
   selector:
     matchLabels:
     {{- include "cluster-registry-client.selectorLabels" . | nindent 6 }}
-  {{- end }}
+{{- end }}
