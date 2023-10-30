@@ -8,11 +8,11 @@ spec:
   replicas: {{ .Values.replicaCount | required ".Values.replicaCount is required" }}
   selector:
     matchLabels:
-      app: cluster-registry-client
+      {{- include "cluster-registry-client.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-      {{- include "cluster-registry-client.appLabels" . | nindent 8 }}
+      {{- include "cluster-registry-client.selectorLabels" . | nindent 8 }}
       annotations:
         kubectl.kubernetes.io/default-container: manager
     spec:

@@ -2,7 +2,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: cluster-registry-leader-election-role
+  name: cluster-registry-leader-election
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "cluster-registry-client.labels" . | nindent 4 }}

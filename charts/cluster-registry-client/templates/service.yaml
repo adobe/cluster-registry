@@ -15,4 +15,4 @@ spec:
       {{ fail "No ports defined" }}
     {{- end }}
   selector:
-    {{- include "cluster-registry-client.appLabels" . | nindent 4 }}
+    {{- include "cluster-registry-client.selectorLabels" . | nindent 4 }}

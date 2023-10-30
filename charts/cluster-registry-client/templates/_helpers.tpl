@@ -40,8 +40,7 @@ helm.sh/chart: {{ include "cluster-registry-client.chart" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
-{{ include "cluster-registry-client.appLabels" . }}
-{{ include "cluster-registry-client.componentLabels" . }}
+component: cluster-registry
 {{- end }}
 
 {{/*
@@ -50,20 +49,6 @@ Selector labels
 {{- define "cluster-registry-client.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "cluster-registry-client.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
-{{- end }}
-
-{{/*
-Cluster Registry client application label
-*/}}
-{{- define "cluster-registry-client.appLabels" -}}
-app: cluster-registry-client
-{{- end }}
-
-{{/*
-Cluster Registry component label
-*/}}
-{{- define "cluster-registry-client.componentLabels" -}}
-component: cluster-registry
 {{- end }}
 
 {{/*

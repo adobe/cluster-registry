@@ -1,6 +1,41 @@
 nameOverride: cluster-registry-client
 fullnameOverride: cluster-registry-client
+
 replicaCount: 2
+
+imagePullSecrets: []
+image:
+  pullPolicy: IfNotPresent
+  registry: ghcr.io/adobe/cluster-registry-client
+
+ports:
+  - name: metrics
+    containerPort: 9090
+  - name: amwebhook
+    containerPort: 9092
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 400Mi
+  requests:
+    cpu: 100m
+    memory: 200Mi
+
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 9091
+  initialDelaySeconds: 15
+  periodSeconds: 20
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: 9091
+  initialDelaySeconds: 5
+  periodSeconds: 10
+terminationGracePeriodSeconds: 10
+
 clusterRegistryClient:
   alertmanagerWebhook:
     bindAddress: 0.0.0.0:9092
@@ -15,41 +50,21 @@ clusterRegistryClient:
     leaderElect: true
     resourceNamespace: cluster-registry
     resourceName: 0c4967d2.registry.ethos.adobe.com
+
 rbac:
   create: true
-  nameSuffix: cluster-client
+
 serviceAccount:
   # Specifies whether a service account should be created, else use: 'name: "default"''
   create: true
   # The name of the service account to use.
   # If set, override, else will use chart fullname template
   name: cluster-registry-client
-imagePullSecrets: []
-image:
-  pullPolicy: IfNotPresent
-  registry: ghcr.io/adobe/cluster-registry-client
-ports:
-  - name: metrics
-    containerPort: 9090
-  - name: amwebhook
-    containerPort: 9092
-resources:
-  limits:
-    cpu: 200m
-    memory: 400Mi
-  requests:
-    cpu: 100m
-    memory: 200Mi
-livenessProbe:
-  httpGet:
-    path: /healthz
-    port: 9091
-  initialDelaySeconds: 15
-  periodSeconds: 20
-readinessProbe:
-  httpGet:
-    path: /readyz
-    port: 9091
-  initialDelaySeconds: 5
-  periodSeconds: 10
-terminationGracePeriodSeconds: 10
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+podMonitor:
+  enabled: false
+  extraLabels: {}
