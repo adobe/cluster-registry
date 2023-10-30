@@ -63,7 +63,7 @@ serviceAccount:
 
 podDisruptionBudget:
   enabled: true
-  minAvailable: 1
+  minAvailable: 50%
 
 podMonitor:
   enabled: false

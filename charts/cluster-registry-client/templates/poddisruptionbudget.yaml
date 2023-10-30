@@ -1,5 +1,6 @@
 {{- if .Values.podDisruptionBudget.enabled }}
-{{- if eq (.Values.replicaCount | int) (.Values.podDisruptionBudget.minAvailable| int) }}
+{{- $isPercentage := regexMatch "^[0-9]+%$" (.Values.podDisruptionBudget.minAvailable | quote) }}
+{{- if and (not $isPercentage) (le (.Values.replicaCount | int) (.Values.podDisruptionBudget.minAvailable | int)) }}
 {{- fail ".Values.replicaCount should be greater than .Values.podDisruptionBudget.minAvailable" }}
 {{- else }}
 apiVersion: policy/v1
