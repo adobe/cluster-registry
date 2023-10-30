@@ -35,7 +35,7 @@ Cluster Registry is a Rest API representing the source of record for all Kuberne
 | livenessProbe.periodSeconds | int | `20` |  |
 | nameOverride | string | `"cluster-registry-client"` |  |
 | podDisruptionBudget.enabled | bool | `true` |  |
-| podDisruptionBudget.minAvailable | int | `1` |  |
+| podDisruptionBudget.minAvailable | string | `"50%"` |  |
 | podMonitor.enabled | bool | `false` |  |
 | podMonitor.extraLabels | object | `{}` |  |
 | ports[0].containerPort | int | `9090` |  |
