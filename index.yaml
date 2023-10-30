@@ -3,6 +3,25 @@ entries:
   cluster-registry-client:
   - apiVersion: v2
     appVersion: v1.4.2
+    created: "2023-10-30T16:10:40.957068945Z"
+    description: Cluster Registry is a Rest API representing the source of record
+      for all Kubernetes clusters in the infrastructure fleet. All clusters are automatically
+      registered, and the information is accurately reflected in the Cluster Registry
+      using a client-server architecture.
+    digest: a0e6eb2c10c3b7166f1b96e1803b9ed3d3c6cb302b1527186581da70a30fea29
+    home: https://github.com/adobe/cluster-registry
+    maintainers:
+    - email: aalexand@adobe.com
+      name: aalexandru
+    - email: caradu@adobe.com
+      name: radu-catalina
+    name: cluster-registry-client
+    type: application
+    urls:
+    - https://github.com/adobe/cluster-registry/releases/download/helm-chart-v0.1.8/cluster-registry-client-0.1.8.tgz
+    version: 0.1.8
+  - apiVersion: v2
+    appVersion: v1.4.2
     created: "2023-10-30T14:08:12.470997572Z"
     description: Cluster Registry is a Rest API representing the source of record
       for all Kubernetes clusters in the infrastructure fleet. All clusters are automatically
@@ -115,4 +134,4 @@ entries:
     urls:
     - https://github.com/adobe/cluster-registry/releases/download/helm-chart-v0.1.2/cluster-registry-client-0.1.2.tgz
     version: 0.1.2
-generated: "2023-10-30T14:08:12.471019172Z"
+generated: "2023-10-30T16:10:40.957096745Z"
