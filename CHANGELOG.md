@@ -1,3 +1,13 @@
+# 1.5.1
+
+## cluster-registry-api
+
+- Add OidcIssuer extra field (#87) 
+
+## cluster-registry-client
+
+- Add OidcIssuer extra field (#87)
+
 # 1.5.0
 
 ## cluster-registry-api
