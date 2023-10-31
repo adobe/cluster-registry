@@ -221,6 +221,9 @@ definitions:
             type: string
           type: object
         type: array
+      oidcIssuer:
+        description: OIDC Issuer URL
+        type: string
     type: object
   github_com_adobe_cluster-registry_pkg_api_registry_v1.PeerVirtualNetwork:
     properties:

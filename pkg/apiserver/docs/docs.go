@@ -679,6 +679,10 @@ const docTemplate = `{
                             "type": "string"
                         }
                     }
+                },
+                "oidcIssuer": {
+                    "description": "OIDC Issuer URL",
+                    "type": "string"
                 }
             }
         },

@@ -175,6 +175,9 @@ type Extra struct {
 
 	// ExtendedRegion information
 	ExtendedRegion string `json:"extendedRegion,omitempty"`
+
+	// OIDC Issuer URL
+	OidcIssuer string `json:"oidcIssuer,omitempty"`
 }
 
 // Tier details
