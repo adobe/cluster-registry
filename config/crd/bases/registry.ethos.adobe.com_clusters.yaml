@@ -146,6 +146,9 @@ spec:
                         type: string
                       type: object
                     type: array
+                  oidcIssuer:
+                    description: OIDC Issuer URL
+                    type: string
                 required:
                 - domainName
                 - lbEndpoints

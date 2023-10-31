@@ -74,6 +74,38 @@ spec:
           status:
             description: ServiceMetadataWatcherStatus defines the observed state of
               ServiceMetadataWatcher
+            properties:
+              watchedServiceObjects:
+                items:
+                  properties:
+                    errors:
+                      items:
+                        type: string
+                      type: array
+                    lastUpdated:
+                      format: date-time
+                      type: string
+                    objectReference:
+                      properties:
+                        apiVersion:
+                          type: string
+                        kind:
+                          type: string
+                        name:
+                          type: string
+                      required:
+                      - apiVersion
+                      - kind
+                      - name
+                      type: object
+                  required:
+                  - errors
+                  - lastUpdated
+                  - objectReference
+                  type: object
+                type: array
+            required:
+            - watchedServiceObjects
             type: object
         type: object
     served: true
