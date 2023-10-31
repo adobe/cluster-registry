@@ -31,3 +31,29 @@ rules:
       - get
       - patch
       - update
+  - apiGroups:
+      - registry.ethos.adobe.com
+    resources:
+      - servicemetadatawatchers
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - registry.ethos.adobe.com
+    resources:
+      - servicemetadatawatchers/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - registry.ethos.adobe.com
+    resources:
+      - servicemetadatawatchers/status
+    verbs:
+      - get
+      - patch
+      - update
