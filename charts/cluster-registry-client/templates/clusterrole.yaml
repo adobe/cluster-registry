@@ -31,3 +31,40 @@ rules:
       - get
       - patch
       - update
+  - apiGroups:
+      - registry.ethos.adobe.com
+    resources:
+      - servicemetadatawatchers
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - registry.ethos.adobe.com
+    resources:
+      - servicemetadatawatchers/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - registry.ethos.adobe.com
+    resources:
+      - servicemetadatawatchers/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - ""
+    resources:
+      - namespaces
+    verbs:
+      - get
+      - watch
+      - list
+  {{- with .Values.extraRBAC }}
+    {{- toYaml . | nindent 2 }}
+  {{- end }}
