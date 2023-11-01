@@ -57,3 +57,14 @@ rules:
       - get
       - patch
       - update
+  - apiGroups:
+      - ""
+    resources:
+      - namespaces
+    verbs:
+      - get
+      - watch
+      - list
+  {{- with .Values.extraRBAC }}
+    {{- toYaml . | nindent 2 }}
+  {{- end }}
