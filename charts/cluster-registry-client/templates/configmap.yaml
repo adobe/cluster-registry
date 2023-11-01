@@ -35,4 +35,16 @@ data:
       {{- else }}
       alertMap: []
       {{- end }}
+    {{- if .Values.clusterRegistryClient.serviceMetadata }}
+    serviceMetadata:
+      serviceIdAnnotation: {{ .Values.clusterRegistryClient.serviceIdAnnotation | default "adobe.serviceid" }}
+      {{- if .Values.clusterRegistryClient.serviceMetadata.watchedGVKs }}
+      watchedGVKs:
+      {{- range $_, $gvk := .Values.clusterRegistryClient.serviceMetadata.watchedGVKs }}
+        - group: {{ $gvk.group }}
+          version: {{ $gvk.version }}
+          kind: {{ $gvk.kind }}
+      {{- end }}
+      {{- end }}
+    {{- end }}
 {{- end }}
