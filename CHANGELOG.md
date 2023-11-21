@@ -1,3 +1,11 @@
+# 1.5.2
+
+## cluster-registry-client
+
+- Add a check for available GVKs using a discovery client. If a configured GVK isn't installed on the cluster it will skip it instead of returning an error.
+
+- Improve field parsing for `servicemetadatawatcher.spec.watchedServiceObjects.watchedFields.src`
+
 # 1.5.1
 
 ## cluster-registry-api
