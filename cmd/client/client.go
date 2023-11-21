@@ -15,6 +15,7 @@ package main
 import (
 	"encoding/base64"
 	"flag"
+	"fmt"
 	registryv1alpha1 "github.com/adobe/cluster-registry/pkg/api/registry/v1alpha1"
 	"github.com/adobe/cluster-registry/pkg/client/controllers"
 	"github.com/adobe/cluster-registry/pkg/config"
@@ -22,6 +23,7 @@ import (
 	"github.com/adobe/cluster-registry/pkg/sqs"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"os"
 
@@ -148,20 +150,10 @@ func main() {
 	}
 
 	if err = (&controllers.ServiceMetadataWatcherReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("ServiceMetadataWatcher"),
-		Scheme: mgr.GetScheme(),
-		WatchedGVKs: func(cfg configv1.ClientConfig) []schema.GroupVersionKind {
-			var GVKs []schema.GroupVersionKind
-			for _, gvk := range cfg.ServiceMetadata.WatchedGVKs {
-				GVKs = append(GVKs, schema.GroupVersionKind{
-					Group:   gvk.Group,
-					Version: gvk.Version,
-					Kind:    gvk.Kind,
-				})
-			}
-			return GVKs
-		}(clientConfig),
+		Client:              mgr.GetClient(),
+		Log:                 ctrl.Log.WithName("controllers").WithName("ServiceMetadataWatcher"),
+		Scheme:              mgr.GetScheme(),
+		WatchedGVKs:         loadWatchedGVKs(clientConfig),
 		ServiceIdAnnotation: clientConfig.ServiceMetadata.ServiceIdAnnotation,
 	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ServiceMetadataWatcher")
@@ -204,6 +196,27 @@ func main() {
 	}
 }
 
+func loadWatchedGVKs(cfg configv1.ClientConfig) []schema.GroupVersionKind {
+	availableGVKs, err := getAvailableGVKs()
+	if err != nil {
+		return []schema.GroupVersionKind{}
+	}
+	var GVKs []schema.GroupVersionKind
+	for _, gvk := range cfg.ServiceMetadata.WatchedGVKs {
+		gvk := schema.GroupVersionKind{
+			Group:   gvk.Group,
+			Version: gvk.Version,
+			Kind:    gvk.Kind,
+		}
+		if _, found := availableGVKs[gvk]; !found {
+			setupLog.Info("GVK not installed in the cluster", "gvk", gvk)
+			continue
+		}
+		GVKs = append(GVKs, gvk)
+	}
+	return GVKs
+}
+
 func apply(configFile string, clientConfigDefaults *configv1.ClientConfig) (ctrl.Options, configv1.ClientConfig, error) {
 	options, cfg, err := configv1.Load(scheme, configFile, clientConfigDefaults)
 	if err != nil {
@@ -217,4 +230,31 @@ func apply(configFile string, clientConfigDefaults *configv1.ClientConfig) (ctrl
 	setupLog.Info("Successfully loaded configuration", "config", cfgStr)
 
 	return options, cfg, nil
+}
+
+func getAvailableGVKs() (map[schema.GroupVersionKind]bool, error) {
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(ctrl.GetConfigOrDie())
+	if err != nil {
+		return nil, fmt.Errorf("unable to create discovery client: %w", err)
+	}
+
+	_, availableResources, err := discoveryClient.ServerGroupsAndResources()
+	if err != nil {
+		return nil, fmt.Errorf("unable to get available API resources: %w", err)
+	}
+
+	availableGVKs := make(map[schema.GroupVersionKind]bool)
+	for _, list := range availableResources {
+		groupVersion, _ := schema.ParseGroupVersion(list.GroupVersion)
+		for _, resource := range list.APIResources {
+			gvk := schema.GroupVersionKind{
+				Group:   groupVersion.Group,
+				Version: groupVersion.Version,
+				Kind:    resource.Kind,
+			}
+			availableGVKs[gvk] = true
+		}
+	}
+
+	return availableGVKs, nil
 }

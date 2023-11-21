@@ -131,7 +131,14 @@ func (r *ServiceMetadataWatcherReconciler) Reconcile(ctx context.Context, req ct
 		for _, field := range wso.WatchedFields {
 			// TODO: validate field Source & Destination somewhere
 
-			value, found, err := getNestedString(obj.Object, strings.Split(field.Source, "."))
+			path, err := parsePath(field.Source)
+			if err != nil {
+				// TODO: update status with error
+				log.Error(err, "cannot parse path", "field", field.Source)
+				continue
+			}
+
+			value, found, err := getNestedString(obj.Object, path)
 			if err != nil {
 				// TODO: update status with error
 				log.Error(err, "cannot get field", "field", field.Source)
@@ -163,6 +170,15 @@ func (r *ServiceMetadataWatcherReconciler) Reconcile(ctx context.Context, req ct
 	}
 
 	return noRequeue()
+}
+
+func parsePath(path string) ([]string, error) {
+	re := regexp.MustCompile(`(?:[^.\[]+|\[.*?\])`)
+	p := re.FindAllString(path, -1)
+	if len(p) > 0 {
+		return p, nil
+	}
+	return nil, fmt.Errorf("invalid path")
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -318,32 +334,40 @@ func createServiceMetadataPatch(serviceId string, namespace string, field string
 }
 
 // getNestedString returns the value of a nested field in the provided object
-// path is a list of keys separated by dots, e.g. "spec.template.spec.containers[0].image"
-// if the field is a slice, the last key must be in the form of "key[index]"
+// path is a list of strings separated by dots, e.g. "spec.template.spec.containers[0].image"
+// If the field is a slice, the last string must be in the form of "field[index]", where index is an integer
+// If the field is a map, the last string must be in the form of "field[key]", where key is a string
 func getNestedString(object interface{}, path []string) (string, bool, error) {
-	re := regexp.MustCompile(`^(.*)\[(\d+|[a-z]+)]$`)
 	var cpath []string
 	for i, key := range path {
-		m := re.FindStringSubmatch(key)
-		if len(m) > 0 {
-			cpath = append(cpath, m[1])
-			slice, found, err := unstructured.NestedSlice(object.(map[string]interface{}), cpath...)
-			if !found || err != nil {
-				return "", false, err
+		if strings.HasPrefix(key, "[") && strings.HasSuffix(key, "]") {
+			k := key[1 : len(key)-1]
+
+			sliceObj, found, err := unstructured.NestedSlice(object.(map[string]interface{}), cpath...)
+			if err == nil && found {
+				index, err := strconv.Atoi(k)
+				if err != nil {
+					return "", false, fmt.Errorf("invalid array index: %s", k)
+				}
+				if index < 0 {
+					index = len(sliceObj) + index
+				}
+				if index >= len(sliceObj) || index < 0 {
+					return "", false, fmt.Errorf("index out of range")
+				}
+				return getNestedString(sliceObj[index], path[i+1:])
 			}
-			index, err := strconv.Atoi(m[2])
-			if err != nil && m[2] != "last" {
-				return "", false, fmt.Errorf("invalid array index: %s", m[2])
+
+			mapObj, found, err := unstructured.NestedMap(object.(map[string]interface{}), cpath...)
+			if err == nil && found {
+				if _, ok := mapObj[k]; !ok {
+					return "", false, fmt.Errorf("key not found: %s", k)
+				}
+				return getNestedString(mapObj[k], path[i+1:])
 			}
-			if m[2] == "last" {
-				index = len(slice) - 1
-			}
-			if len(slice) <= index {
-				return "", false, fmt.Errorf("index out of range")
-			}
-			return getNestedString(slice[index], path[i+1:])
+		} else {
+			cpath = append(cpath, key)
 		}
-		cpath = append(cpath, key)
 	}
 
 	if reflect.TypeOf(object).String() == "string" {
@@ -364,7 +388,15 @@ func getNestedString(object interface{}, path []string) (string, bool, error) {
 		return strconv.FormatBool(boolVal), found, err
 	}
 
-	// TODO: handle additional types?
+	intVal, found, err := unstructured.NestedInt64(object.(map[string]interface{}), path...)
+	if found && err == nil {
+		return strconv.FormatInt(intVal, 10), found, err
+	}
+
+	floatVal, found, err := unstructured.NestedFloat64(object.(map[string]interface{}), path...)
+	if found && err == nil {
+		return strconv.FormatFloat(floatVal, 'g', -1, 64), found, err
+	}
 
 	return "", found, fmt.Errorf("invalid field type")
 }

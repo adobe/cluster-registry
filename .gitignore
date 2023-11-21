@@ -10,7 +10,7 @@ docker/
 
 # build artifacts
 /cluster-registry*
-kubeconfig
+kubeconfig*
 .dynamodb
 .hack*
 
