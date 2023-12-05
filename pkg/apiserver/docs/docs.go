@@ -468,6 +468,17 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_adobe_cluster-registry_pkg_api_registry_v1.AvailabilityZone": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_adobe_cluster-registry_pkg_api_registry_v1.Capacity": {
             "type": "object",
             "properties": {
@@ -503,6 +514,13 @@ const docTemplate = `{
                             "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.APIServer"
                         }
                     ]
+                },
+                "availabilityZones": {
+                    "description": "AvailabilityZones cluster availability zones",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.AvailabilityZone"
+                    }
                 },
                 "businessUnit": {
                     "description": "The BU that owns the cluster\n+kubebuilder:validation:Required",
