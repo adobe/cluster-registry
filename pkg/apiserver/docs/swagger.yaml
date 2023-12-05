@@ -29,6 +29,13 @@ definitions:
           +kubebuilder:validation:Required
         type: string
     type: object
+  github_com_adobe_cluster-registry_pkg_api_registry_v1.AvailabilityZone:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+    type: object
   github_com_adobe_cluster-registry_pkg_api_registry_v1.Capacity:
     properties:
       clusterCapacity:
@@ -57,6 +64,11 @@ definitions:
         description: |-
           Information about K8s API endpoint and CA cert
           +kubebuilder:validation:Required
+      availabilityZones:
+        description: AvailabilityZones cluster availability zones
+        items:
+          $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.AvailabilityZone'
+        type: array
       businessUnit:
         description: |-
           The BU that owns the cluster

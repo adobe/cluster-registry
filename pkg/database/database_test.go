@@ -626,8 +626,22 @@ var _ = Describe("Database Suite", func() {
 								Phase:        "Running",
 								Type:         "Dedicated",
 								Capabilities: []string{"gpu-compute"},
-								LastUpdated:  "2020-03-20T07:55:46.132Z",
-								Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
+								AvailabilityZones: []registryv1.AvailabilityZone{
+									{
+										Name: "us-east-1a",
+										ID:   "use1-az1",
+									},
+									{
+										Name: "us-east-1b",
+										ID:   "use1-az2",
+									},
+									{
+										Name: "us-east-1c",
+										ID:   "use1-az3",
+									},
+								},
+								LastUpdated: "2020-03-20T07:55:46.132Z",
+								Tags:        map[string]string{"onboarding": "on", "scaling": "on"},
 							},
 						},
 					},
@@ -1106,6 +1120,20 @@ var _ = Describe("Database Suite", func() {
 							Capabilities: []string{"gpu-compute"},
 							LastUpdated:  "2020-03-20T07:55:46.132Z",
 							Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
+							AvailabilityZones: []registryv1.AvailabilityZone{
+								{
+									Name: "us-east-1a",
+									ID:   "use1-az1",
+								},
+								{
+									Name: "us-east-1b",
+									ID:   "use1-az2",
+								},
+								{
+									Name: "us-east-1c",
+									ID:   "use1-az3",
+								},
+							},
 						},
 					},
 				},
@@ -1427,6 +1455,20 @@ var _ = Describe("Database Suite", func() {
 							Capabilities: []string{"gpu-compute"},
 							LastUpdated:  "2020-03-20T07:55:46.132Z",
 							Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
+							AvailabilityZones: []registryv1.AvailabilityZone{
+								{
+									Name: "us-east-1a",
+									ID:   "use1-az1",
+								},
+								{
+									Name: "us-east-1b",
+									ID:   "use1-az2",
+								},
+								{
+									Name: "us-east-1c",
+									ID:   "use1-az3",
+								},
+							},
 						},
 					},
 				},

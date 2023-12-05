@@ -119,6 +119,9 @@ type ClusterSpec struct {
 
 	// ServiceMetadata service specific metadata
 	ServiceMetadata ServiceMetadata `json:"services,omitempty"`
+
+	// AvailabilityZones cluster availability zones
+	AvailabilityZones []AvailabilityZone `json:"availabilityZones,omitempty"`
 }
 
 // Offering the cluster is meant for
@@ -254,6 +257,11 @@ type ServiceMetadata map[string]ServiceMetadataItem
 type ServiceMetadataItem map[string]ServiceMetadataMap
 
 type ServiceMetadataMap map[string]string
+
+type AvailabilityZone struct {
+	Name string `json:"name"`
+	ID   string `json:"id,omitempty"`
+}
 
 // ClusterStatus defines the observed state of Cluster
 type ClusterStatus struct {
