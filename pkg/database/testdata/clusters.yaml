@@ -228,3 +228,10 @@
     tags:
       onboarding: "on"
       scaling: "on"
+    availabilityZones:
+    - name: us-east-1a
+      id: use1-az1
+    - name: us-east-1b
+      id: use1-az2
+    - name: us-east-1c
+      id: use1-az3

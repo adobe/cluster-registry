@@ -74,6 +74,18 @@ spec:
                 - certificateAuthorityData
                 - endpoint
                 type: object
+              availabilityZones:
+                description: AvailabilityZones cluster availability zones
+                items:
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type: string
+                  required:
+                  - name
+                  type: object
+                type: array
               businessUnit:
                 description: The BU that owns the cluster
                 type: string
