@@ -1,3 +1,13 @@
+# 1.5.3
+
+## cluster-registry-api
+
+- Add AvailabilityZones field (#92)
+
+## cluster-registry-client
+
+- Add AvailabilityZones field (#92)
+
 # 1.5.2
 
 ## cluster-registry-client
