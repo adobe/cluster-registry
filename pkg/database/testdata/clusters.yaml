@@ -15,6 +15,7 @@
     type: Shared
     businessUnit: BU1
     chargebackBusinessUnit: BU1
+    chargedBack: true
     offering:
     - caas
     - paas
@@ -104,6 +105,7 @@
     type: Dedicated
     businessUnit: BU2
     chargebackBusinessUnit: BU2
+    chargedBack: false
     offering:
     - caas
     - paas
@@ -170,6 +172,7 @@
     type: Dedicated
     businessUnit: BU1
     chargebackBusinessUnit: BU1
+    chargedBack: true
     offering:
     - paas
     allowedTeams:

@@ -13,6 +13,7 @@
         },
         "businessUnit": "BU1",
         "chargebackBusinessUnit": "BU1",
+        "chargedBack": true,
         "managingOrg": "Org1",
         "cloudType": "azure",
         "environment": "prod",

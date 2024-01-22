@@ -88,6 +88,11 @@ definitions:
           The BU responsible for paying for the cluster.
           +kubebuilder:validation:Required
         type: string
+      chargedBack:
+        description: |-
+          Whether the cluster is charged back to the chargebackBusinessUnit
+          +kubebuilder:validation:Required
+        type: boolean
       cloudProviderRegion:
         description: |-
           The cloud provider standard region
