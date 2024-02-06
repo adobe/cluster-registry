@@ -16,6 +16,7 @@
     type: Shared
     businessUnit: BU1
     chargebackBusinessUnit: BU1
+    chargedBack: true
     offering:
     - CaaS
     - PaaS

@@ -75,6 +75,7 @@ var _ = Describe("Cluster Controller", func() {
 					Environment:            "Prod",
 					BusinessUnit:           "BU1",
 					ChargebackBusinessUnit: "BU1",
+					ChargedBack:            true,
 					Offering:               []registryv1.Offering{},
 					AccountID:              "",
 					Tiers:                  []registryv1.Tier{},
