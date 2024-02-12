@@ -12,7 +12,7 @@ require (
 	github.com/gusaul/go-dynamock v0.0.0-20210107061312-3e989056e1e6
 	github.com/jinzhu/gorm v1.9.16
 	github.com/labstack/echo/v4 v4.11.1
-	github.com/labstack/gommon v0.4.0
+	github.com/labstack/gommon v0.4.2
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.27.10
 	github.com/prometheus/client_golang v1.18.0
@@ -84,7 +84,7 @@ require (
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.19 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-sqlite3 v1.14.0 // indirect
 	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
