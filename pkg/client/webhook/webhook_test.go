@@ -184,6 +184,7 @@ var _ = Describe("Webhook Server", func() {
 					Name:                   "cluster01-prod-useast1",
 					ShortName:              "cluster01produseast1",
 					APIServer:              registryv1.APIServer{Endpoint: "", CertificateAuthorityData: ""},
+					ArgoInstance:           "argocd-prod-gen-01.cluster01-prod-useast1.example.com",
 					Region:                 "useast1",
 					CloudType:              "Azure",
 					Environment:            "Prod",
@@ -198,6 +199,7 @@ var _ = Describe("Webhook Server", func() {
 					Status:                 "Active",
 					Phase:                  "Running",
 					Type:                   "Shared",
+					MaintenanceGroup:       "B",
 					Extra: registryv1.Extra{
 						DomainName:       "",
 						LbEndpoints:      map[string]string{},
