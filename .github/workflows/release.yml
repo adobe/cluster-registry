@@ -22,7 +22,7 @@ jobs:
           go-version: '${{ env.golang-version }}'
       - name: Login to ghcr.io
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v1
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
