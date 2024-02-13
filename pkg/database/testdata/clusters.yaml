@@ -9,6 +9,7 @@
     apiServer:
       endpoint: https://cluster01-prod-useast1.example.com
       certificateAuthorityData: LS0tLS1CRUdJTiBDRVJUSUZJ==
+    argoInstance: argocd-prod-gen-01.cluster01-prod-useast1.example.com
     region: useast1
     cloudType: azure
     environment: Prod
@@ -85,6 +86,7 @@
     lastUpdated: "2021-12-13T05:50:07.492Z"
     status: Active
     phase: Running
+    maintenanceGroup: B
     tags:
       onboarding: "off"
       scaling: "off"
@@ -99,6 +101,7 @@
     apiServer:
       endpoint: https://cluster02-prod-euwest1.example.com
       certificateAuthorityData: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0==
+    argoInstance: argocd-prod-gen-02.cluster02-prod-useast1.example.com
     region: euwest1
     cloudType: azure
     environment: Prod
@@ -152,6 +155,7 @@
     lastUpdated: "2020-02-10T06:15:32Z"
     status: Active
     phase: Upgrading
+    maintenanceGroup: B
     tags:
       onboarding: "off"
       scaling: "on"
@@ -166,6 +170,7 @@
     apiServer:
       endpoint: https://cluster03-prod-uswest1.example.com
       certificateAuthorityData: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS==
+    argoInstance: argocd-prod-gen-03.cluster03-prod-useast1.example.com
     region: uswest1
     cloudType: aws
     environment: Prod
@@ -228,6 +233,7 @@
     lastUpdated: "2020-03-20T07:55:46.132Z"
     status: Active
     phase: Running
+    maintenanceGroup: B
     tags:
       onboarding: "on"
       scaling: "on"
