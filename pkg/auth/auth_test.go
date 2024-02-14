@@ -20,10 +20,10 @@ import (
 	monitoring "github.com/adobe/cluster-registry/pkg/monitoring/apiserver"
 	"github.com/adobe/cluster-registry/test/jwt"
 	"github.com/coreos/go-oidc/v3/oidc"
+	jose "github.com/go-jose/go-jose/v3"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
-	jose "gopkg.in/square/go-jose.v2"
 )
 
 const (

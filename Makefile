@@ -183,7 +183,7 @@ test:
 test-e2e:
 	$(shell pwd)/local/setup.sh
 	@. local/.env.local && go test -race github.com/adobe/cluster-registry/test/e2e -count=1 -v
-	# $(shell pwd)/local/cleanup.sh
+	 $(shell pwd)/local/cleanup.sh
 
 ## Make sure you have set the APISERVER_AUTH_TOKEN env variable.
 ## Use PERFORMANCE_TEST_TIME env var to set the benchmark time per endpoint.

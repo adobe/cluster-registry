@@ -25,7 +25,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
+	"net/http"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	configv1 "github.com/adobe/cluster-registry/pkg/api/config/v1"
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
@@ -96,8 +98,13 @@ func main() {
 		},
 	}
 	options := ctrl.Options{
-		Scheme:                     scheme,
-		MetricsBindAddress:         metricsAddr,
+		Scheme: scheme,
+		Metrics: server.Options{
+			BindAddress: metricsAddr,
+			ExtraHandlers: map[string]http.Handler{
+				"/metrics/extra": promhttp.Handler(),
+			},
+		},
 		HealthProbeBindAddress:     probeAddr,
 		LeaderElection:             enableLeaderElection,
 		LeaderElectionID:           "1d5078e3.registry.ethos.adobe.com",
@@ -166,11 +173,6 @@ func main() {
 	}
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up ready check")
-		os.Exit(1)
-	}
-
-	if err := mgr.AddMetricsExtraHandler("/metrics/extra", promhttp.Handler()); err != nil {
-		setupLog.Error(err, "unable to set up extra metrics handler")
 		os.Exit(1)
 	}
 
