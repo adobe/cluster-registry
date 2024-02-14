@@ -1,3 +1,16 @@
+# 1.5.4
+
+## cluster-registry-api
+
+- Add maintenanceGroup and argoInstance fields (#107)
+- chargedBack field added (#95)
+
+## cluster-registry-client
+
+- Add maintenanceGroup and argoInstance fields (#107)
+- chargedBack field added (#95)
+- Fix webhook tests (#96)
+
 # 1.5.3
 
 ## cluster-registry-api
