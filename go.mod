@@ -8,7 +8,7 @@ require (
 	github.com/coreos/go-oidc/v3 v3.9.0
 	github.com/evanphx/json-patch/v5 v5.6.0
 	github.com/go-logr/logr v1.4.1
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.6.0
 	github.com/gusaul/go-dynamock v0.0.0-20210107061312-3e989056e1e6
 	github.com/jinzhu/gorm v1.9.16
 	github.com/labstack/echo/v4 v4.11.1
