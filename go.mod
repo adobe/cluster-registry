@@ -18,7 +18,7 @@ require (
 	github.com/prometheus/client_golang v1.18.0
 	github.com/stretchr/testify v1.8.4
 	github.com/swaggo/echo-swagger v1.4.1
-	github.com/swaggo/swag v1.16.1
+	github.com/swaggo/swag v1.16.3
 	github.com/testcontainers/testcontainers-go v0.23.0
 	golang.org/x/net v0.21.0
 	gopkg.in/go-playground/validator.v9 v9.31.0
