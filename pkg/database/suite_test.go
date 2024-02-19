@@ -121,19 +121,17 @@ func setupDatabse(ctx context.Context) (*datatbaseContainer, error) {
 
 func createTable(endpoint string) error {
 	log.Println("Create new database table")
-	cmd := exec.Command("aws", "dynamodb", "create-table", "--cli-input-json", "file://testdata/schema.json", "--endpoint-url", endpoint)
-	_, err := cmd.Output()
-	if err != nil {
+	cmd := exec.Command("aws", "dynamodb", "create-table", "--cli-input-json", "file://testdata/schema.json", "--endpoint-url", endpoint, "--output", "json")
+	if err := cmd.Run(); err != nil {
 		return err
 	}
 	return nil
 }
 
 func deleteTable(endpoint string, tableName string) error {
-	log.Printf("Create database table %s\n", tableName)
-	cmd := exec.Command("aws", "dynamodb", "delete-table", "--endpoint-url", endpoint, "--table-name", tableName)
-	_, err := cmd.Output()
-	if err != nil {
+	log.Printf("Delete database table %s\n", tableName)
+	cmd := exec.Command("aws", "dynamodb", "delete-table", "--endpoint-url", endpoint, "--table-name", tableName, "--output", "json")
+	if err := cmd.Run(); err != nil {
 		return err
 	}
 	return nil
