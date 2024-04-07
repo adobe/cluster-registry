@@ -2,11 +2,11 @@
 
 ## cluster-registry-api
 
-- Add NamespaceProfileInfraType field (#108)
+- Add NamespaceProfileInfraType field (#130)
 
 ## cluster-registry-client
 
-- Add NamespaceProfileInfraType field (#108)
+- Add NamespaceProfileInfraType field (#130)
 
 # 1.5.4
 
