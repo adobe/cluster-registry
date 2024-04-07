@@ -241,6 +241,9 @@ definitions:
             type: string
           type: object
         type: array
+      namespaceProfileInfraType:
+        description: Profile Infrastructure Type
+        type: string
       nfsInfo:
         description: NFS information
         items:

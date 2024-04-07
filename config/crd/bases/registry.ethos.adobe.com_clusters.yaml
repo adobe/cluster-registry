@@ -1,3 +1,4 @@
+
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -157,6 +158,9 @@ spec:
                         type: string
                       type: object
                     type: array
+                  namespaceProfileInfraType:
+                    description: Namespace Profile Infrastructure Type
+                    type: string
                   nfsInfo:
                     description: NFS information
                     items:
