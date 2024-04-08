@@ -193,6 +193,9 @@ type Extra struct {
 
 	// OIDC Issuer URL
 	OidcIssuer string `json:"oidcIssuer,omitempty"`
+
+	// Namespace Profile Infrastructure Type
+	NamespaceProfileInfraType string `json:"namespaceProfileInfraType,omitempty"`
 }
 
 // Tier details

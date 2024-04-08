@@ -700,6 +700,10 @@ const docTemplate = `{
                         }
                     }
                 },
+                "namespaceProfileInfraType": {
+                    "description": "Namespace Profile Infrastructure Type",
+                    "type": "string"
+                },
                 "nfsInfo": {
                     "description": "NFS information",
                     "type": "array",
