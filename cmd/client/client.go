@@ -112,7 +112,7 @@ func main() {
 	}
 
 	if configFile != "" {
-		options, clientConfig, err = apply(configFile, &clientConfigDefaults)
+		options, clientConfig, err = apply(options, configFile, &clientConfigDefaults)
 		if err != nil {
 			setupLog.Error(err, "unable to load the config file")
 			os.Exit(1)
@@ -219,8 +219,8 @@ func loadWatchedGVKs(cfg configv1.ClientConfig) []schema.GroupVersionKind {
 	return GVKs
 }
 
-func apply(configFile string, clientConfigDefaults *configv1.ClientConfig) (ctrl.Options, configv1.ClientConfig, error) {
-	options, cfg, err := configv1.Load(scheme, configFile, clientConfigDefaults)
+func apply(defaultOptions ctrl.Options, configFile string, clientConfigDefaults *configv1.ClientConfig) (ctrl.Options, configv1.ClientConfig, error) {
+	options, cfg, err := configv1.Load(defaultOptions, scheme, configFile, clientConfigDefaults)
 	if err != nil {
 		return options, cfg, err
 	}
