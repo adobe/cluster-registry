@@ -1,12 +1,61 @@
+# 1.5.6
+
+## cluster-registry-api
+
+- dependabot(deps): bump golang.org/x/net from 0.22.0 to 0.24.0 (#131)
+- dependabot(deps): bump github.com/aws/aws-sdk-go from 1.51.11 to 1.51.16 (#132)
+
+## cluster-registry-client
+
+- Fix extra metrics handler (#135)
+- dependabot(deps): bump golang.org/x/net from 0.22.0 to 0.24.0 (#131)
+- dependabot(deps): bump github.com/aws/aws-sdk-go from 1.51.11 to 1.51.16 (#132)
+
 # 1.5.5
 
 ## cluster-registry-api
 
 - Add NamespaceProfileInfraType field (#130)
+- dependabot(deps): bump github.com/aws/aws-sdk-go from 1.51.6 to 1.51.11 (#129)
+- dependabot(deps): bump github.com/coreos/go-oidc/v3 from 3.9.0 to 3.10.0 (#128)
+- dependabot(deps): bump github.com/onsi/gomega from 1.31.1 to 1.32.0 (#127)
+- dependabot(deps): bump github.com/aws/aws-sdk-go from 1.51.1 to 1.51.6 (#126)
+- dependabot(deps): bump golang.org/x/net from 0.21.0 to 0.22.0 (#124)
+- dependabot(deps): bump github.com/aws/aws-sdk-go from 1.50.30 to 1.51.1 (#125)
+- dependabot(deps): bump github.com/go-jose/go-jose/v3 from 3.0.2 to 3.0.3 (#123)
+- dependabot(deps): bump github.com/testcontainers/testcontainers-go (#121)
+- dependabot(deps): bump github.com/stretchr/testify from 1.8.4 to 1.9.0 (#120)
+- dependabot(deps): bump github.com/prometheus/client_golang (#119)
+- dependabot(deps): bump github.com/aws/aws-sdk-go from 1.50.25 to 1.50.30 (#118)
+- dependabot(deps): bump github.com/aws/aws-sdk-go from 1.50.18 to 1.50.25 (#117)
+- dependabot(deps): bump github.com/go-jose/go-jose/v3 from 3.0.1 to 3.0.2 (#116)
+- Update dependencies (#110)
+- dependabot(deps): bump github.com/testcontainers/testcontainers-go (#114)
+- dependabot(deps): bump github.com/swaggo/swag from 1.16.1 to 1.16.3 (#113)
+- dependabot(deps): bump sigs.k8s.io/yaml from 1.3.0 to 1.4.0 (#112)
+- dependabot(deps): bump github.com/coreos/go-oidc/v3 from 3.6.0 to 3.9.0 (#111)
 
 ## cluster-registry-client
 
 - Add NamespaceProfileInfraType field (#130)
+- dependabot(deps): bump github.com/aws/aws-sdk-go from 1.51.6 to 1.51.11 (#129)
+- dependabot(deps): bump github.com/coreos/go-oidc/v3 from 3.9.0 to 3.10.0 (#128)
+- dependabot(deps): bump github.com/onsi/gomega from 1.31.1 to 1.32.0 (#127)
+- dependabot(deps): bump github.com/aws/aws-sdk-go from 1.51.1 to 1.51.6 (#126)
+- dependabot(deps): bump golang.org/x/net from 0.21.0 to 0.22.0 (#124)
+- dependabot(deps): bump github.com/aws/aws-sdk-go from 1.50.30 to 1.51.1 (#125)
+- dependabot(deps): bump github.com/go-jose/go-jose/v3 from 3.0.2 to 3.0.3 (#123)
+- dependabot(deps): bump github.com/testcontainers/testcontainers-go (#121)
+- dependabot(deps): bump github.com/stretchr/testify from 1.8.4 to 1.9.0 (#120)
+- dependabot(deps): bump github.com/prometheus/client_golang (#119)
+- dependabot(deps): bump github.com/aws/aws-sdk-go from 1.50.25 to 1.50.30 (#118)
+- dependabot(deps): bump github.com/aws/aws-sdk-go from 1.50.18 to 1.50.25 (#117)
+- dependabot(deps): bump github.com/go-jose/go-jose/v3 from 3.0.1 to 3.0.2 (#116)
+- Update dependencies (#110)
+- dependabot(deps): bump github.com/testcontainers/testcontainers-go (#114)
+- dependabot(deps): bump github.com/swaggo/swag from 1.16.1 to 1.16.3 (#113)
+- dependabot(deps): bump sigs.k8s.io/yaml from 1.3.0 to 1.4.0 (#112)
+- dependabot(deps): bump github.com/coreos/go-oidc/v3 from 3.6.0 to 3.9.0 (#111)
 
 # 1.5.4
 
