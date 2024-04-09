@@ -133,11 +133,12 @@ func Encode(scheme *runtime.Scheme, cfg *ClientConfig) (string, error) {
 
 // Load returns a set of controller options and ClientConfig from the given file, if the config file path is empty
 // it uses the default values.
-func Load(scheme *runtime.Scheme, configFile string, defaults *ClientConfig) (ctrl.Options, ClientConfig, error) {
+func Load(defaultOptions ctrl.Options, scheme *runtime.Scheme, configFile string, defaults *ClientConfig) (ctrl.Options, ClientConfig, error) {
 	var err error
-	options := ctrl.Options{
-		Scheme: scheme,
-	}
+
+	options := defaultOptions
+	options.Scheme = scheme
+
 	cfg := &ClientConfig{}
 	if defaults != nil {
 		cfg = defaults.DeepCopy()
