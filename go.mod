@@ -12,7 +12,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gusaul/go-dynamock v0.0.0-20210107061312-3e989056e1e6
 	github.com/jinzhu/gorm v1.9.16
-	github.com/labstack/echo/v4 v4.11.4
+	github.com/labstack/echo/v4 v4.12.0
 	github.com/labstack/gommon v0.4.2
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.33.1
