@@ -97,6 +97,14 @@ type ClusterSpec struct {
 	// +kubebuilder:validation:Enum=Building;Testing;Running;Upgrading
 	Phase string `json:"phase"`
 
+	// Cluster maintenance group
+	// +kubebuilder:validation:Required
+	MaintenanceGroup string `json:"maintenanceGroup"`
+
+	// The corresponding Argo instance of the cluster
+	// +kubebuilder:validation:Required
+	ArgoInstance string `json:"argoInstance"`
+
 	// The type of the cluster
 	Type string `json:"type,omitempty"`
 
@@ -185,6 +193,9 @@ type Extra struct {
 
 	// OIDC Issuer URL
 	OidcIssuer string `json:"oidcIssuer,omitempty"`
+
+	// Namespace Profile Infrastructure Type
+	NamespaceProfileInfraType string `json:"namespaceProfileInfraType,omitempty"`
 }
 
 // Tier details

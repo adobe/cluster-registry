@@ -515,6 +515,10 @@ const docTemplate = `{
                         }
                     ]
                 },
+                "argoInstance": {
+                    "description": "The corresponding Argo instance of the cluster\n+kubebuilder:validation:Required",
+                    "type": "string"
+                },
                 "availabilityZones": {
                     "description": "AvailabilityZones cluster availability zones",
                     "type": "array",
@@ -571,6 +575,10 @@ const docTemplate = `{
                 },
                 "lastUpdated": {
                     "description": "Timestamp when cluster information was updated",
+                    "type": "string"
+                },
+                "maintenanceGroup": {
+                    "description": "Cluster maintenance group\n+kubebuilder:validation:Required",
                     "type": "string"
                 },
                 "managingOrg": {
@@ -691,6 +699,10 @@ const docTemplate = `{
                             "type": "string"
                         }
                     }
+                },
+                "namespaceProfileInfraType": {
+                    "description": "Namespace Profile Infrastructure Type",
+                    "type": "string"
                 },
                 "nfsInfo": {
                     "description": "NFS information",

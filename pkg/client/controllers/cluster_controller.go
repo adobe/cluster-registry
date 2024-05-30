@@ -66,6 +66,10 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if skipCACert != "true" {
 		if r.CAData != "" {
 			instance.Spec.APIServer.CertificateAuthorityData = r.CAData
+			if err := r.Update(ctx, instance); err != nil {
+				log.Error(err, "unable to update object CertificateAuthorityData")
+				return ctrl.Result{Requeue: true, RequeueAfter: 5 * time.Second}, err
+			}
 		} else {
 			log.Info("Certificate Authority data is empty")
 		}

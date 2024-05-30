@@ -25,7 +25,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
+	"net/http"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	configv1 "github.com/adobe/cluster-registry/pkg/api/config/v1"
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
@@ -96,8 +98,13 @@ func main() {
 		},
 	}
 	options := ctrl.Options{
-		Scheme:                     scheme,
-		MetricsBindAddress:         metricsAddr,
+		Scheme: scheme,
+		Metrics: server.Options{
+			BindAddress: metricsAddr,
+			ExtraHandlers: map[string]http.Handler{
+				"/metrics/extra": promhttp.Handler(),
+			},
+		},
 		HealthProbeBindAddress:     probeAddr,
 		LeaderElection:             enableLeaderElection,
 		LeaderElectionID:           "1d5078e3.registry.ethos.adobe.com",
@@ -105,7 +112,7 @@ func main() {
 	}
 
 	if configFile != "" {
-		options, clientConfig, err = apply(configFile, &clientConfigDefaults)
+		options, clientConfig, err = apply(options, configFile, &clientConfigDefaults)
 		if err != nil {
 			setupLog.Error(err, "unable to load the config file")
 			os.Exit(1)
@@ -169,11 +176,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := mgr.AddMetricsExtraHandler("/metrics/extra", promhttp.Handler()); err != nil {
-		setupLog.Error(err, "unable to set up extra metrics handler")
-		os.Exit(1)
-	}
-
 	go func() {
 		setupLog.Info("starting alertmanager webhook server", "addr", clientConfig.AlertmanagerWebhook.BindAddress)
 		if err := (&webhook.Server{
@@ -217,8 +219,8 @@ func loadWatchedGVKs(cfg configv1.ClientConfig) []schema.GroupVersionKind {
 	return GVKs
 }
 
-func apply(configFile string, clientConfigDefaults *configv1.ClientConfig) (ctrl.Options, configv1.ClientConfig, error) {
-	options, cfg, err := configv1.Load(scheme, configFile, clientConfigDefaults)
+func apply(defaultOptions ctrl.Options, configFile string, clientConfigDefaults *configv1.ClientConfig) (ctrl.Options, configv1.ClientConfig, error) {
+	options, cfg, err := configv1.Load(defaultOptions, scheme, configFile, clientConfigDefaults)
 	if err != nil {
 		return options, cfg, err
 	}

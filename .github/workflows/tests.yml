@@ -10,11 +10,11 @@ jobs:
     name: CI tests
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Import environment variables from file
         run: cat ".github/env" >> $GITHUB_ENV
       - name: Setup Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v5
         with:
           go-version: '${{ env.golang-version }}'
       - name: Run code format check

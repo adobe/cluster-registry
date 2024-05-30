@@ -64,6 +64,11 @@ definitions:
         description: |-
           Information about K8s API endpoint and CA cert
           +kubebuilder:validation:Required
+      argoInstance:
+        description: |-
+          The corresponding Argo instance of the cluster
+          +kubebuilder:validation:Required
+        type: string
       availabilityZones:
         description: AvailabilityZones cluster availability zones
         items:
@@ -114,6 +119,11 @@ definitions:
         description: Extra information, not necessary related to the cluster
       lastUpdated:
         description: Timestamp when cluster information was updated
+        type: string
+      maintenanceGroup:
+        description: |-
+          Cluster maintenance group
+          +kubebuilder:validation:Required
         type: string
       managingOrg:
         description: |-
@@ -231,6 +241,9 @@ definitions:
             type: string
           type: object
         type: array
+      namespaceProfileInfraType:
+        description: Profile Infrastructure Type
+        type: string
       nfsInfo:
         description: NFS information
         items:

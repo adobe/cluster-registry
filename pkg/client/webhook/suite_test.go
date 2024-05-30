@@ -14,6 +14,7 @@ package webhook
 
 import (
 	"path/filepath"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"testing"
 	"time"
 
@@ -60,8 +61,10 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	k8sManager, err = ctrl.NewManager(cfg, ctrl.Options{
-		Scheme:             scheme.Scheme,
-		MetricsBindAddress: ":8180",
+		Scheme: scheme.Scheme,
+		Metrics: server.Options{
+			BindAddress: ":8180",
+		},
 	})
 	Expect(err).ToNot(HaveOccurred())
 
