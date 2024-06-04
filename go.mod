@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-sdk-go v1.53.10
 	github.com/coreos/go-oidc/v3 v3.10.0
 	github.com/evanphx/json-patch/v5 v5.9.0
-	github.com/go-jose/go-jose/v3 v3.0.3
+	github.com/go-jose/go-jose/v4 v4.0.2
 	github.com/go-jose/go-jose/v4 v4.0.2
 	github.com/go-logr/logr v1.4.2
 	github.com/google/uuid v1.6.0
