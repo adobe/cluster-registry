@@ -22,7 +22,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var _ = Describe("Cluster Controller", func() {
@@ -70,6 +69,7 @@ var _ = Describe("Cluster Controller", func() {
 					Name:                   "cluster01-prod-useast1",
 					ShortName:              "cluster01produseast1",
 					APIServer:              registryv1.APIServer{Endpoint: "", CertificateAuthorityData: ""},
+					ArgoInstance:           "argocd-prod-gen-01.cluster01-prod-useast1.example.com",
 					Region:                 "useast1",
 					CloudType:              "Azure",
 					Environment:            "Prod",
@@ -84,6 +84,7 @@ var _ = Describe("Cluster Controller", func() {
 					Status:                 "Active",
 					Phase:                  "Running",
 					Type:                   "Shared",
+					MaintenanceGroup:       "B",
 					Extra: registryv1.Extra{
 						DomainName:       "",
 						LbEndpoints:      map[string]string{},
@@ -110,7 +111,6 @@ var _ = Describe("Cluster Controller", func() {
 			updatedCluster := &registryv1.Cluster{}
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, clusterLookupKey, updatedCluster)
-				log.Log.Info(string(updatedCluster.Spec.APIServer.CertificateAuthorityData))
 				if err != nil {
 					return false
 				}
@@ -127,7 +127,7 @@ var _ = Describe("Cluster Controller", func() {
 			cluster.Spec.APIServer.CertificateAuthorityData = "_custom_cert_data_"
 			Expect(k8sClient.Update(ctx, cluster)).Should(Succeed())
 
-			// give controller-runtime time to propagagte data into etcd
+			// give controller-runtime time to propagate data into etcd
 			time.Sleep(2 * time.Second)
 
 			updatedCluster = &registryv1.Cluster{}

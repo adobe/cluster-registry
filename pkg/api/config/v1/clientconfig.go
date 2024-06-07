@@ -42,8 +42,8 @@ func fromFile(path string, scheme *runtime.Scheme, cfg *ClientConfig) error {
 // addTo provides an alternative to the deprecated o.AndFrom(&cfg)
 func addTo(o *ctrl.Options, cfg *ClientConfig) {
 	addLeaderElectionTo(o, cfg)
-	if o.MetricsBindAddress == "" && cfg.Metrics.BindAddress != "" {
-		o.MetricsBindAddress = cfg.Metrics.BindAddress
+	if o.Metrics.BindAddress == "" && cfg.Metrics.BindAddress != "" {
+		o.Metrics.BindAddress = cfg.Metrics.BindAddress
 	}
 
 	if o.HealthProbeBindAddress == "" && cfg.Health.HealthProbeBindAddress != "" {
@@ -133,11 +133,12 @@ func Encode(scheme *runtime.Scheme, cfg *ClientConfig) (string, error) {
 
 // Load returns a set of controller options and ClientConfig from the given file, if the config file path is empty
 // it uses the default values.
-func Load(scheme *runtime.Scheme, configFile string, defaults *ClientConfig) (ctrl.Options, ClientConfig, error) {
+func Load(defaultOptions ctrl.Options, scheme *runtime.Scheme, configFile string, defaults *ClientConfig) (ctrl.Options, ClientConfig, error) {
 	var err error
-	options := ctrl.Options{
-		Scheme: scheme,
-	}
+
+	options := defaultOptions
+	options.Scheme = scheme
+
 	cfg := &ClientConfig{}
 	if defaults != nil {
 		cfg = defaults.DeepCopy()

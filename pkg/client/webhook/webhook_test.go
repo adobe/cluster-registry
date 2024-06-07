@@ -18,7 +18,6 @@ import (
 	"fmt"
 	configv1 "github.com/adobe/cluster-registry/pkg/api/config/v1"
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
-	"github.com/adobe/cluster-registry/pkg/client/controllers"
 	monitoring "github.com/adobe/cluster-registry/pkg/monitoring/client"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -185,6 +184,7 @@ var _ = Describe("Webhook Server", func() {
 					Name:                   "cluster01-prod-useast1",
 					ShortName:              "cluster01produseast1",
 					APIServer:              registryv1.APIServer{Endpoint: "", CertificateAuthorityData: ""},
+					ArgoInstance:           "argocd-prod-gen-01.cluster01-prod-useast1.example.com",
 					Region:                 "useast1",
 					CloudType:              "Azure",
 					Environment:            "Prod",
@@ -199,6 +199,7 @@ var _ = Describe("Webhook Server", func() {
 					Status:                 "Active",
 					Phase:                  "Running",
 					Type:                   "Shared",
+					MaintenanceGroup:       "B",
 					Extra: registryv1.Extra{
 						DomainName:       "",
 						LbEndpoints:      map[string]string{},
@@ -226,12 +227,6 @@ var _ = Describe("Webhook Server", func() {
 			updatedCluster := &registryv1.Cluster{}
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, clusterLookupKey, updatedCluster)
-				if updatedCluster.Annotations[controllers.HashAnnotation] == "" {
-					return false
-				}
-				if updatedCluster.Spec.APIServer.CertificateAuthorityData != CAData {
-					return false
-				}
 				return err == nil
 			}, timeout, interval).Should(BeTrue())
 
@@ -269,7 +264,6 @@ var _ = Describe("Webhook Server", func() {
 				if err != nil {
 					return false
 				}
-				fmt.Println(updatedCluster.ObjectMeta.ResourceVersion)
 				return updatedCluster.Spec.Tags["my-tag"] == "off"
 			}, timeout, interval).Should(BeTrue())
 

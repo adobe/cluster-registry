@@ -11,6 +11,7 @@
             "endpoint": "https://cluster05-prod-useast1.example.com",
             "certificateAuthorityData": ""
         },
+        "argoInstance": "argocd-prod-gen-01.cluster01-prod-useast1.example.com",
         "businessUnit": "BU1",
         "chargebackBusinessUnit": "BU1",
         "chargedBack": true,
@@ -33,6 +34,7 @@
         "phase": "Upgrading",
         "region": "useast1",
         "cloudProviderRegion": "us-eas1",
+        "maintenanceGroup": "B",
         "registeredAt": "2019-02-13T06:15:32Z",
         "lastUpdated": "2019-02-14T06:15:32Z",
         "shortName": "cluster05produseast1",

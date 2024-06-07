@@ -74,6 +74,9 @@ spec:
                 - certificateAuthorityData
                 - endpoint
                 type: object
+              argoInstance:
+                description: The corresponding Argo instance of the cluster
+                type: string
               availabilityZones:
                 description: AvailabilityZones cluster availability zones
                 items:
@@ -154,6 +157,9 @@ spec:
                         type: string
                       type: object
                     type: array
+                  namespaceProfileInfraType:
+                    description: Namespace Profile Infrastructure Type
+                    type: string
                   nfsInfo:
                     description: NFS information
                     items:
@@ -170,6 +176,9 @@ spec:
                 type: object
               lastUpdated:
                 description: Timestamp when cluster information was updated
+                type: string
+              maintenanceGroup:
+                description: Cluster maintenance group
                 type: string
               managingOrg:
                 description: The Org that is responsible for the cluster operations
@@ -322,6 +331,7 @@ spec:
             required:
             - accountId
             - apiServer
+            - argoInstance
             - businessUnit
             - chargebackBusinessUnit
             - chargedBack
@@ -329,6 +339,7 @@ spec:
             - cloudType
             - environment
             - lastUpdated
+            - maintenanceGroup
             - managingOrg
             - name
             - offering

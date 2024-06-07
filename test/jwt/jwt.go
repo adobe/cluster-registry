@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/adobe/cluster-registry/pkg/config"
-	"gopkg.in/square/go-jose.v2"
+	"github.com/go-jose/go-jose/v3"
 )
 
 var HmacSampleSecret []byte
