@@ -56,11 +56,9 @@ type ClusterSpec struct {
 	BusinessUnit string `json:"businessUnit"`
 
 	// The BU responsible for paying for the cluster.
-	// +kubebuilder:validation:Required
 	ChargebackBusinessUnit string `json:"chargebackBusinessUnit"`
 
 	// Whether the cluster is charged back to the chargebackBusinessUnit
-	// +kubebuilder:validation:Required
 	ChargedBack bool `json:"chargedBack"`
 
 	// The Org that is responsible for the cluster operations
