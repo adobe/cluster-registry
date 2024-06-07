@@ -333,8 +333,6 @@ spec:
             - apiServer
             - argoInstance
             - businessUnit
-            - chargebackBusinessUnit
-            - chargedBack
             - cloudProviderRegion
             - cloudType
             - environment
