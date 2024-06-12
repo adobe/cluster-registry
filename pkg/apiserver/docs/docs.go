@@ -546,11 +546,11 @@ const docTemplate = `{
                     ]
                 },
                 "chargebackBusinessUnit": {
-                    "description": "The BU responsible for paying for the cluster.\n+kubebuilder:validation:Required",
+                    "description": "The BU responsible for paying for the cluster.",
                     "type": "string"
                 },
                 "chargedBack": {
-                    "description": "Whether the cluster is charged back to the chargebackBusinessUnit\n+kubebuilder:validation:Required",
+                    "description": "Whether the cluster is charged back to the chargebackBusinessUnit",
                     "type": "boolean"
                 },
                 "cloudProviderRegion": {
