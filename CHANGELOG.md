@@ -1,3 +1,37 @@
+# 1.5.7
+
+## cluster-registry-api
+
+- Make chargeback fields as optional (#167)
+- fix(deps): update module github.com/go-jose/go-jose/v3 to v4 (#162)
+- fix(deps): update module github.com/onsi/ginkgo to v2 (#161)
+- fix(deps): update module github.com/go-jose/go-jose/v3 to v4 (#157)
+- fix(deps): update module github.com/onsi/ginkgo to v2 (#158)
+- fix(deps): update k8s.io/utils digest to fe8a2dd (#151)
+- fix(deps): update module github.com/go-logr/logr to v1.4.2 (#152)
+- Add renovate.json (#134)
+- dependabot(deps): bump github.com/labstack/echo/v4 from 4.11.4 to 4.12.0 (#141)
+- dependabot(deps): bump github.com/onsi/gomega from 1.32.0 to 1.33.1 (#145)
+- dependabot(deps): bump github.com/prometheus/client_golang (#146)
+- dependabot(deps): bump github.com/testcontainers/testcontainers-go (#147)
+- dependabot(deps): bump github.com/aws/aws-sdk-go from 1.51.16 to 1.53.10 (#150)
+
+## cluster-registry-client
+
+- Make chargeback fields as optional (#167)
+- fix(deps): update module github.com/go-jose/go-jose/v3 to v4 (#162)
+- fix(deps): update module github.com/onsi/ginkgo to v2 (#161)
+- fix(deps): update module github.com/go-jose/go-jose/v3 to v4 (#157)
+- fix(deps): update module github.com/onsi/ginkgo to v2 (#158)
+- fix(deps): update k8s.io/utils digest to fe8a2dd (#151)
+- fix(deps): update module github.com/go-logr/logr to v1.4.2 (#152)
+- Add renovate.json (#134)
+- dependabot(deps): bump github.com/labstack/echo/v4 from 4.11.4 to 4.12.0 (#141)
+- dependabot(deps): bump github.com/onsi/gomega from 1.32.0 to 1.33.1 (#145)
+- dependabot(deps): bump github.com/prometheus/client_golang (#146)
+- dependabot(deps): bump github.com/testcontainers/testcontainers-go (#147)
+- dependabot(deps): bump github.com/aws/aws-sdk-go from 1.51.16 to 1.53.10 (#150)
+
 # 1.5.6
 
 ## cluster-registry-api
