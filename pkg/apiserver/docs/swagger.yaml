@@ -89,14 +89,10 @@ definitions:
         - $ref: '#/definitions/github_com_adobe_cluster-registry_pkg_api_registry_v1.Capacity'
         description: Capacity cluster information
       chargebackBusinessUnit:
-        description: |-
-          The BU responsible for paying for the cluster.
-          +kubebuilder:validation:Required
+        description: The BU responsible for paying for the cluster.
         type: string
       chargedBack:
-        description: |-
-          Whether the cluster is charged back to the chargebackBusinessUnit
-          +kubebuilder:validation:Required
+        description: Whether the cluster is charged back to the chargebackBusinessUnit
         type: boolean
       cloudProviderRegion:
         description: |-
@@ -242,7 +238,7 @@ definitions:
           type: object
         type: array
       namespaceProfileInfraType:
-        description: Profile Infrastructure Type
+        description: Namespace Profile Infrastructure Type
         type: string
       nfsInfo:
         description: NFS information
