@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Adobe. All rights reserved.
+Copyright 2024 Adobe. All rights reserved.
 This file is licensed to you under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License. You may obtain a copy
 of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -13,33 +13,27 @@ governing permissions and limitations under the License.
 package main
 
 import (
-	"encoding/base64"
 	"flag"
 	"fmt"
+	configv1 "github.com/adobe/cluster-registry/pkg/api/config/v1"
+	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
 	registryv1alpha1 "github.com/adobe/cluster-registry/pkg/api/registry/v1alpha1"
-	"github.com/adobe/cluster-registry/pkg/client/controllers"
-	"github.com/adobe/cluster-registry/pkg/config"
 	monitoring "github.com/adobe/cluster-registry/pkg/monitoring/client"
-	"github.com/adobe/cluster-registry/pkg/sqs"
+	"github.com/adobe/cluster-registry/pkg/sync/producer"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/discovery"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"net/http"
 	"os"
-	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
-
-	configv1 "github.com/adobe/cluster-registry/pkg/api/config/v1"
-	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
-	"github.com/adobe/cluster-registry/pkg/client/webhook"
-	"k8s.io/apimachinery/pkg/runtime"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 )
 
 var (
@@ -59,10 +53,9 @@ func main() {
 
 	var configFile string
 	var metricsAddr string
-	var enableLeaderElection bool
 	var probeAddr string
-	var alertmanagerWebhookAddr string
 	var namespace string
+	var enableLeaderElection bool
 
 	flag.StringVar(&configFile, "config", "",
 		"The controller will load its initial configuration from this file. "+
@@ -70,11 +63,11 @@ func main() {
 			"Command-line flags override configuration from this file.")
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":9090", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":9091", "The address the probe endpoint binds to.")
-	flag.StringVar(&alertmanagerWebhookAddr, "alertmanager-webhook-bind-address", ":9092", "The address the alertmanager webhook endpoint binds to.")
-	flag.StringVar(&namespace, "namespace", "cluster-registry", "The namespace where cluster-registry-client will run.")
+	flag.StringVar(&namespace, "namespace", "cluster-registry", "The namespace where cluster-registry-sync-producer will run.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+
 	opts := zap.Options{
 		// TODO: change this to false
 		Development: true,
@@ -85,17 +78,10 @@ func main() {
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	var err error
-	var clientConfig configv1.ClientConfig
-	clientConfigDefaults := configv1.ClientConfig{
-		Namespace: namespace,
-		AlertmanagerWebhook: configv1.AlertmanagerWebhookConfig{
-			BindAddress: alertmanagerWebhookAddr,
-			AlertMap:    []configv1.AlertRule{},
-		},
-		ServiceMetadata: configv1.ServiceMetadataConfig{
-			WatchedGVKs:         []configv1.WatchedGVK{},
-			ServiceIdAnnotation: "adobe.serviceid",
-		},
+	var syncConfig configv1.SyncConfig
+	syncConfigDefaults := configv1.SyncConfig{
+		Namespace:   namespace,
+		WatchedGVKs: []configv1.WatchedGVK{},
 	}
 	options := ctrl.Options{
 		Scheme: scheme,
@@ -107,63 +93,35 @@ func main() {
 		},
 		HealthProbeBindAddress:     probeAddr,
 		LeaderElection:             enableLeaderElection,
-		LeaderElectionID:           "1d5078e3.registry.ethos.adobe.com",
+		LeaderElectionID:           "sync.registry.ethos.adobe.com",
 		LeaderElectionResourceLock: resourcelock.LeasesResourceLock,
 	}
 
 	if configFile != "" {
-		options, clientConfig, err = apply(options, configFile, &clientConfigDefaults)
+		options, syncConfig, err = apply(options, configFile, &syncConfigDefaults)
 		if err != nil {
 			setupLog.Error(err, "unable to load the config file")
 			os.Exit(1)
 		}
 	}
-	setupLog.Info("using client configuration", "config", clientConfig)
+	setupLog.Info("using client configuration", "config", syncConfig)
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), options)
 	if err != nil {
-		setupLog.Error(err, "unable to start cluster-registry-client")
+		setupLog.Error(err, "unable to start cluster-registry-sync-producer")
 		os.Exit(1)
 	}
 
 	m := monitoring.NewMetrics()
 	m.Init(false)
 
-	// InClusterConfiguration doesn't initialize the CAData field by default
-	// for some reason, so we're doing this manually by calling LoadTLSFiles
-	if err = rest.LoadTLSFiles(mgr.GetConfig()); err != nil {
-		setupLog.Error(err, "failed to load TLS files")
-		os.Exit(1)
-	}
-
-	appConfig, err := config.LoadClientConfig()
-
-	if err != nil {
-		setupLog.Error(err, "failed to load client configuration")
-		os.Exit(1)
-	}
-
-	sqsProducer := sqs.NewProducer(appConfig, m)
-
-	if err = (&controllers.ClusterReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Cluster"),
-		Scheme: mgr.GetScheme(),
-		Queue:  sqsProducer,
-		CAData: base64.StdEncoding.EncodeToString(mgr.GetConfig().CAData),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Cluster")
-		os.Exit(1)
-	}
-
-	if err = (&controllers.ServiceMetadataWatcherReconciler{
-		Client:              mgr.GetClient(),
-		Log:                 ctrl.Log.WithName("controllers").WithName("ServiceMetadataWatcher"),
-		Scheme:              mgr.GetScheme(),
-		WatchedGVKs:         loadWatchedGVKs(clientConfig),
-		ServiceIdAnnotation: clientConfig.ServiceMetadata.ServiceIdAnnotation,
+	if err = (&producer.SyncController{
+		Client:      mgr.GetClient(),
+		Log:         ctrl.Log.WithName("controllers").WithName("SyncController"),
+		Scheme:      mgr.GetScheme(),
+		WatchedGVKs: loadWatchedGVKs(syncConfig),
 	}).SetupWithManager(ctx, mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "ServiceMetadataWatcher")
+		setupLog.Error(err, "unable to create controller", "controller", "SyncController")
 		os.Exit(1)
 	}
 
@@ -176,35 +134,20 @@ func main() {
 		os.Exit(1)
 	}
 
-	go func() {
-		setupLog.Info("starting alertmanager webhook server", "addr", clientConfig.AlertmanagerWebhook.BindAddress)
-		if err := (&webhook.Server{
-			Client:      mgr.GetClient(),
-			Namespace:   clientConfig.Namespace,
-			BindAddress: clientConfig.AlertmanagerWebhook.BindAddress,
-			Log:         ctrl.Log.WithName("webhook"),
-			Metrics:     m,
-			AlertMap:    clientConfig.AlertmanagerWebhook.AlertMap,
-		}).Start(); err != nil {
-			setupLog.Error(err, "unable to start alertmanager webhook server")
-			os.Exit(1)
-		}
-	}()
-
-	setupLog.Info("starting cluster-registry-client")
+	setupLog.Info("starting cluster-sync-producer")
 	if err := mgr.Start(ctx); err != nil {
-		setupLog.Error(err, "problem running cluster-registry-client")
+		setupLog.Error(err, "problem running cluster-registry-sync-producer")
 		os.Exit(1)
 	}
 }
 
-func loadWatchedGVKs(cfg configv1.ClientConfig) []schema.GroupVersionKind {
+func loadWatchedGVKs(cfg configv1.SyncConfig) []schema.GroupVersionKind {
 	availableGVKs, err := getAvailableGVKs()
 	if err != nil {
 		return []schema.GroupVersionKind{}
 	}
 	var GVKs []schema.GroupVersionKind
-	for _, gvk := range cfg.ServiceMetadata.WatchedGVKs {
+	for _, gvk := range cfg.WatchedGVKs {
 		gvk := schema.GroupVersionKind{
 			Group:   gvk.Group,
 			Version: gvk.Version,
@@ -219,8 +162,8 @@ func loadWatchedGVKs(cfg configv1.ClientConfig) []schema.GroupVersionKind {
 	return GVKs
 }
 
-func apply(defaultOptions ctrl.Options, configFile string, clientConfigDefaults *configv1.ClientConfig) (ctrl.Options, configv1.ClientConfig, error) {
-	options, cfg, err := configv1.NewClientConfig(defaultOptions, scheme, configFile, clientConfigDefaults)
+func apply(defaultOptions ctrl.Options, configFile string, syncConfigDefaults *configv1.SyncConfig) (ctrl.Options, configv1.SyncConfig, error) {
+	options, cfg, err := configv1.NewSyncConfig(defaultOptions, scheme, configFile, syncConfigDefaults)
 	if err != nil {
 		return options, cfg, err
 	}

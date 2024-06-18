@@ -26,7 +26,7 @@ import (
 )
 
 // fromFile provides an alternative to the deprecated ctrl.ConfigFile().AtPath(path).OfKind(&cfg)
-func (cfg *ClientConfig) fromFile(path string, scheme *runtime.Scheme) error {
+func (cfg *SyncConfig) fromFile(path string, scheme *runtime.Scheme) error {
 	content, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return err
@@ -40,7 +40,7 @@ func (cfg *ClientConfig) fromFile(path string, scheme *runtime.Scheme) error {
 }
 
 // addTo provides an alternative to the deprecated o.AndFrom(&cfg)
-func (cfg *ClientConfig) addTo(o *ctrl.Options) {
+func (cfg *SyncConfig) addTo(o *ctrl.Options) {
 	cfg.addLeaderElectionTo(o)
 	if o.Metrics.BindAddress == "" && cfg.Metrics.BindAddress != "" {
 		o.Metrics.BindAddress = cfg.Metrics.BindAddress
@@ -69,9 +69,9 @@ func (cfg *ClientConfig) addTo(o *ctrl.Options) {
 	}
 }
 
-func (cfg *ClientConfig) addLeaderElectionTo(o *ctrl.Options) {
+func (cfg *SyncConfig) addLeaderElectionTo(o *ctrl.Options) {
 	if cfg.LeaderElection == nil {
-		// The source does not have any ClientConfig; noop
+		// The source does not have any SyncConfig; noop
 		return
 	}
 
@@ -104,7 +104,7 @@ func (cfg *ClientConfig) addLeaderElectionTo(o *ctrl.Options) {
 	}
 }
 
-func (cfg *ClientConfig) addWebhookTo(o *ctrl.Options) {
+func (cfg *SyncConfig) addWebhookTo(o *ctrl.Options) {
 	if o.WebhookServer == nil && cfg.Webhook.Host != "" && *cfg.Webhook.Port > 0 && cfg.Webhook.CertDir != "" {
 		o.WebhookServer = webhook.NewServer(webhook.Options{
 			Host:    cfg.Webhook.Host,
@@ -114,8 +114,8 @@ func (cfg *ClientConfig) addWebhookTo(o *ctrl.Options) {
 	}
 }
 
-// Encode returns a string representation of the given ClientConfig.
-func (cfg *ClientConfig) Encode(scheme *runtime.Scheme) (string, error) {
+// Encode returns a string representation of the given SyncConfig.
+func (cfg *SyncConfig) Encode(scheme *runtime.Scheme) (string, error) {
 	codecs := serializer.NewCodecFactory(scheme)
 	const mediaType = runtime.ContentTypeYAML
 	info, ok := runtime.SerializerInfoForMediaType(codecs.SupportedMediaTypes(), mediaType)
@@ -131,15 +131,15 @@ func (cfg *ClientConfig) Encode(scheme *runtime.Scheme) (string, error) {
 	return buf.String(), nil
 }
 
-// NewClientConfig returns a set of controller options and ClientConfig from the given file, if the config file path is empty
+// NewSyncConfig returns a set of controller options and SyncConfig from the given file, if the config file path is empty
 // it uses the default values.
-func NewClientConfig(defaultOptions ctrl.Options, scheme *runtime.Scheme, configFile string, defaults *ClientConfig) (ctrl.Options, ClientConfig, error) {
+func NewSyncConfig(defaultOptions ctrl.Options, scheme *runtime.Scheme, configFile string, defaults *SyncConfig) (ctrl.Options, SyncConfig, error) {
 	var err error
 
 	options := defaultOptions
 	options.Scheme = scheme
 
-	cfg := &ClientConfig{}
+	cfg := &SyncConfig{}
 	if defaults != nil {
 		cfg = defaults.DeepCopy()
 	}

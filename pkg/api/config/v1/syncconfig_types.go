@@ -10,25 +10,30 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-package controllers
+package v1
 
 import (
-	ctrl "sigs.k8s.io/controller-runtime"
-	"time"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func requeueIfError(err error) (ctrl.Result, error) {
-	return ctrl.Result{}, err
+// SyncConfigStatus defines the observed state of SyncConfig
+type SyncConfigStatus struct {
 }
 
-func noRequeue() (ctrl.Result, error) {
-	return ctrl.Result{}, nil
+//+kubebuilder:object:root=true
+//+kubebuilder:subresource:status
+
+// SyncConfig is the Schema for the syncconfigs API
+type SyncConfig struct {
+	metav1.TypeMeta `json:",inline"`
+
+	ControllerManager `json:",inline"`
+
+	Namespace string `json:"namespace,omitempty"`
+
+	WatchedGVKs []WatchedGVK `json:"watchedGVKs"`
 }
 
-func requeueAfter(interval time.Duration, err error) (ctrl.Result, error) {
-	return ctrl.Result{RequeueAfter: interval}, err
-}
-
-func requeueImmediately() (ctrl.Result, error) {
-	return ctrl.Result{Requeue: true}, nil
+func init() {
+	SchemeBuilder.Register(&SyncConfig{})
 }
