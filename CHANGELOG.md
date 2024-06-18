@@ -1,3 +1,14 @@
+
+# 1.5.8
+
+## cluster-registry-api
+
+- Chargeback - Swagger docs (#175)
+
+## cluster-registry-client
+
+- Chargeback - Swagger docs (#175)
+
 # 1.5.7
 
 ## cluster-registry-api
