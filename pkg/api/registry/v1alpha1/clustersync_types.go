@@ -2,15 +2,16 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type WatchedResource struct {
 	// Kind of the resource
-	Kind string `json:"kind,omitempty"`
+	Kind string `json:"kind"`
 	// API version of the resource
-	APIVersion string `json:"apiVersion,omitempty"`
+	APIVersion string `json:"apiVersion"`
 	// Namespace of the resource
-	Namespace string `json:"namespace,omitempty"`
+	Namespace string `json:"namespace"`
 	// Name of the resource
 	// +optional
 	Name string `json:"name,omitempty"`
@@ -40,7 +41,7 @@ type ClusterSync struct {
 
 	Spec ClusterSyncSpec `json:"spec,omitempty"`
 	// +optional
-	Data   map[string]string `json:"data,omitempty"`
+	Data   string            `json:"data,omitempty"`
 	Status ClusterSyncStatus `json:"status,omitempty"`
 }
 
@@ -55,4 +56,16 @@ type ClusterSyncList struct {
 
 func init() {
 	SchemeBuilder.Register(&ClusterSync{}, &ClusterSyncList{})
+}
+
+func (res *WatchedResource) GVK() (schema.GroupVersionKind, error) {
+	gv, err := schema.ParseGroupVersion(res.APIVersion)
+	if err != nil {
+		return schema.GroupVersionKind{}, err
+	}
+	return schema.GroupVersionKind{
+		Group:   gv.Group,
+		Version: gv.Version,
+		Kind:    res.Kind,
+	}, nil
 }

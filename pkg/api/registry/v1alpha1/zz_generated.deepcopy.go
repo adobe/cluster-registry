@@ -27,13 +27,6 @@ func (in *ClusterSync) DeepCopyInto(out *ClusterSync) {
 	out.TypeMeta = in.TypeMeta
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
 	in.Spec.DeepCopyInto(&out.Spec)
-	if in.Data != nil {
-		in, out := &in.Data, &out.Data
-		*out = make(map[string]string, len(*in))
-		for key, val := range *in {
-			(*out)[key] = val
-		}
-	}
 	out.Status = in.Status
 }
 
