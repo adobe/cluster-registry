@@ -1,4 +1,4 @@
-package producer
+package manager
 
 import (
 	"bytes"
@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -111,6 +112,9 @@ func (c *SyncController) SetupWithManager(ctx context.Context, mgr ctrl.Manager)
 			DeleteFunc: func(e crevent.DeleteEvent) bool {
 				return true
 			},
+			GenericFunc: func(e crevent.GenericEvent) bool {
+				return false
+			},
 		}))
 	}
 	err := b.WithOptions(options).Complete(c)
@@ -134,11 +138,29 @@ func (c *SyncController) eventFilters() predicate.Predicate {
 		},
 		UpdateFunc: func(e crevent.UpdateEvent) bool {
 			c.Log.Info("new event", "type", "Update", "name", e.ObjectNew.GetName(), "namespace", e.ObjectNew.GetNamespace())
-			return c.hasDifferentFingerprint(e.ObjectNew)
+
+			oldObject := e.ObjectOld.(*registryv1alpha1.ClusterSync)
+			newObject := e.ObjectNew.(*registryv1alpha1.ClusterSync)
+
+			// check if the data has changed
+			if c.hasDifferentFingerprint(e.ObjectNew) {
+				return true
+			}
+
+			// check if the watched resources have changed
+			if !reflect.DeepEqual(oldObject.Spec.WatchedResources, newObject.Spec.WatchedResources) {
+				return true
+			}
+
+			return false
 		},
 		DeleteFunc: func(e crevent.DeleteEvent) bool {
 			c.Log.Info("new event", "type", "Delete", "name", e.Object.GetName(), "namespace", e.Object.GetNamespace())
 			return !e.DeleteStateUnknown
+		},
+		GenericFunc: func(e crevent.GenericEvent) bool {
+			c.Log.Info("new event", "type", "Generic", "name", e.Object.GetName(), "namespace", e.Object.GetNamespace())
+			return false
 		},
 	}
 }
@@ -293,31 +315,36 @@ func (c *SyncController) extractClusterMetadata(ctx context.Context, res registr
 	for _, obj := range objects {
 		clusterShortName, err := getNestedString(obj, "metadata", "labels", "clusterShortName")
 		if err != nil {
-			return nil, err
+			c.errorFailedToGetValueFromObject(err, obj)
+			continue
 		}
 		clusterSpec.ShortName = clusterShortName
 
 		region, err := getNestedString(obj, "metadata", "labels", "locationShortName")
 		if err != nil {
-			return nil, err
+			c.errorFailedToGetValueFromObject(err, obj)
+			continue
 		}
 		clusterSpec.Region = region
 
 		provider, err := getNestedString(obj, "metadata", "labels", "provider")
 		if err != nil {
-			return nil, err
+			c.errorFailedToGetValueFromObject(err, obj)
+			continue
 		}
 		clusterSpec.CloudType = provider
 
 		cloudProviderRegion, err := getNestedString(obj, "metadata", "labels", "location")
 		if err != nil {
-			return nil, err
+			c.errorFailedToGetValueFromObject(err, obj)
+			continue
 		}
 		clusterSpec.CloudProviderRegion = cloudProviderRegion
 
 		environment, err := getNestedString(obj, "metadata", "labels", "environment")
 		if err != nil {
-			return nil, err
+			c.errorFailedToGetValueFromObject(err, obj)
+			continue
 		}
 		clusterSpec.Environment = environment
 
@@ -344,12 +371,14 @@ func (c *SyncController) extractVPCMetadata(ctx context.Context, res registryv1a
 	for _, obj := range objects {
 		vpcID, err := getNestedString(obj, "status", "vpcID")
 		if err != nil {
-			return nil, err
+			c.errorFailedToGetValueFromObject(err, obj)
+			continue
 		}
 
 		cidrs, err := getNestedStringSlice(obj, "spec", "cidrBlocks")
 		if err != nil {
-			return nil, err
+			c.errorFailedToGetValueFromObject(err, obj)
+			continue
 		}
 
 		clusterSpec.VirtualNetworks = append(clusterSpec.VirtualNetworks, v1.VirtualNetwork{
@@ -398,7 +427,7 @@ func (c *SyncController) applyPatch(ctx context.Context, instance *registryv1alp
 	}
 	modifiedYAML := buf.Bytes()
 
-	if instance.Data == string(modifiedYAML) {
+	if reflect.DeepEqual(originalData, modifiedData) {
 		c.Log.Info("no data changes detected",
 			"name", instance.GetName(),
 			"namespace", instance.GetNamespace())
@@ -454,4 +483,8 @@ func (c *SyncController) setFingerprints(ctx context.Context, instance *registry
 	}
 
 	return nil
+}
+
+func (c *SyncController) errorFailedToGetValueFromObject(err error, obj unstructured.Unstructured) {
+	c.Log.Info("failed to get value from object", "name", obj.GetName(), "namespace", obj.GetNamespace(), "err", err)
 }

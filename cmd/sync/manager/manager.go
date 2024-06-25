@@ -19,7 +19,7 @@ import (
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
 	registryv1alpha1 "github.com/adobe/cluster-registry/pkg/api/registry/v1alpha1"
 	monitoring "github.com/adobe/cluster-registry/pkg/monitoring/client"
-	"github.com/adobe/cluster-registry/pkg/sync/producer"
+	"github.com/adobe/cluster-registry/pkg/sync/manager"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -63,7 +63,7 @@ func main() {
 			"Command-line flags override configuration from this file.")
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":9090", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":9091", "The address the probe endpoint binds to.")
-	flag.StringVar(&namespace, "namespace", "cluster-registry", "The namespace where cluster-registry-sync-producer will run.")
+	flag.StringVar(&namespace, "namespace", "cluster-registry", "The namespace where cluster-registry-sync-manager will run.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
@@ -108,14 +108,14 @@ func main() {
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), options)
 	if err != nil {
-		setupLog.Error(err, "unable to start cluster-registry-sync-producer")
+		setupLog.Error(err, "unable to start cluster-registry-sync-manager")
 		os.Exit(1)
 	}
 
 	m := monitoring.NewMetrics()
 	m.Init(false)
 
-	if err = (&producer.SyncController{
+	if err = (&manager.SyncController{
 		Client:      mgr.GetClient(),
 		Log:         ctrl.Log.WithName("controllers").WithName("SyncController"),
 		Scheme:      mgr.GetScheme(),
@@ -134,9 +134,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	setupLog.Info("starting cluster-sync-producer")
+	setupLog.Info("starting cluster-sync-manager")
 	if err := mgr.Start(ctx); err != nil {
-		setupLog.Error(err, "problem running cluster-registry-sync-producer")
+		setupLog.Error(err, "problem running cluster-registry-sync-manager")
 		os.Exit(1)
 	}
 }

@@ -1,4 +1,4 @@
-package producer
+package manager
 
 import (
 	"crypto/sha256"
