@@ -15,6 +15,7 @@ package main
 import (
 	// docs "github.com/adobe/cluster-registry/pkg/apiserver/docs"
 	"github.com/adobe/cluster-registry/pkg/apiserver/docs"
+	"github.com/adobe/cluster-registry/pkg/apiserver/event"
 	"github.com/adobe/cluster-registry/pkg/apiserver/web"
 	api "github.com/adobe/cluster-registry/pkg/apiserver/web"
 	apiv1 "github.com/adobe/cluster-registry/pkg/apiserver/web/handler/v1"
@@ -24,6 +25,7 @@ import (
 	"github.com/adobe/cluster-registry/pkg/k8s"
 	monitoring "github.com/adobe/cluster-registry/pkg/monitoring/apiserver"
 	"github.com/adobe/cluster-registry/pkg/sqs"
+	awssqs "github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/labstack/gommon/log"
 	echoSwagger "github.com/swaggo/echo-swagger"
 )
@@ -50,19 +52,60 @@ func main() {
 	appConfig, err := config.LoadApiConfig()
 	if err != nil {
 		log.Fatalf("Cannot load the api configuration: '%v'", err.Error())
+		return
 	}
+
 	log.SetLevel(appConfig.LogLevel)
 	log.Debugf("Config loaded successfully %+v:", appConfig)
 
 	m := monitoring.NewMetrics("cluster_registry_api", false)
 	db := database.NewDb(appConfig, m)
-	s := sqs.NewSQS(appConfig)
-	c := sqs.NewConsumer(s, appConfig, db, m)
+	q, err := sqs.NewSQS(sqs.Config{
+		AWSRegion:         appConfig.SqsAwsRegion,
+		Endpoint:          appConfig.SqsEndpoint,
+		QueueName:         appConfig.SqsQueueName,
+		BatchSize:         10,
+		VisibilityTimeout: 120,
+		WaitSeconds:       5,
+		RunInterval:       20,
+		RunOnce:           false,
+		MaxHandlers:       10,
+		BusyTimeout:       30,
+	})
+
+	if err != nil {
+		log.Fatalf("Cannot create SQS client: %s", err.Error())
+		return
+	}
+
+	handler := event.NewClusterUpdateHandler(db)
+	q.RegisterHandler(func(msg *awssqs.Message) {
+		log.Debugf("Received message: %s", *msg.MessageId)
+		e, err := sqs.NewEvent(msg)
+		if err != nil {
+			log.Errorf("Cannot create event from message: %s", err.Error())
+			return
+		}
+		if e.Type != sqs.ClusterUpdateEvent {
+			log.Infof("Not interested in event of type %s, skipping", e.Type)
+			return
+		}
+		log.Debugf("Handling event for message: %s", *msg.MessageId)
+		if err = handler.Handle(e); err != nil {
+			log.Errorf("Failed to handle event: %s", err.Error())
+			return
+		}
+		if err = q.Delete(msg); err != nil {
+			log.Errorf("Failed to delete message: %s", err.Error())
+			return
+		}
+	})
+
 	a := api.NewRouter()
 
 	status := api.StatusSessions{
 		Db:        db,
-		Consumer:  c,
+		SQS:       q,
 		AppConfig: appConfig,
 	}
 
@@ -82,7 +125,7 @@ func main() {
 	hv2 := apiv2.NewHandler(appConfig, db, m, &k8s.ClientProvider{})
 	hv2.Register(v2)
 
-	go c.Consume()
+	go q.Poll()
 
 	m.Use(a)
 	a.Logger.Fatal(a.Start(":8080"))

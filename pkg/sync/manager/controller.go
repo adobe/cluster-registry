@@ -5,8 +5,12 @@ import (
 	"context"
 	v1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
 	registryv1alpha1 "github.com/adobe/cluster-registry/pkg/api/registry/v1alpha1"
+	"github.com/adobe/cluster-registry/pkg/sqs"
+	"github.com/aws/aws-sdk-go/aws"
+	awssqs "github.com/aws/aws-sdk-go/service/sqs"
 	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/go-logr/logr"
+	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -35,6 +39,7 @@ type SyncController struct {
 	Log         logr.Logger
 	Scheme      *runtime.Scheme
 	WatchedGVKs []schema.GroupVersionKind
+	Queue       *sqs.Config
 }
 
 func (c *SyncController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -54,17 +59,17 @@ func (c *SyncController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return noRequeue()
 	}
 
-	if err := c.setFingerprints(ctx, instance); err != nil {
-		log.Error(err, "failed to set fingerprints")
-		return requeueIfError(err)
+	if c.hasDifferentFingerprint(instance) {
+		if err := c.enqueueData(instance); err != nil {
+			log.Error(err, "failed to enqueue message")
+			return noRequeue()
+		}
+		return noRequeue()
 	}
 
-	if c.hasDifferentFingerprint(instance) {
-		// TODO: reconcile data -> send to SQS
-
-		c.Log.Info("reconciling data", "data", instance.Data)
-
-		return noRequeue()
+	if err := c.setFingerprint(ctx, instance); err != nil {
+		log.Error(err, "failed to set fingerprints")
+		return requeueIfError(err)
 	}
 
 	var errList []error
@@ -469,7 +474,7 @@ func (c *SyncController) hasDifferentFingerprint(object runtime.Object) bool {
 	return false
 }
 
-func (c *SyncController) setFingerprints(ctx context.Context, instance *registryv1alpha1.ClusterSync) error {
+func (c *SyncController) setFingerprint(ctx context.Context, instance *registryv1alpha1.ClusterSync) error {
 	annotations := instance.GetAnnotations()
 	if annotations == nil {
 		annotations = make(map[string]string, 1)
@@ -487,4 +492,42 @@ func (c *SyncController) setFingerprints(ctx context.Context, instance *registry
 
 func (c *SyncController) errorFailedToGetValueFromObject(err error, obj unstructured.Unstructured) {
 	c.Log.Info("failed to get value from object", "name", obj.GetName(), "namespace", obj.GetNamespace(), "err", err)
+}
+
+func (c *SyncController) enqueueData(instance *registryv1alpha1.ClusterSync) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	obj, err := yaml.Marshal(instance.Data)
+	if err != nil {
+		return err
+	}
+
+	id, err := uuid.NewUUID()
+	if err != nil {
+		return err
+	}
+
+	start := time.Now()
+	err = c.Queue.Enqueue(ctx, []*awssqs.SendMessageBatchRequestEntry{
+		{
+			Id:           aws.String(id.String()),
+			DelaySeconds: aws.Int64(10),
+			MessageAttributes: map[string]*awssqs.MessageAttributeValue{
+				"Type": {
+					DataType:    aws.String("String"),
+					StringValue: aws.String(sqs.PartialClusterUpdateEvent),
+				},
+			},
+			MessageBody: aws.String(string(obj)),
+		},
+	})
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	c.Log.Info("Enqueue time", "time", elapsed)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

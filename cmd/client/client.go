@@ -143,13 +143,22 @@ func main() {
 		os.Exit(1)
 	}
 
-	sqsProducer := sqs.NewProducer(appConfig, m)
+	q, err := sqs.NewSQS(sqs.Config{
+		AWSRegion: appConfig.SqsAwsRegion,
+		Endpoint:  appConfig.SqsEndpoint,
+		QueueName: appConfig.SqsQueueName,
+	})
+
+	if err != nil {
+		setupLog.Error(err, "cannot create SQS client")
+		os.Exit(1)
+	}
 
 	if err = (&controllers.ClusterReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("Cluster"),
 		Scheme: mgr.GetScheme(),
-		Queue:  sqsProducer,
+		Queue:  q,
 		CAData: base64.StdEncoding.EncodeToString(mgr.GetConfig().CAData),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Cluster")

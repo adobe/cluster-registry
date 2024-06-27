@@ -18,7 +18,9 @@ import (
 	configv1 "github.com/adobe/cluster-registry/pkg/api/config/v1"
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
 	registryv1alpha1 "github.com/adobe/cluster-registry/pkg/api/registry/v1alpha1"
+	"github.com/adobe/cluster-registry/pkg/config"
 	monitoring "github.com/adobe/cluster-registry/pkg/monitoring/client"
+	"github.com/adobe/cluster-registry/pkg/sqs"
 	"github.com/adobe/cluster-registry/pkg/sync/manager"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -115,11 +117,36 @@ func main() {
 	m := monitoring.NewMetrics()
 	m.Init(false)
 
+	appConfig, err := config.LoadClientConfig()
+
+	if err != nil {
+		setupLog.Error(err, "failed to load client configuration")
+		os.Exit(1)
+	}
+
+	q, err := sqs.NewSQS(sqs.Config{
+		AWSRegion:         appConfig.SqsAwsRegion,
+		Endpoint:          appConfig.SqsEndpoint,
+		QueueName:         appConfig.SqsQueueName,
+		BatchSize:         10,
+		VisibilityTimeout: 120,
+		WaitSeconds:       5,
+		RunInterval:       20,
+		RunOnce:           false,
+		MaxHandlers:       10,
+		BusyTimeout:       30,
+	})
+	if err != nil {
+		setupLog.Error(err, "cannot create SQS client")
+		os.Exit(1)
+	}
+
 	if err = (&manager.SyncController{
 		Client:      mgr.GetClient(),
 		Log:         ctrl.Log.WithName("controllers").WithName("SyncController"),
 		Scheme:      mgr.GetScheme(),
 		WatchedGVKs: loadWatchedGVKs(syncConfig),
+		Queue:       q,
 	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "SyncController")
 		os.Exit(1)

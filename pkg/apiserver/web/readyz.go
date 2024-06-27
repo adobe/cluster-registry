@@ -31,7 +31,7 @@ type status struct {
 // StatusSessions is used to keep the same objects and state for the database
 // and sqs that are used for the rest of the calls inside the project
 type StatusSessions struct {
-	Consumer  sqs.Consumer
+	SQS       *sqs.Config
 	Db        database.Db
 	AppConfig *config.AppConfig
 	Metrics   monitoring.MetricsI
@@ -45,7 +45,7 @@ func (s *StatusSessions) checkDBStatus() bool {
 }
 
 func (s *StatusSessions) checkSqsStatus() bool {
-	if err := s.Consumer.Status(s.AppConfig, s.Metrics); err != nil {
+	if err := s.SQS.Status(); err != nil {
 		return false
 	}
 	return true
