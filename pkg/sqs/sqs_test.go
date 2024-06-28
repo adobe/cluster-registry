@@ -12,15 +12,24 @@ governing permissions and limitations under the License.
 package sqs
 
 import (
+	"context"
+	"encoding/json"
 	"github.com/adobe/cluster-registry/pkg/config"
+	"github.com/aws/aws-sdk-go/aws"
+	awssqs "github.com/aws/aws-sdk-go/service/sqs"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("SQS suite", func() {
 
-	var q *Config
-	var appConfig *config.AppConfig
+	var (
+		q           *Config
+		appConfig   *config.AppConfig
+		messageBody = map[string]string{
+			"foo": "bar",
+		}
+	)
 
 	BeforeEach(func() {
 		var err error
@@ -35,15 +44,14 @@ var _ = Describe("SQS suite", func() {
 			AWSRegion:         appConfig.SqsAwsRegion,
 			Endpoint:          appConfig.SqsEndpoint,
 			QueueName:         appConfig.SqsQueueName,
-			BatchSize:         10,
+			BatchSize:         1,
 			VisibilityTimeout: 120,
-			WaitSeconds:       5,
-			RunInterval:       20,
-			RunOnce:           false,
+			WaitSeconds:       10,
+			RunInterval:       5,
+			RunOnce:           true,
 			MaxHandlers:       10,
 			BusyTimeout:       30,
 		})
-
 		Expect(err).To(BeNil())
 	})
 
@@ -58,6 +66,43 @@ var _ = Describe("SQS suite", func() {
 			Expect(err).To(BeNil())
 		})
 
-		// TODO: add more tests
+		It("should successfully enqueue a message", func() {
+			data, err := json.Marshal(messageBody)
+			Expect(err).To(BeNil())
+
+			err = q.Enqueue(context.Background(), []*awssqs.SendMessageBatchRequestEntry{
+				{
+					Id: aws.String("test-message"),
+					MessageAttributes: map[string]*awssqs.MessageAttributeValue{
+						MessageAttributeType: {
+							DataType:    aws.String("String"),
+							StringValue: aws.String(ClusterUpdateEvent),
+						},
+					},
+					MessageBody: aws.String(string(data)),
+				},
+			})
+			Expect(err).To(BeNil())
+		})
+
+		It("should successfully consume an enqueued message", func() {
+			var count = 0
+			q.RegisterHandler(func(msg *awssqs.Message) {
+				defer GinkgoRecover()
+
+				if msg == nil {
+					return
+				}
+
+				Expect(*msg.Body).To(Equal(`{"foo":"bar"}`))
+				count++
+
+				err := q.Delete(msg)
+				Expect(err).To(BeNil())
+			})
+
+			q.Poll()
+			Eventually(count).Should(Equal(1))
+		})
 	})
 })
