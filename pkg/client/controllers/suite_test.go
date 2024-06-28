@@ -70,7 +70,7 @@ var _ = BeforeSuite(func() {
 		Client: k8sManager.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("Cluster"),
 		Scheme: k8sManager.GetScheme(),
-		Queue:  sqs.NewFakeProducer(metrics),
+		Queue:  &sqs.Config{},
 		CAData: "_cert_data_",
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
