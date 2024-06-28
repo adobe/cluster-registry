@@ -126,15 +126,6 @@ func (c *SyncController) SetupWithManager(ctx context.Context, mgr ctrl.Manager)
 	return err
 }
 
-func (c *SyncController) isAllowedGVK(gvk schema.GroupVersionKind) bool {
-	for _, watchedGVK := range c.WatchedGVKs {
-		if gvk.String() == watchedGVK.String() {
-			return true
-		}
-	}
-	return false
-}
-
 func (c *SyncController) eventFilters() predicate.Predicate {
 	return predicate.Funcs{
 		CreateFunc: func(e crevent.CreateEvent) bool {

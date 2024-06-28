@@ -56,6 +56,10 @@ func main() {
 		MaxHandlers:       10,
 		BusyTimeout:       30,
 	})
+	if err != nil {
+		log.Panicf("Error while trying to create SQS client: %v", err.Error())
+	}
+
 	input_file := flag.String("input-file", "../db/dummy-data.yaml", "yaml file path")
 	flag.Parse()
 

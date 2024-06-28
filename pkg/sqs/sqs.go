@@ -205,13 +205,13 @@ func (s *Config) Poll() {
 					s.mutex.Unlock()
 
 					wg.Done()
-				}(&(*msg))
+				}(msg)
 			}
 
 			childLogger.Info("Spawned handler", "messageId", *msg.MessageId)
 		}
 
-		if s.RunOnce == true {
+		if s.RunOnce {
 			childLogger.Info(`Exiting since configured to run once`)
 			break
 		} else {
