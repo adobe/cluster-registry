@@ -30,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -78,7 +78,7 @@ func (c *SyncController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	instance.Status.LastSyncError = nil
 
 	if c.shouldEnqueueData(instance) {
-		instance.Status.SyncedDataHash = pointer.String(hash(instance.Status.SyncedData))
+		instance.Status.SyncedDataHash = ptr.To(hash(instance.Status.SyncedData))
 		if err := c.enqueueData(instance); err != nil {
 			log.Error(err, "failed to enqueue message")
 			if err := c.updateStatus(ctx, instance); err != nil {
@@ -109,9 +109,9 @@ func (c *SyncController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	if len(errList) > 0 {
-		instance.Status.LastSyncStatus = pointer.String(SyncStatusFail)
+		instance.Status.LastSyncStatus = ptr.To(SyncStatusFail)
 		// only show the first error
-		instance.Status.LastSyncError = pointer.String(errList[0].Error())
+		instance.Status.LastSyncError = ptr.To(errList[0].Error())
 		instance.Status.LastSyncTime = &metav1.Time{Time: time.Now()}
 		log.Error(errList[0], "failed to sync resources")
 		if err := c.updateStatus(ctx, instance); err != nil {
@@ -461,8 +461,8 @@ func (c *SyncController) applyPatch(ctx context.Context, instance *registryv1alp
 		return nil
 	}
 
-	instance.Status.SyncedData = pointer.String(string(modifiedYAML))
-	instance.Status.LastSyncStatus = pointer.String(SyncStatusSuccess)
+	instance.Status.SyncedData = ptr.To(string(modifiedYAML))
+	instance.Status.LastSyncStatus = ptr.To(SyncStatusSuccess)
 	instance.Status.LastSyncTime = &metav1.Time{Time: time.Now()}
 
 	return c.updateStatus(ctx, instance)
@@ -507,7 +507,7 @@ func (c *SyncController) enqueueData(instance *registryv1alpha1.ClusterSync) err
 }
 
 func (c *SyncController) shouldEnqueueData(instance *registryv1alpha1.ClusterSync) bool {
-	if instance.Status.LastSyncStatus != pointer.String(SyncStatusSuccess) {
+	if instance.Status.LastSyncStatus != ptr.To(SyncStatusSuccess) {
 		return false
 	}
 
@@ -518,7 +518,7 @@ func (c *SyncController) hasDifferentHash(object runtime.Object) bool {
 	instance := object.(*registryv1alpha1.ClusterSync)
 
 	oldHash := instance.Status.SyncedDataHash
-	newHash := pointer.String(hash(instance.Status.SyncedData))
+	newHash := ptr.To(hash(instance.Status.SyncedData))
 
 	return &oldHash != &newHash
 }
