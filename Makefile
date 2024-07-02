@@ -121,7 +121,7 @@ format-prereq:
 	@[ -f $(GOSEC) ] || GOBIN=$(shell pwd)/bin go get "github.com/securego/gosec/v2/cmd/gosec";
 
 .PHONY: format
-format: format-prereq go-fmt go-vet go-lint go-sec check-license
+format: format-prereq go-fmt go-vet go-lint go-sec
 
 .PHONY: go-fmt
 go-fmt:

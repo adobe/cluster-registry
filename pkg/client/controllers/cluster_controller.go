@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Adobe. All rights reserved.
+Copyright 2024 Adobe. All rights reserved.
 This file is licensed to you under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License. You may obtain a copy
 of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -17,6 +17,9 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	awssqs "github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/google/uuid"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -36,7 +39,7 @@ type ClusterReconciler struct {
 	client.Client
 	Log    logr.Logger
 	Scheme *runtime.Scheme
-	Queue  sqs.Producer
+	Queue  *sqs.Config
 	CAData string
 }
 
@@ -89,9 +92,9 @@ func (r *ClusterReconciler) ReconcileCreateUpdate(instance *registryv1.Cluster, 
 	annotations[HashAnnotation] = hash
 	instance.SetAnnotations(annotations)
 
-	err := r.enqueue(instance, log)
+	err := r.enqueue(instance)
 	if err != nil {
-		log.Error(err, "Error enqueuing message")
+		r.Log.Error(err, "error enqueuing message")
 		return ctrl.Result{}, err
 	}
 
@@ -129,17 +132,45 @@ func (r *ClusterReconciler) eventFilters() predicate.Predicate {
 	}
 }
 
-func (r *ClusterReconciler) enqueue(instance *registryv1.Cluster, log logr.Logger) error {
+func (r *ClusterReconciler) enqueue(instance *registryv1.Cluster) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	err := r.Queue.Send(ctx, instance)
+	obj, err := json.Marshal(instance)
+	if err != nil {
+		return err
+	}
+
+	id, err := uuid.NewUUID()
+	if err != nil {
+		return err
+	}
+
+	start := time.Now()
+	err = r.Queue.Enqueue(ctx, []*awssqs.SendMessageBatchRequestEntry{
+		{
+			Id:           aws.String(id.String()),
+			DelaySeconds: aws.Int64(10),
+			MessageAttributes: map[string]*awssqs.MessageAttributeValue{
+				"Type": {
+					DataType:    aws.String("String"),
+					StringValue: aws.String(sqs.ClusterUpdateEvent),
+				},
+				"ClusterName": {
+					DataType:    aws.String("String"),
+					StringValue: aws.String(instance.Spec.Name),
+				},
+			},
+			MessageBody: aws.String(string(obj)),
+		},
+	})
+	elapsed := float64(time.Since(start)) / float64(time.Second)
+	r.Log.Info("Enqueue time", "time", elapsed)
 
 	if err != nil {
 		return err
 	}
 
-	log.Info("Successfully enqueued cluster " + instance.Spec.Name)
 	return nil
 }
 
