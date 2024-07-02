@@ -24,8 +24,6 @@ spec:
               of an object. Servers should convert recognized schemas to the latest
               internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
             type: string
-          data:
-            type: string
           kind:
             description: 'Kind is a string value representing the REST resource this
               object represents. Servers may infer this from the endpoint the client
@@ -36,6 +34,8 @@ spec:
           spec:
             description: ClusterSyncSpec defines the desired state of ClusterSync
             properties:
+              initialData:
+                type: string
               watchedResources:
                 items:
                   properties:
@@ -74,11 +74,13 @@ spec:
                                 items:
                                   type: string
                                 type: array
+                                x-kubernetes-list-type: atomic
                             required:
                             - key
                             - operator
                             type: object
                           type: array
+                          x-kubernetes-list-type: atomic
                         matchLabels:
                           additionalProperties:
                             type: string
@@ -107,6 +109,18 @@ spec:
             type: object
           status:
             description: ClusterSyncStatus defines the observed state of ClusterSync
+            properties:
+              lastSyncError:
+                type: string
+              lastSyncStatus:
+                type: string
+              lastSyncTime:
+                format: date-time
+                type: string
+              syncedData:
+                type: string
+              syncedDataHash:
+                type: string
             type: object
         type: object
     served: true

@@ -7,7 +7,6 @@ import (
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	jsoniter "github.com/json-iterator/go"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"strings"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -16,7 +15,7 @@ type PatchWrapper struct {
 	Data map[string]interface{} `json:"data"`
 }
 
-func fingerprint(obj interface{}) string {
+func hash(obj interface{}) string {
 	b, _ := json.Marshal(obj)
 	h := sha256.New()
 	h.Write([]byte(fmt.Sprintf("%v", b)))
@@ -47,22 +46,30 @@ func mergePatches(a, b []byte) ([]byte, error) {
 
 func getNestedString(obj unstructured.Unstructured, fields ...string) (string, error) {
 	value, found, err := unstructured.NestedString(obj.Object, fields...)
+	getErr := &FailedToGetValueFromObjectError{
+		Fields: fields,
+		Object: obj,
+	}
 	if err != nil {
-		return "", err
+		return "", getErr.Wrap(err)
 	}
 	if !found {
-		return "", fmt.Errorf("%s not found in %s object", strings.Join(fields, "."), obj.GroupVersionKind().String())
+		return "", getErr.Wrap(fmt.Errorf("field not found"))
 	}
 	return value, nil
 }
 
 func getNestedStringSlice(obj unstructured.Unstructured, fields ...string) ([]string, error) {
 	value, found, err := unstructured.NestedStringSlice(obj.Object, fields...)
+	getErr := &FailedToGetValueFromObjectError{
+		Fields: fields,
+		Object: obj,
+	}
 	if err != nil {
-		return []string{}, err
+		return []string{}, getErr.Wrap(err)
 	}
 	if !found {
-		return []string{}, fmt.Errorf("%s not found in %s object", strings.Join(fields, "."), obj.GroupVersionKind().String())
+		return []string{}, getErr.Wrap(fmt.Errorf("field not found"))
 	}
 	return value, nil
 }

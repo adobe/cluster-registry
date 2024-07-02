@@ -18,6 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/pointer"
 	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -31,7 +32,8 @@ import (
 )
 
 const (
-	FingerprintAnnotation = "registry.ethos.adobe.com/fingerprint"
+	SyncStatusSuccess = "success"
+	SyncStatusFail    = "fail"
 )
 
 type SyncController struct {
@@ -59,17 +61,23 @@ func (c *SyncController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return noRequeue()
 	}
 
-	if c.hasDifferentFingerprint(instance) {
+	// clear sync status
+	instance.Status.LastSyncStatus = nil
+	instance.Status.LastSyncError = nil
+
+	if c.shouldEnqueueData(instance) {
+		instance.Status.SyncedDataHash = pointer.String(hash(instance.Status.SyncedData))
 		if err := c.enqueueData(instance); err != nil {
 			log.Error(err, "failed to enqueue message")
+			if err := c.updateStatus(ctx, instance); err != nil {
+				return requeueAfter(10*time.Second, err)
+			}
 			return noRequeue()
 		}
+		if err := c.updateStatus(ctx, instance); err != nil {
+			return requeueAfter(10*time.Second, err)
+		}
 		return noRequeue()
-	}
-
-	if err := c.setFingerprint(ctx, instance); err != nil {
-		log.Error(err, "failed to set fingerprints")
-		return requeueIfError(err)
 	}
 
 	var errList []error
@@ -89,6 +97,15 @@ func (c *SyncController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	if len(errList) > 0 {
+		instance.Status.LastSyncStatus = pointer.String(SyncStatusFail)
+		// only show the first error
+		instance.Status.LastSyncError = pointer.String(errList[0].Error())
+		instance.Status.LastSyncTime = &metav1.Time{Time: time.Now()}
+		log.Error(errList[0], "failed to sync resources")
+		if err := c.updateStatus(ctx, instance); err != nil {
+			log.Error(err, "failed to update status")
+			return requeueIfError(err)
+		}
 		return noRequeue()
 	}
 
@@ -130,7 +147,7 @@ func (c *SyncController) eventFilters() predicate.Predicate {
 	return predicate.Funcs{
 		CreateFunc: func(e crevent.CreateEvent) bool {
 			c.Log.Info("new event", "type", "Create", "name", e.Object.GetName(), "namespace", e.Object.GetNamespace())
-			return c.hasDifferentFingerprint(e.Object)
+			return c.hasDifferentHash(e.Object)
 		},
 		UpdateFunc: func(e crevent.UpdateEvent) bool {
 			c.Log.Info("new event", "type", "Update", "name", e.ObjectNew.GetName(), "namespace", e.ObjectNew.GetNamespace())
@@ -139,12 +156,17 @@ func (c *SyncController) eventFilters() predicate.Predicate {
 			newObject := e.ObjectNew.(*registryv1alpha1.ClusterSync)
 
 			// check if the data has changed
-			if c.hasDifferentFingerprint(e.ObjectNew) {
+			if c.hasDifferentHash(e.ObjectNew) {
 				return true
 			}
 
 			// check if the watched resources have changed
 			if !reflect.DeepEqual(oldObject.Spec.WatchedResources, newObject.Spec.WatchedResources) {
+				return true
+			}
+
+			// check if the initial data has changed
+			if oldObject.Spec.InitialData != newObject.Spec.InitialData {
 				return true
 			}
 
@@ -309,38 +331,33 @@ func (c *SyncController) extractClusterMetadata(ctx context.Context, res registr
 	clusterSpec := new(v1.ClusterSpec)
 
 	for _, obj := range objects {
-		clusterShortName, err := getNestedString(obj, "metadata", "labels", "clusterShortName")
+		clusterShortName, err := getNestedString(obj, "metadata", "labels", "shortName")
 		if err != nil {
-			c.errorFailedToGetValueFromObject(err, obj)
-			continue
+			return nil, err
 		}
 		clusterSpec.ShortName = clusterShortName
 
 		region, err := getNestedString(obj, "metadata", "labels", "locationShortName")
 		if err != nil {
-			c.errorFailedToGetValueFromObject(err, obj)
-			continue
+			return nil, err
 		}
 		clusterSpec.Region = region
 
 		provider, err := getNestedString(obj, "metadata", "labels", "provider")
 		if err != nil {
-			c.errorFailedToGetValueFromObject(err, obj)
-			continue
+			return nil, err
 		}
 		clusterSpec.CloudType = provider
 
 		cloudProviderRegion, err := getNestedString(obj, "metadata", "labels", "location")
 		if err != nil {
-			c.errorFailedToGetValueFromObject(err, obj)
-			continue
+			return nil, err
 		}
 		clusterSpec.CloudProviderRegion = cloudProviderRegion
 
 		environment, err := getNestedString(obj, "metadata", "labels", "environment")
 		if err != nil {
-			c.errorFailedToGetValueFromObject(err, obj)
-			continue
+			return nil, err
 		}
 		clusterSpec.Environment = environment
 
@@ -367,14 +384,12 @@ func (c *SyncController) extractVPCMetadata(ctx context.Context, res registryv1a
 	for _, obj := range objects {
 		vpcID, err := getNestedString(obj, "status", "vpcID")
 		if err != nil {
-			c.errorFailedToGetValueFromObject(err, obj)
-			continue
+			return nil, err
 		}
 
 		cidrs, err := getNestedStringSlice(obj, "spec", "cidrBlocks")
 		if err != nil {
-			c.errorFailedToGetValueFromObject(err, obj)
-			continue
+			return nil, err
 		}
 
 		clusterSpec.VirtualNetworks = append(clusterSpec.VirtualNetworks, v1.VirtualNetwork{
@@ -395,12 +410,16 @@ func (c *SyncController) extractVPCMetadata(ctx context.Context, res registryv1a
 
 // TODO: think of a better way to do this
 func (c *SyncController) applyPatch(ctx context.Context, instance *registryv1alpha1.ClusterSync, patch []byte) error {
-	var originalData map[string]interface{}
-	if err := yaml.Unmarshal([]byte(instance.Data), &originalData); err != nil {
+	var initialData map[string]interface{}
+	if err := yaml.Unmarshal([]byte(instance.Spec.InitialData), &initialData); err != nil {
 		return err
 	}
 
-	originalJSON, err := json.Marshal(originalData)
+	if initialData == nil {
+		initialData = make(map[string]interface{})
+	}
+
+	originalJSON, err := json.Marshal(initialData)
 	if err != nil {
 		return err
 	}
@@ -423,73 +442,25 @@ func (c *SyncController) applyPatch(ctx context.Context, instance *registryv1alp
 	}
 	modifiedYAML := buf.Bytes()
 
-	if reflect.DeepEqual(originalData, modifiedData) {
+	if reflect.DeepEqual(initialData, modifiedData) {
 		c.Log.Info("no data changes detected",
 			"name", instance.GetName(),
 			"namespace", instance.GetNamespace())
 		return nil
 	}
 
-	instance.Data = string(modifiedYAML)
+	instance.Status.SyncedData = pointer.String(string(modifiedYAML))
+	instance.Status.LastSyncStatus = pointer.String(SyncStatusSuccess)
+	instance.Status.LastSyncTime = &metav1.Time{Time: time.Now()}
 
-	if err := c.Client.Update(ctx, instance); err != nil {
-		c.Log.Error(err, "failed to update ClusterSync data")
-		return err
-	}
-
-	c.Log.Info("updated ClusterSync data",
-		"name", instance.GetName(),
-		"namespace", instance.GetNamespace(),
-		"data", modifiedData)
-
-	return nil
-}
-
-// --
-
-func (c *SyncController) hasDifferentFingerprint(object runtime.Object) bool {
-	instance := object.(*registryv1alpha1.ClusterSync)
-
-	oldFingerprint := instance.GetAnnotations()[FingerprintAnnotation]
-	newFingerprint := fingerprint(instance.Data)
-
-	if oldFingerprint != newFingerprint {
-		c.Log.Info("different fingerprints found",
-			"old", oldFingerprint, "new", newFingerprint,
-			"namespace", instance.GetNamespace(), "name", instance.GetName())
-		return true
-	}
-
-	c.Log.Info("same fingerprints found",
-		"namespace", instance.GetNamespace(), "name", instance.GetName())
-	return false
-}
-
-func (c *SyncController) setFingerprint(ctx context.Context, instance *registryv1alpha1.ClusterSync) error {
-	annotations := instance.GetAnnotations()
-	if annotations == nil {
-		annotations = make(map[string]string, 1)
-	}
-	annotations[FingerprintAnnotation] = fingerprint(instance.Data)
-	instance.SetAnnotations(annotations)
-
-	err := c.Client.Update(ctx, instance)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (c *SyncController) errorFailedToGetValueFromObject(err error, obj unstructured.Unstructured) {
-	c.Log.Info("failed to get value from object", "name", obj.GetName(), "namespace", obj.GetNamespace(), "err", err)
+	return c.updateStatus(ctx, instance)
 }
 
 func (c *SyncController) enqueueData(instance *registryv1alpha1.ClusterSync) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	obj, err := yaml.Marshal(instance.Data)
+	obj, err := yaml.Marshal(instance.Status.SyncedData)
 	if err != nil {
 		return err
 	}
@@ -520,5 +491,32 @@ func (c *SyncController) enqueueData(instance *registryv1alpha1.ClusterSync) err
 		return err
 	}
 
+	return nil
+}
+
+func (c *SyncController) shouldEnqueueData(instance *registryv1alpha1.ClusterSync) bool {
+	if instance.Status.LastSyncStatus != pointer.String(SyncStatusSuccess) {
+		return false
+	}
+
+	return c.hasDifferentHash(instance)
+}
+
+func (c *SyncController) hasDifferentHash(object runtime.Object) bool {
+	instance := object.(*registryv1alpha1.ClusterSync)
+
+	oldHash := instance.Status.SyncedDataHash
+	newHash := pointer.String(hash(instance.Status.SyncedData))
+
+	return &oldHash != &newHash
+}
+
+func (c *SyncController) updateStatus(ctx context.Context, instance *registryv1alpha1.ClusterSync) error {
+	if err := c.Client.Status().Update(ctx, instance); err != nil {
+		c.Log.Error(err, "failed to update ClusterSync status")
+		return err
+	}
+
+	c.Log.Info("updated ClusterSync status", "name", instance.GetName(), "namespace", instance.GetNamespace(), "status", instance.Status)
 	return nil
 }

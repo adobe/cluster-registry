@@ -25,10 +25,22 @@ type ClusterSyncSpec struct {
 	// +required
 	// +kubebuilder:validation:Required
 	WatchedResources []WatchedResource `json:"watchedResources"`
+	// +optional
+	InitialData string `json:"initialData,omitempty"`
 }
 
 // ClusterSyncStatus defines the observed state of ClusterSync
 type ClusterSyncStatus struct {
+	// +optional
+	LastSyncTime *metav1.Time `json:"lastSyncTime,omitempty"`
+	// +optional
+	LastSyncStatus *string `json:"lastSyncStatus,omitempty"`
+	// +optional
+	LastSyncError *string `json:"lastSyncError,omitempty"`
+	// +optional
+	SyncedData *string `json:"syncedData,omitempty"`
+	// +optional
+	SyncedDataHash *string `json:"syncedDataHash,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -41,7 +53,6 @@ type ClusterSync struct {
 
 	Spec ClusterSyncSpec `json:"spec,omitempty"`
 	// +optional
-	Data   string            `json:"data,omitempty"`
 	Status ClusterSyncStatus `json:"status,omitempty"`
 }
 
