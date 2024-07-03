@@ -37,10 +37,10 @@ type sqsContainer struct {
 }
 
 var sqsTestConfig = map[string]string{
-	"AWS_ACCESS_KEY_ID": "aws-access-key",
-	"AWS_SECRET":        "aws-secret-access-key",
-	"AWS_REGION":        "aws-region",
-	"SQS_QUEUE_NAME":    "cluster-registry-local",
+	"AWS_ACCESS_KEY_ID":     "aws-access-key",
+	"AWS_SECRET_ACCESS_KEY": "aws-secret-access-key",
+	"AWS_REGION":            "aws-region",
+	"SQS_QUEUE_NAME":        "cluster-registry-local",
 }
 
 var container *sqsContainer
