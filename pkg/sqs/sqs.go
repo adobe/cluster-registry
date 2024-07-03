@@ -275,7 +275,7 @@ func (s *Config) ChangeVisibilityTimeout(msg *sqs.Message, seconds int64) bool {
 		return false
 	}
 
-	strURL := &s.Endpoint
+	strURL := &s.QueueURL
 	receiptHandle := *msg.ReceiptHandle
 
 	changeMessageVisibilityInput := sqs.ChangeMessageVisibilityInput{}

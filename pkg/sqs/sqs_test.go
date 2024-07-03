@@ -15,6 +15,7 @@ package sqs
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/adobe/cluster-registry/pkg/config"
 	"github.com/aws/aws-sdk-go/aws"
 	awssqs "github.com/aws/aws-sdk-go/service/sqs"
@@ -45,6 +46,7 @@ var _ = Describe("SQS suite", func() {
 			AWSRegion:         appConfig.SqsAwsRegion,
 			Endpoint:          appConfig.SqsEndpoint,
 			QueueName:         appConfig.SqsQueueName,
+			QueueURL:          fmt.Sprintf("%s/%s/%s", container.Endpoint, "1234567890", appConfig.SqsQueueName),
 			BatchSize:         1,
 			VisibilityTimeout: 120,
 			WaitSeconds:       10,
