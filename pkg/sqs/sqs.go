@@ -111,21 +111,17 @@ func NewSQS(cfg Config) (*Config, error) {
 		return nil, errors.New("unable to create a service connection with AWS SQS")
 	}
 
-	logger.Info("Fetching queue URL")
-	res, err := svc.GetQueueUrl(&sqs.GetQueueUrlInput{
-		QueueName: &cfg.QueueName,
-	})
-	if err != nil {
-		logger.Info("Unable to fetch queue name", err)
-		return nil, errors.New("unable to get queue name")
-	}
 	if cfg.QueueURL == "" {
-		cfg.QueueURL = *res.QueueUrl
-	} else {
-		if cfg.QueueURL != *res.QueueUrl {
-			logger.Info("Queue URL mismatch")
-			return nil, errors.New("queue URL mismatch")
+		logger.Info("Fetching queue URL")
+		res, err := svc.GetQueueUrl(&sqs.GetQueueUrlInput{
+			QueueName: &cfg.QueueName,
+		})
+		if err != nil {
+			logger.Info("Unable to fetch queue name", err)
+			return nil, errors.New("unable to get queue name")
 		}
+
+		cfg.QueueURL = *res.QueueUrl
 	}
 	logger.Info("Connected to Queue")
 
