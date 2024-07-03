@@ -142,7 +142,7 @@ func (s *e2eTestSuite) Test_EndToEnd_CreateCluster() {
 	}
 	s.T().Logf("Successfully created cluster %s.", inputCluster.Spec.Name)
 
-	time.Sleep(20 * time.Second)
+	time.Sleep(30 * time.Second)
 
 	appConfig, err := config.LoadApiConfig()
 	if err != nil {
@@ -257,7 +257,7 @@ func (s *e2eTestSuite) TBD_Test_EndToEnd_UpdateCluster() {
 
 	s.T().Logf("Successfully created cluster %s.", inputCluster.Spec.Name)
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(30 * time.Second)
 
 	jwtToken := jwt.GenerateDefaultSignedToken(appConfig)
 	bearer := "Bearer " + jwtToken
