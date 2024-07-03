@@ -151,7 +151,7 @@ func (s *e2eTestSuite) Test_EndToEnd_CreateCluster() {
 
 	jwtToken := jwt.GenerateDefaultSignedToken(appConfig)
 	bearer := "Bearer " + jwtToken
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/api/v1/clusters/%s", s.apiPort, inputCluster.Spec.Name), nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/api/v2/clusters/%s", s.apiPort, inputCluster.Spec.Name), nil)
 
 	if err != nil {
 		s.T().Fatalf("Failed to build request object: %v", err.Error())
@@ -261,7 +261,7 @@ func (s *e2eTestSuite) TBD_Test_EndToEnd_UpdateCluster() {
 
 	jwtToken := jwt.GenerateDefaultSignedToken(appConfig)
 	bearer := "Bearer " + jwtToken
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/api/v1/clusters/%s", s.apiPort, inputCluster.Spec.Name), nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/api/v2/clusters/%s", s.apiPort, inputCluster.Spec.Name), nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -300,7 +300,7 @@ func (s *e2eTestSuite) Test_EndToEnd_RateLimiter() {
 	jwtToken := jwt.GenerateDefaultSignedToken(appConfig)
 	bearer := "Bearer " + jwtToken
 
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/api/v1/clusters", s.apiPort), nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/api/v2/clusters", s.apiPort), nil)
 	if err != nil {
 		s.T().Fatalf("Cannot build http request: %v", err.Error())
 	}
