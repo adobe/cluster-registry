@@ -22,6 +22,8 @@ import (
 	monitoring "github.com/adobe/cluster-registry/pkg/monitoring/client"
 	"github.com/adobe/cluster-registry/pkg/sqs"
 	"github.com/adobe/cluster-registry/pkg/sync/manager"
+	"github.com/adobe/cluster-registry/pkg/sync/parser"
+	"github.com/adobe/cluster-registry/pkg/sync/parser/handler"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -141,12 +143,20 @@ func main() {
 		os.Exit(1)
 	}
 
+	client := mgr.GetClient()
+	ctrlLog := ctrl.Log.WithName("controllers").WithName("SyncController")
+
+	rp := parser.New(client, ctrlLog)
+	rp.RegisterHandlerForGVK(schema.GroupVersionKind{Group: "ec2.services.k8s.aws", Version: "v1alpha1", Kind: "VPC"}, &handler.VPCHandler{})
+	rp.RegisterHandlerForGVK(schema.GroupVersionKind{Group: "cluster.x-k8s.io", Version: "v1beta1", Kind: "Cluster"}, &handler.ClusterHandler{})
+
 	if err = (&manager.SyncController{
-		Client:      mgr.GetClient(),
-		Log:         ctrl.Log.WithName("controllers").WithName("SyncController"),
-		Scheme:      mgr.GetScheme(),
-		WatchedGVKs: loadWatchedGVKs(syncConfig),
-		Queue:       q,
+		Client:         client,
+		Log:            ctrlLog,
+		Scheme:         mgr.GetScheme(),
+		WatchedGVKs:    loadWatchedGVKs(syncConfig),
+		Queue:          q,
+		ResourceParser: rp,
 	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "SyncController")
 		os.Exit(1)

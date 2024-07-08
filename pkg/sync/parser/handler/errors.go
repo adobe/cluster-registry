@@ -10,7 +10,7 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-package manager
+package handler
 
 import (
 	"fmt"
@@ -18,20 +18,20 @@ import (
 	"strings"
 )
 
-type FailedToGetValueFromObjectError struct {
+type ParseError struct {
 	Fields []string
 	Object unstructured.Unstructured
 	Err    error
 }
 
-func (e *FailedToGetValueFromObjectError) Error() string {
+func (e *ParseError) Error() string {
 	return fmt.Sprintf("failed to get value (%s) from object (namespace: %s, name: %s, gvk: %s): %s",
 		strings.Join(e.Fields, "."),
 		e.Object.GetNamespace(), e.Object.GetName(), e.Object.GroupVersionKind().String(),
 		e.Err.Error())
 }
 
-func (e *FailedToGetValueFromObjectError) Wrap(err error) error {
+func (e *ParseError) Wrap(err error) error {
 	e.Err = err
 	return e
 }

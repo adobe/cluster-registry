@@ -15,9 +15,9 @@ package manager
 import (
 	"bytes"
 	"context"
-	v1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
 	registryv1alpha1 "github.com/adobe/cluster-registry/pkg/api/registry/v1alpha1"
 	"github.com/adobe/cluster-registry/pkg/sqs"
+	"github.com/adobe/cluster-registry/pkg/sync/parser"
 	"github.com/aws/aws-sdk-go/aws"
 	awssqs "github.com/aws/aws-sdk-go/service/sqs"
 	jsonpatch "github.com/evanphx/json-patch"
@@ -50,10 +50,11 @@ const (
 
 type SyncController struct {
 	client.Client
-	Log         logr.Logger
-	Scheme      *runtime.Scheme
-	WatchedGVKs []schema.GroupVersionKind
-	Queue       *sqs.Config
+	Log            logr.Logger
+	Scheme         *runtime.Scheme
+	WatchedGVKs    []schema.GroupVersionKind
+	Queue          *sqs.Config
+	ResourceParser *parser.ResourceParser
 }
 
 func (c *SyncController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -96,7 +97,7 @@ func (c *SyncController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	var finalPatch []byte
 
 	for _, res := range instance.Spec.WatchedResources {
-		patch, err := c.parseResource(ctx, res)
+		patch, err := c.ResourceParser.Parse(ctx, res)
 		if err != nil {
 			log.Error(err, "failed to parse resource", "resource", res)
 			errList = append(errList, err)
@@ -261,166 +262,7 @@ func (c *SyncController) enqueueRequestsFromMapFunc(gvk schema.GroupVersionKind)
 	}
 }
 
-func (c *SyncController) parseResource(ctx context.Context, res registryv1alpha1.WatchedResource) ([]byte, error) {
-	gvk, err := res.GVK()
-	if err != nil {
-		return nil, err
-	}
-
-	switch gvk {
-
-	case schema.GroupVersionKind{Group: "ec2.services.k8s.aws", Version: "v1alpha1", Kind: "VPC"}:
-		patch, err := c.extractVPCMetadata(ctx, res)
-		if err != nil {
-			return nil, err
-		}
-		return patch, nil
-
-	case schema.GroupVersionKind{Group: "cluster.x-k8s.io", Version: "v1beta1", Kind: "Cluster"}:
-		patch, err := c.extractClusterMetadata(ctx, res)
-		if err != nil {
-			return nil, err
-		}
-		return patch, nil
-	}
-
-	return nil, nil
-}
-
-func (c *SyncController) extractObjectsForResource(ctx context.Context, res registryv1alpha1.WatchedResource) ([]unstructured.Unstructured, error) {
-	var objects []unstructured.Unstructured
-
-	gvk, err := res.GVK()
-	if err != nil {
-		return objects, err
-	}
-
-	log := c.Log.WithValues("gvk", gvk, "namespace", res.Namespace)
-
-	if res.Name != "" {
-		// get a single object
-		log.WithValues("name", res.Name)
-		obj := new(unstructured.Unstructured)
-		obj.SetGroupVersionKind(gvk)
-		if err := c.Client.Get(ctx, types.NamespacedName{
-			Name:      res.Name,
-			Namespace: res.Namespace,
-		}, obj); err != nil {
-			log.Error(err, "cannot get object")
-			return nil, err
-		}
-
-		objects = append(objects, *obj)
-	} else {
-		// get a list of objects
-		listOptions := &client.ListOptions{Namespace: res.Namespace}
-		if res.LabelSelector != nil {
-			selector, err := metav1.LabelSelectorAsSelector(res.LabelSelector)
-			if err != nil {
-				return nil, err
-			}
-			listOptions.LabelSelector = selector
-			log.WithValues("labelSelector", res.LabelSelector.String())
-		}
-		list := &unstructured.UnstructuredList{}
-		list.SetGroupVersionKind(gvk)
-		if err := c.Client.List(ctx, list, listOptions); err != nil {
-			c.Log.Error(err, "cannot list objects")
-
-		}
-
-		objects = append(objects, list.Items...)
-	}
-	return objects, nil
-}
-
-func (c *SyncController) extractClusterMetadata(ctx context.Context, res registryv1alpha1.WatchedResource) ([]byte, error) {
-	objects, err := c.extractObjectsForResource(ctx, res)
-	if err != nil {
-		return nil, err
-	}
-
-	clusterSpec := new(v1.ClusterSpec)
-
-	for _, obj := range objects {
-		clusterShortName, err := getNestedString(obj, "metadata", "labels", "shortName")
-		if err != nil {
-			return nil, err
-		}
-		clusterSpec.ShortName = clusterShortName
-
-		region, err := getNestedString(obj, "metadata", "labels", "locationShortName")
-		if err != nil {
-			return nil, err
-		}
-		clusterSpec.Region = region
-
-		provider, err := getNestedString(obj, "metadata", "labels", "provider")
-		if err != nil {
-			return nil, err
-		}
-		clusterSpec.CloudType = provider
-
-		cloudProviderRegion, err := getNestedString(obj, "metadata", "labels", "location")
-		if err != nil {
-			return nil, err
-		}
-		clusterSpec.CloudProviderRegion = cloudProviderRegion
-
-		environment, err := getNestedString(obj, "metadata", "labels", "environment")
-		if err != nil {
-			return nil, err
-		}
-		clusterSpec.Environment = environment
-
-	}
-
-	patch, err := createClusterSpecPatch(clusterSpec)
-	if err != nil {
-		return nil, err
-	}
-
-	c.Log.Info("extracted Cluster metadata", "patch", string(patch))
-
-	return patch, nil
-}
-
-func (c *SyncController) extractVPCMetadata(ctx context.Context, res registryv1alpha1.WatchedResource) ([]byte, error) {
-	objects, err := c.extractObjectsForResource(ctx, res)
-	if err != nil {
-		return nil, err
-	}
-
-	clusterSpec := new(v1.ClusterSpec)
-
-	for _, obj := range objects {
-		vpcID, err := getNestedString(obj, "status", "vpcID")
-		if err != nil {
-			return nil, err
-		}
-
-		cidrs, err := getNestedStringSlice(obj, "spec", "cidrBlocks")
-		if err != nil {
-			return nil, err
-		}
-
-		clusterSpec.VirtualNetworks = append(clusterSpec.VirtualNetworks, v1.VirtualNetwork{
-			ID:    vpcID,
-			Cidrs: cidrs,
-		})
-	}
-
-	patch, err := createClusterSpecPatch(clusterSpec)
-	if err != nil {
-		return nil, err
-	}
-
-	c.Log.Info("extracted VPC metadata", "patch", string(patch))
-
-	return patch, nil
-}
-
-// TODO: think of a better way to do this
+// applyPatch merges the provided patch with the initial data and updates the status of the ClusterSync object
 func (c *SyncController) applyPatch(ctx context.Context, instance *registryv1alpha1.ClusterSync, patch []byte) error {
 	var initialData map[string]interface{}
 	if err := yaml.Unmarshal([]byte(instance.Spec.InitialData), &initialData); err != nil {
