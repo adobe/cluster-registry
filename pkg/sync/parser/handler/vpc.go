@@ -44,6 +44,7 @@ func (h *VPCHandler) Handle(ctx context.Context, objects []unstructured.Unstruct
 			Cidrs: cidrs,
 		})
 
+		// TODO: maybe there's a better object to extract this from
 		accountId, err := getNestedString(obj, "status", "ownerID")
 		if err != nil {
 			return nil, err
