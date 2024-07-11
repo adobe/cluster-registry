@@ -15,7 +15,6 @@ package parser
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	v1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
 	registryv1alpha1 "github.com/adobe/cluster-registry/pkg/api/registry/v1alpha1"
@@ -60,7 +59,7 @@ func (p *ResourceParser) Parse(ctx context.Context, res registryv1alpha1.Watched
 
 	h, ok := p.handlers[gvk]
 	if !ok {
-		return errors.New(fmt.Sprintf("no handler registered for GVK: %s", gvk.String()))
+		return fmt.Errorf("no handler registered for GVK: %s", gvk.String())
 	}
 
 	objects, err := p.getObjectsForResource(ctx, res)

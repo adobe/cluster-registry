@@ -103,9 +103,7 @@ func (c *SyncController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	c.ResourceParser.SetBuffer(initialData)
 
 	for _, res := range instance.Spec.WatchedResources {
-		var err error
-		err = c.ResourceParser.Parse(ctx, res)
-		if err != nil {
+		if err = c.ResourceParser.Parse(ctx, res); err != nil {
 			log.Error(err, "failed to parse resource", "resource", res)
 			errList = append(errList, err)
 		}
