@@ -147,10 +147,12 @@ func main() {
 	ctrlLog := ctrl.Log.WithName("controllers").WithName("SyncController")
 
 	rp := parser.New(client, ctrlLog)
+	rp.RegisterHandlerForGVK(schema.GroupVersionKind{Group: "cluster.x-k8s.io", Version: "v1beta1", Kind: "Cluster"}, &handler.ClusterHandler{})
 	rp.RegisterHandlerForGVK(schema.GroupVersionKind{Group: "ec2.services.k8s.aws", Version: "v1alpha1", Kind: "VPC"}, &handler.VPCHandler{})
 	rp.RegisterHandlerForGVK(schema.GroupVersionKind{Group: "ec2.services.k8s.aws", Version: "v1alpha1", Kind: "Subnet"}, &handler.SubnetHandler{})
-	rp.RegisterHandlerForGVK(schema.GroupVersionKind{Group: "cluster.x-k8s.io", Version: "v1beta1", Kind: "Cluster"}, &handler.ClusterHandler{})
 	rp.RegisterHandlerForGVK(schema.GroupVersionKind{Group: "controlplane.cluster.x-k8s.io", Version: "v1beta2", Kind: "AWSManagedControlPlane"}, &handler.AWSManagedControlPlaneHandler{})
+	rp.RegisterHandlerForGVK(schema.GroupVersionKind{Group: "infrastructure.cluster.x-k8s.io", Version: "v1beta2", Kind: "AWSManagedMachinePool"}, &handler.AWSManagedMachinePoolHandler{})
+	rp.RegisterHandlerForGVK(schema.GroupVersionKind{Group: "bootstrap.cluster.x-k8s.io", Version: "v1beta2", Kind: "EKSConfig"}, &handler.EKSConfigHandler{})
 
 	if err = (&manager.SyncController{
 		Client:         client,

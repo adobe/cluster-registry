@@ -13,14 +13,13 @@ governing permissions and limitations under the License.
 package manager
 
 import (
-	"bytes"
 	"context"
+	v1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
 	registryv1alpha1 "github.com/adobe/cluster-registry/pkg/api/registry/v1alpha1"
 	"github.com/adobe/cluster-registry/pkg/sqs"
 	"github.com/adobe/cluster-registry/pkg/sync/parser"
 	"github.com/aws/aws-sdk-go/aws"
 	awssqs "github.com/aws/aws-sdk-go/service/sqs"
-	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
@@ -94,17 +93,20 @@ func (c *SyncController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	var errList []error
-	var finalPatch []byte
+
+	initialData, err := c.getInitialData(instance)
+	if err != nil {
+		log.Error(err, "failed to get initial data")
+		errList = append(errList, err)
+	}
+
+	c.ResourceParser.SetBuffer(initialData)
 
 	for _, res := range instance.Spec.WatchedResources {
-		patch, err := c.ResourceParser.Parse(ctx, res)
+		var err error
+		err = c.ResourceParser.Parse(ctx, res)
 		if err != nil {
 			log.Error(err, "failed to parse resource", "resource", res)
-			errList = append(errList, err)
-		}
-		finalPatch, err = mergePatches(finalPatch, patch)
-		if err != nil {
-			log.Error(err, "failed to merge patches")
 			errList = append(errList, err)
 		}
 	}
@@ -122,9 +124,9 @@ func (c *SyncController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return noRequeue()
 	}
 
-	err := c.applyPatch(ctx, instance, finalPatch)
+	err = c.reconcile(ctx, instance)
 	if err != nil {
-		log.Error(err, "failed to apply patch")
+		log.Error(err, "failed to reconcile")
 		return noRequeue()
 	}
 
@@ -217,7 +219,7 @@ func (c *SyncController) enqueueRequestsFromMapFunc(gvk schema.GroupVersionKind)
 			for _, res := range clusterSync.Spec.WatchedResources {
 				gv, err := schema.ParseGroupVersion(res.APIVersion)
 				if err != nil {
-					c.Log.Error(err, "failed to parseResource API version")
+					c.Log.Error(err, "failed to parse resource API version")
 					return requests
 				}
 				if gv != gvk.GroupVersion() || res.Kind != gvk.Kind || clusterSync.Namespace != obj.GetNamespace() {
@@ -233,7 +235,7 @@ func (c *SyncController) enqueueRequestsFromMapFunc(gvk schema.GroupVersionKind)
 				if res.LabelSelector.Size() > 0 {
 					selector, err := metav1.LabelSelectorAsSelector(res.LabelSelector)
 					if err != nil {
-						c.Log.Error(err, "failed to parseResource label selector")
+						c.Log.Error(err, "failed to parse resource label selector")
 						return requests
 					}
 					if !selector.Matches(labels.Set(obj.GetLabels())) {
@@ -262,48 +264,23 @@ func (c *SyncController) enqueueRequestsFromMapFunc(gvk schema.GroupVersionKind)
 	}
 }
 
-// applyPatch merges the provided patch with the initial data and updates the status of the ClusterSync object
-func (c *SyncController) applyPatch(ctx context.Context, instance *registryv1alpha1.ClusterSync, patch []byte) error {
-	var initialData map[string]interface{}
-	if err := yaml.Unmarshal([]byte(instance.Spec.InitialData), &initialData); err != nil {
-		return err
-	}
-
-	if initialData == nil {
-		initialData = make(map[string]interface{})
-	}
-
-	originalJSON, err := json.Marshal(initialData)
+// reconcile merges the provided patch with the initial data and updates the status of the ClusterSync object
+func (c *SyncController) reconcile(ctx context.Context, instance *registryv1alpha1.ClusterSync) error {
+	syncedData, err := c.ResourceParser.Diff()
 	if err != nil {
 		return err
 	}
 
-	modifiedJSON, err := jsonpatch.MergeMergePatches(originalJSON, patch)
-	if err != nil {
-		return err
-	}
+	instance.Status.SyncedData = ptr.To(string(syncedData))
 
-	var modifiedData map[string]interface{}
-	if err := json.Unmarshal(modifiedJSON, &modifiedData); err != nil {
-		return err
-	}
-
-	buf := bytes.Buffer{}
-	enc := yaml.NewEncoder(&buf)
-	enc.SetIndent(2)
-	if err := enc.Encode(modifiedData); err != nil {
-		return err
-	}
-	modifiedYAML := buf.Bytes()
-
-	if reflect.DeepEqual(initialData, modifiedData) {
+	if !c.hasDifferentHash(instance) {
 		c.Log.Info("no data changes detected",
 			"name", instance.GetName(),
 			"namespace", instance.GetNamespace())
 		return nil
 	}
 
-	instance.Status.SyncedData = ptr.To(string(modifiedYAML))
+	instance.Status.SyncedDataHash = ptr.To(hash(instance.Status.SyncedData))
 	instance.Status.LastSyncStatus = ptr.To(SyncStatusSuccess)
 	instance.Status.LastSyncTime = &metav1.Time{Time: time.Now()}
 
@@ -314,7 +291,7 @@ func (c *SyncController) enqueueData(instance *registryv1alpha1.ClusterSync) err
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	obj, err := yaml.Marshal(instance.Status.SyncedData)
+	obj, err := json.Marshal(instance.Status.SyncedData)
 	if err != nil {
 		return err
 	}
@@ -349,6 +326,9 @@ func (c *SyncController) enqueueData(instance *registryv1alpha1.ClusterSync) err
 }
 
 func (c *SyncController) shouldEnqueueData(instance *registryv1alpha1.ClusterSync) bool {
+	if instance.Status.SyncedDataHash == ptr.To(hash(instance.Status.SyncedData)) {
+		return false
+	}
 	if instance.Status.LastSyncStatus != ptr.To(SyncStatusSuccess) {
 		return false
 	}
@@ -362,7 +342,7 @@ func (c *SyncController) hasDifferentHash(object runtime.Object) bool {
 	oldHash := instance.Status.SyncedDataHash
 	newHash := ptr.To(hash(instance.Status.SyncedData))
 
-	return &oldHash != &newHash
+	return *oldHash != *newHash
 }
 
 func (c *SyncController) updateStatus(ctx context.Context, instance *registryv1alpha1.ClusterSync) error {
@@ -373,4 +353,12 @@ func (c *SyncController) updateStatus(ctx context.Context, instance *registryv1a
 
 	c.Log.Info("updated ClusterSync status", "name", instance.GetName(), "namespace", instance.GetNamespace(), "status", instance.Status)
 	return nil
+}
+
+func (c *SyncController) getInitialData(instance *registryv1alpha1.ClusterSync) (v1.ClusterSpec, error) {
+	var initialData = v1.ClusterSpec{}
+
+	err := yaml.Unmarshal([]byte(instance.Spec.InitialData), &initialData)
+
+	return initialData, err
 }

@@ -13,23 +13,9 @@ governing permissions and limitations under the License.
 package handler
 
 import (
-	"encoding/json"
 	"fmt"
-	jsonpatch "github.com/evanphx/json-patch/v5"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
-
-func createTargetObjectPatch(targetObject *TargetObject) ([]byte, error) {
-	oldData, err := json.Marshal(TargetObject{})
-	if err != nil {
-		return nil, err
-	}
-	newData, err := json.Marshal(targetObject)
-	if err != nil {
-		return nil, err
-	}
-	return jsonpatch.CreateMergePatch(oldData, newData)
-}
 
 func getNestedString(obj unstructured.Unstructured, fields ...string) (string, error) {
 	value, found, err := unstructured.NestedString(obj.Object, fields...)
@@ -46,6 +32,21 @@ func getNestedString(obj unstructured.Unstructured, fields ...string) (string, e
 	return value, nil
 }
 
+func getNestedInt64(obj unstructured.Unstructured, fields ...string) (int64, error) {
+	value, found, err := unstructured.NestedInt64(obj.Object, fields...)
+	getErr := &ParseError{
+		Fields: fields,
+		Object: obj,
+	}
+	if err != nil {
+		return -1, getErr.Wrap(err)
+	}
+	if !found {
+		return -1, getErr.Wrap(fmt.Errorf("field not found"))
+	}
+	return value, nil
+}
+
 func getNestedStringSlice(obj unstructured.Unstructured, fields ...string) ([]string, error) {
 	value, found, err := unstructured.NestedStringSlice(obj.Object, fields...)
 	getErr := &ParseError{
@@ -57,6 +58,36 @@ func getNestedStringSlice(obj unstructured.Unstructured, fields ...string) ([]st
 	}
 	if !found {
 		return []string{}, getErr.Wrap(fmt.Errorf("field not found"))
+	}
+	return value, nil
+}
+
+func getNestedStringMap(obj unstructured.Unstructured, fields ...string) (map[string]string, error) {
+	value, found, err := unstructured.NestedStringMap(obj.Object, fields...)
+	getErr := &ParseError{
+		Fields: fields,
+		Object: obj,
+	}
+	if err != nil {
+		return map[string]string{}, getErr.Wrap(err)
+	}
+	if !found {
+		return map[string]string{}, getErr.Wrap(fmt.Errorf("field not found"))
+	}
+	return value, nil
+}
+
+func getNestedSlice(obj unstructured.Unstructured, fields ...string) ([]interface{}, error) {
+	value, found, err := unstructured.NestedSlice(obj.Object, fields...)
+	getErr := &ParseError{
+		Fields: fields,
+		Object: obj,
+	}
+	if err != nil {
+		return nil, getErr.Wrap(err)
+	}
+	if !found {
+		return nil, getErr.Wrap(fmt.Errorf("field not found"))
 	}
 	return value, nil
 }

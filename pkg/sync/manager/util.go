@@ -15,29 +15,14 @@ package manager
 import (
 	"crypto/sha256"
 	"fmt"
-	jsonpatch "github.com/evanphx/json-patch/v5"
 	jsoniter "github.com/json-iterator/go"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
-
-type PatchWrapper struct {
-	Data map[string]interface{} `json:"data"`
-}
 
 func hash(obj interface{}) string {
 	b, _ := json.Marshal(obj)
 	h := sha256.New()
 	h.Write([]byte(fmt.Sprintf("%v", b)))
 	return fmt.Sprintf("%x", h.Sum(nil))
-}
-
-func mergePatches(a, b []byte) ([]byte, error) {
-	if a == nil {
-		a = []byte(`{}`)
-	}
-	if b == nil {
-		b = []byte(`{}`)
-	}
-	return jsonpatch.MergeMergePatches(a, b)
 }

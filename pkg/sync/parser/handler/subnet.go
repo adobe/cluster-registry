@@ -25,8 +25,8 @@ import (
 // - id (e.g. "use-az2")
 type SubnetHandler struct{}
 
-func (h *SubnetHandler) Handle(ctx context.Context, objects []unstructured.Unstructured) ([]byte, error) {
-	targetObject := new(TargetObject)
+func (h *SubnetHandler) Handle(ctx context.Context, objects []unstructured.Unstructured) (*v1.ClusterSpec, error) {
+	clusterSpec := new(v1.ClusterSpec)
 
 	for _, obj := range objects {
 		if !isPrivateSubnet(obj) {
@@ -44,13 +44,13 @@ func (h *SubnetHandler) Handle(ctx context.Context, objects []unstructured.Unstr
 			return nil, err
 		}
 
-		targetObject.AvailabilityZones = append(targetObject.AvailabilityZones, v1.AvailabilityZone{
+		clusterSpec.AvailabilityZones = append(clusterSpec.AvailabilityZones, v1.AvailabilityZone{
 			Name: availabilityZone,
 			ID:   availabilityZoneID,
 		})
 	}
 
-	return createTargetObjectPatch(targetObject)
+	return clusterSpec, nil
 }
 
 // isPrivateSubnet returns true if the subnet is private

@@ -14,6 +14,7 @@ package handler
 
 import (
 	"context"
+	v1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"strings"
 )
@@ -22,18 +23,18 @@ import (
 // - extra.oidcIssuer (e.g. "oidc.eks.us-west-2.amazonaws.com/id/EXAMPLED539D4633E2D5B6B716D3041E")
 type AWSManagedControlPlaneHandler struct{}
 
-func (h *AWSManagedControlPlaneHandler) Handle(ctx context.Context, objects []unstructured.Unstructured) ([]byte, error) {
-	targetObject := new(TargetObject)
+func (h *AWSManagedControlPlaneHandler) Handle(ctx context.Context, objects []unstructured.Unstructured) (*v1.ClusterSpec, error) {
+	clusterSpec := new(v1.ClusterSpec)
 
 	for _, obj := range objects {
 		oidcProviderARN, err := getNestedString(obj, "status", "oidcProvider", "arn")
 		if err != nil {
 			return nil, err
 		}
-		targetObject.Extra.OidcIssuer = extractOIDCIssuerFromARN(oidcProviderARN)
+		clusterSpec.Extra.OidcIssuer = extractOIDCIssuerFromARN(oidcProviderARN)
 	}
 
-	return createTargetObjectPatch(targetObject)
+	return clusterSpec, nil
 }
 
 func extractOIDCIssuerFromARN(arn string) string {

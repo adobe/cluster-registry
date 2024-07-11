@@ -14,6 +14,7 @@ package handler
 
 import (
 	"context"
+	v1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -25,40 +26,40 @@ import (
 // - environment (e.g. "dev")
 type ClusterHandler struct{}
 
-func (h *ClusterHandler) Handle(ctx context.Context, objects []unstructured.Unstructured) ([]byte, error) {
-	targetObject := new(TargetObject)
+func (h *ClusterHandler) Handle(ctx context.Context, objects []unstructured.Unstructured) (*v1.ClusterSpec, error) {
+	clusterSpec := new(v1.ClusterSpec)
 
 	for _, obj := range objects {
 		clusterShortName, err := getNestedString(obj, "metadata", "labels", "clusterShortName")
 		if err != nil {
 			return nil, err
 		}
-		targetObject.ShortName = clusterShortName
+		clusterSpec.ShortName = clusterShortName
 
 		region, err := getNestedString(obj, "metadata", "labels", "locationShortName")
 		if err != nil {
 			return nil, err
 		}
-		targetObject.Region = region
+		clusterSpec.Region = region
 
 		provider, err := getNestedString(obj, "metadata", "labels", "provider")
 		if err != nil {
 			return nil, err
 		}
-		targetObject.CloudType = provider
+		clusterSpec.CloudType = provider
 
 		cloudProviderRegion, err := getNestedString(obj, "metadata", "labels", "location")
 		if err != nil {
 			return nil, err
 		}
-		targetObject.CloudProviderRegion = cloudProviderRegion
+		clusterSpec.CloudProviderRegion = cloudProviderRegion
 
 		environment, err := getNestedString(obj, "metadata", "labels", "environment")
 		if err != nil {
 			return nil, err
 		}
-		targetObject.Environment = environment
+		clusterSpec.Environment = environment
 	}
 
-	return createTargetObjectPatch(targetObject)
+	return clusterSpec, nil
 }

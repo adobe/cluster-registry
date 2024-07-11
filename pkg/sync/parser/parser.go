@@ -14,9 +14,13 @@ package parser
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	v1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
 	registryv1alpha1 "github.com/adobe/cluster-registry/pkg/api/registry/v1alpha1"
 	"github.com/adobe/cluster-registry/pkg/sync/parser/handler"
+	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/go-logr/logr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -30,6 +34,7 @@ type ResourceParser struct {
 	client.Client
 	log      logr.Logger
 	handlers map[schema.GroupVersionKind]handler.ObjectHandler
+	buffer   v1.ClusterSpec
 }
 
 func New(client client.Client, log logr.Logger) *ResourceParser {
@@ -37,6 +42,7 @@ func New(client client.Client, log logr.Logger) *ResourceParser {
 		Client:   client,
 		log:      log,
 		handlers: make(map[schema.GroupVersionKind]handler.ObjectHandler),
+		buffer:   v1.ClusterSpec{},
 	}
 }
 
@@ -46,23 +52,50 @@ func (p *ResourceParser) RegisterHandlerForGVK(gvk schema.GroupVersionKind, pars
 }
 
 // Parse parses the watched resource and returns a byte array that represents a patch to be applied to the target resource
-func (p *ResourceParser) Parse(ctx context.Context, res registryv1alpha1.WatchedResource) ([]byte, error) {
+func (p *ResourceParser) Parse(ctx context.Context, res registryv1alpha1.WatchedResource) error {
 	gvk, err := res.GVK()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	h, ok := p.handlers[gvk]
 	if !ok {
-		return nil, errors.New("no handler registered for GVK %s" + gvk.String())
+		return errors.New(fmt.Sprintf("no handler registered for GVK: %s", gvk.String()))
 	}
 
 	objects, err := p.getObjectsForResource(ctx, res)
 	if err != nil {
+		return err
+	}
+
+	patch, err := h.Handle(ctx, objects)
+	if err != nil {
+		return err
+	}
+
+	return p.buffer.Merge(patch)
+}
+
+func (p *ResourceParser) GetBuffer() v1.ClusterSpec {
+	return p.buffer
+}
+
+func (p *ResourceParser) SetBuffer(buffer v1.ClusterSpec) {
+	p.buffer = buffer
+}
+
+func (p *ResourceParser) Diff() ([]byte, error) {
+	original, err := json.Marshal(v1.ClusterSpec{})
+	if err != nil {
 		return nil, err
 	}
 
-	return h.Handle(ctx, objects)
+	modified, err := json.Marshal(p.buffer)
+	if err != nil {
+		return nil, err
+	}
+
+	return jsonpatch.CreateMergePatch(original, modified)
 }
 
 func (p *ResourceParser) getObjectsForResource(ctx context.Context, res registryv1alpha1.WatchedResource) ([]unstructured.Unstructured, error) {

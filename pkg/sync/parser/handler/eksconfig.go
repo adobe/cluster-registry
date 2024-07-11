@@ -16,41 +16,32 @@ import (
 	"context"
 	v1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"slices"
 )
 
-// VPCHandler extracts the following Cluster Registry metadata from VPC (ACK) objects:
-// virtualNetworks:
-// - vpcID (e.g. "vpc-0a1b2c3d4e5f6g7h8")
-// - cidrBlocks (e.g. ["10.123.0.0/12", "100.64.0.0/16])
-// - accountId (e.g. "123456789012")
-type VPCHandler struct{}
+// EKSConfigHandler extracts the following Cluster Registry metadata from EKSConfig (CAPA) objects:
+// - tiers[].containerRuntime (e.g. "containerd")
+type EKSConfigHandler struct{}
 
-func (h *VPCHandler) Handle(ctx context.Context, objects []unstructured.Unstructured) (*v1.ClusterSpec, error) {
+func (h *EKSConfigHandler) Handle(ctx context.Context, objects []unstructured.Unstructured) (*v1.ClusterSpec, error) {
 	clusterSpec := new(v1.ClusterSpec)
 
 	for _, obj := range objects {
-		vpcID, err := getNestedString(obj, "status", "vpcID")
+		containerRuntime, err := getNestedString(obj, "spec", "containerRuntime")
 		if err != nil {
 			return nil, err
 		}
 
-		cidrs, err := getNestedStringSlice(obj, "spec", "cidrBlocks")
-		if err != nil {
-			return nil, err
+		if k := slices.IndexFunc(clusterSpec.Tiers, func(t v1.Tier) bool {
+			return t.Name == obj.GetName()
+		}); k > -1 {
+			clusterSpec.Tiers[k].ContainerRuntime = containerRuntime
+		} else {
+			clusterSpec.Tiers = append(clusterSpec.Tiers, v1.Tier{
+				Name:             obj.GetName(),
+				ContainerRuntime: containerRuntime,
+			})
 		}
-
-		clusterSpec.VirtualNetworks = append(clusterSpec.VirtualNetworks, v1.VirtualNetwork{
-			ID:    vpcID,
-			Cidrs: cidrs,
-		})
-
-		// TODO: maybe there's a better object to extract this from
-		accountId, err := getNestedString(obj, "status", "ownerID")
-		if err != nil {
-			return nil, err
-		}
-
-		clusterSpec.AccountID = accountId
 	}
 
 	return clusterSpec, nil
