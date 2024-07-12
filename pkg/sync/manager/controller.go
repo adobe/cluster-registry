@@ -74,23 +74,8 @@ func (c *SyncController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	// clear sync status
-	instance.Status.LastSyncStatus = nil
+	instance.Status.LastSyncStatus = ptr.To(SyncStatusSuccess)
 	instance.Status.LastSyncError = nil
-
-	if c.shouldEnqueueData(instance) {
-		instance.Status.SyncedDataHash = ptr.To(hash(instance.Status.SyncedData))
-		if err := c.enqueueData(instance); err != nil {
-			log.Error(err, "failed to enqueue message")
-			if err := c.updateStatus(ctx, instance); err != nil {
-				return requeueAfter(10*time.Second, err)
-			}
-			return noRequeue()
-		}
-		if err := c.updateStatus(ctx, instance); err != nil {
-			return requeueAfter(10*time.Second, err)
-		}
-		return noRequeue()
-	}
 
 	var errList []error
 
@@ -115,16 +100,26 @@ func (c *SyncController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		instance.Status.LastSyncError = ptr.To(errList[0].Error())
 		instance.Status.LastSyncTime = &metav1.Time{Time: time.Now()}
 		log.Error(errList[0], "failed to sync resources")
-		if err := c.updateStatus(ctx, instance); err != nil {
-			log.Error(err, "failed to update status")
-			return requeueIfError(err)
-		}
-		return noRequeue()
 	}
 
 	err = c.reconcile(ctx, instance)
 	if err != nil {
 		log.Error(err, "failed to reconcile")
+		return noRequeue()
+	}
+
+	if c.shouldEnqueueData(instance) {
+		instance.Status.SyncedDataHash = ptr.To(hash(instance.Status.SyncedData))
+		if err := c.enqueueData(instance); err != nil {
+			log.Error(err, "failed to enqueue message")
+			if err := c.updateStatus(ctx, instance); err != nil {
+				return requeueAfter(10*time.Second, err)
+			}
+			return noRequeue()
+		}
+		if err := c.updateStatus(ctx, instance); err != nil {
+			return requeueAfter(10*time.Second, err)
+		}
 		return noRequeue()
 	}
 
@@ -279,7 +274,6 @@ func (c *SyncController) reconcile(ctx context.Context, instance *registryv1alph
 	}
 
 	instance.Status.SyncedDataHash = ptr.To(hash(instance.Status.SyncedData))
-	instance.Status.LastSyncStatus = ptr.To(SyncStatusSuccess)
 	instance.Status.LastSyncTime = &metav1.Time{Time: time.Now()}
 
 	return c.updateStatus(ctx, instance)
@@ -324,14 +318,7 @@ func (c *SyncController) enqueueData(instance *registryv1alpha1.ClusterSync) err
 }
 
 func (c *SyncController) shouldEnqueueData(instance *registryv1alpha1.ClusterSync) bool {
-	if instance.Status.SyncedDataHash == ptr.To(hash(instance.Status.SyncedData)) {
-		return false
-	}
-	if instance.Status.LastSyncStatus != ptr.To(SyncStatusSuccess) {
-		return false
-	}
-
-	return c.hasDifferentHash(instance)
+	return c.isLastSyncSuccessful(instance)
 }
 
 func (c *SyncController) hasDifferentHash(object runtime.Object) bool {
@@ -359,4 +346,8 @@ func (c *SyncController) getInitialData(instance *registryv1alpha1.ClusterSync) 
 	err := yaml.Unmarshal([]byte(instance.Spec.InitialData), &initialData)
 
 	return initialData, err
+}
+
+func (c *SyncController) isLastSyncSuccessful(instance *registryv1alpha1.ClusterSync) bool {
+	return instance.Status.LastSyncStatus != nil && *instance.Status.LastSyncStatus == SyncStatusSuccess
 }
