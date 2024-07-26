@@ -13,7 +13,6 @@ governing permissions and limitations under the License.
 package main
 
 import (
-	// docs "github.com/adobe/cluster-registry/pkg/apiserver/docs"
 	"github.com/adobe/cluster-registry/pkg/apiserver/docs"
 	"github.com/adobe/cluster-registry/pkg/apiserver/event"
 	"github.com/adobe/cluster-registry/pkg/apiserver/web"
@@ -26,7 +25,10 @@ import (
 	monitoring "github.com/adobe/cluster-registry/pkg/monitoring/apiserver"
 	"github.com/adobe/cluster-registry/pkg/sqs"
 	awssqs "github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/eko/gocache/lib/v4/cache"
+	redisstore "github.com/eko/gocache/store/redis/v4"
 	"github.com/labstack/gommon/log"
+	"github.com/redis/go-redis/v9"
 	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
@@ -103,6 +105,12 @@ func main() {
 
 	a := api.NewRouter()
 
+	redisStore := redisstore.NewRedis(redis.NewClient(&redis.Options{
+		Addr: "localhost:6379",
+	}))
+
+	cacheManager := cache.New[string](redisStore)
+
 	status := api.StatusSessions{
 		Db:        db,
 		SQS:       q,
@@ -118,11 +126,11 @@ func main() {
 	a.GET("/metrics", web.Metrics())
 
 	v1 := a.Group("/api/v1")
-	hv1 := apiv1.NewHandler(appConfig, db, m)
+	hv1 := apiv1.NewHandler(appConfig, db, m, cacheManager)
 	hv1.Register(v1)
 
 	v2 := a.Group("/api/v2")
-	hv2 := apiv2.NewHandler(appConfig, db, m, &k8s.ClientProvider{})
+	hv2 := apiv2.NewHandler(appConfig, db, m, &k8s.ClientProvider{}, cacheManager)
 	hv2.Register(v2)
 
 	go q.Poll()

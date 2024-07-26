@@ -15,6 +15,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/labstack/gommon/log"
 )
@@ -38,6 +39,7 @@ type AppConfig struct {
 	ApiClientId           string
 	ApiClientSecret       string
 	ApiAuthorizedGroupId  string
+	ApiCacheTTL           time.Duration
 }
 
 func LoadApiConfig() (*AppConfig, error) {
@@ -129,6 +131,12 @@ func LoadApiConfig() (*AppConfig, error) {
 		return nil, fmt.Errorf("environment variable API_AUTHORIZED_GROUP_ID is not set")
 	}
 
+	apiCacheTTLstr := getEnv("API_CACHE_TTL", "1h")
+	apiCacheTTL, err := time.ParseDuration(apiCacheTTLstr)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing API_CACHE_TTL: %v", err)
+	}
+
 	return &AppConfig{
 		AwsRegion:             awsRegion,
 		DbEndpoint:            dbEndpoint,
@@ -148,6 +156,7 @@ func LoadApiConfig() (*AppConfig, error) {
 		ApiClientId:           apiClientId,
 		ApiClientSecret:       apiClientSecret,
 		ApiAuthorizedGroupId:  authorizedGroupId,
+		ApiCacheTTL:           apiCacheTTL,
 	}, nil
 }
 

@@ -13,6 +13,7 @@ governing permissions and limitations under the License.
 package v1
 
 import (
+	"github.com/eko/gocache/lib/v4/cache"
 	"net/http"
 	"strconv"
 
@@ -39,14 +40,16 @@ type handler struct {
 	db        database.Db
 	appConfig *config.AppConfig
 	metrics   monitoring.MetricsI
+	cache     *cache.Cache[string]
 }
 
 // NewHandler func
-func NewHandler(appConfig *config.AppConfig, d database.Db, m monitoring.MetricsI) Handler {
+func NewHandler(appConfig *config.AppConfig, d database.Db, m monitoring.MetricsI, cache *cache.Cache[string]) Handler {
 	h := &handler{
 		db:        d,
 		metrics:   m,
 		appConfig: appConfig,
+		cache:     cache,
 	}
 	return h
 }
