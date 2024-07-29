@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Adobe. All rights reserved.
+Copyright 2024 Adobe. All rights reserved.
 This file is licensed to you under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License. You may obtain a copy
 of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -142,7 +142,7 @@ func (s *e2eTestSuite) Test_EndToEnd_CreateCluster() {
 	}
 	s.T().Logf("Successfully created cluster %s.", inputCluster.Spec.Name)
 
-	time.Sleep(20 * time.Second)
+	time.Sleep(30 * time.Second)
 
 	appConfig, err := config.LoadApiConfig()
 	if err != nil {
@@ -151,7 +151,7 @@ func (s *e2eTestSuite) Test_EndToEnd_CreateCluster() {
 
 	jwtToken := jwt.GenerateDefaultSignedToken(appConfig)
 	bearer := "Bearer " + jwtToken
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/api/v1/clusters/%s", s.apiPort, inputCluster.Spec.Name), nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/api/v2/clusters/%s", s.apiPort, inputCluster.Spec.Name), nil)
 
 	if err != nil {
 		s.T().Fatalf("Failed to build request object: %v", err.Error())
@@ -257,11 +257,11 @@ func (s *e2eTestSuite) TBD_Test_EndToEnd_UpdateCluster() {
 
 	s.T().Logf("Successfully created cluster %s.", inputCluster.Spec.Name)
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(30 * time.Second)
 
 	jwtToken := jwt.GenerateDefaultSignedToken(appConfig)
 	bearer := "Bearer " + jwtToken
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/api/v1/clusters/%s", s.apiPort, inputCluster.Spec.Name), nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/api/v2/clusters/%s", s.apiPort, inputCluster.Spec.Name), nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -300,7 +300,7 @@ func (s *e2eTestSuite) Test_EndToEnd_RateLimiter() {
 	jwtToken := jwt.GenerateDefaultSignedToken(appConfig)
 	bearer := "Bearer " + jwtToken
 
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/api/v1/clusters", s.apiPort), nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/api/v2/clusters", s.apiPort), nil)
 	if err != nil {
 		s.T().Fatalf("Cannot build http request: %v", err.Error())
 	}

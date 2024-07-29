@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Adobe. All rights reserved.
+Copyright 2024 Adobe. All rights reserved.
 This file is licensed to you under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License. You may obtain a copy
 of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -26,7 +26,7 @@ import (
 )
 
 // fromFile provides an alternative to the deprecated ctrl.ConfigFile().AtPath(path).OfKind(&cfg)
-func fromFile(path string, scheme *runtime.Scheme, cfg *ClientConfig) error {
+func (cfg *ClientConfig) fromFile(path string, scheme *runtime.Scheme) error {
 	content, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return err
@@ -40,8 +40,8 @@ func fromFile(path string, scheme *runtime.Scheme, cfg *ClientConfig) error {
 }
 
 // addTo provides an alternative to the deprecated o.AndFrom(&cfg)
-func addTo(o *ctrl.Options, cfg *ClientConfig) {
-	addLeaderElectionTo(o, cfg)
+func (cfg *ClientConfig) addTo(o *ctrl.Options) {
+	cfg.addLeaderElectionTo(o)
 	if o.Metrics.BindAddress == "" && cfg.Metrics.BindAddress != "" {
 		o.Metrics.BindAddress = cfg.Metrics.BindAddress
 	}
@@ -57,7 +57,7 @@ func addTo(o *ctrl.Options, cfg *ClientConfig) {
 	if o.LivenessEndpointName == "" && cfg.Health.LivenessEndpointName != "" {
 		o.LivenessEndpointName = cfg.Health.LivenessEndpointName
 	}
-	addWebhookTo(o, cfg)
+	cfg.addWebhookTo(o)
 	if cfg.Controller != nil {
 		if o.Controller.CacheSyncTimeout == 0 && cfg.Controller.CacheSyncTimeout != nil {
 			o.Controller.CacheSyncTimeout = *cfg.Controller.CacheSyncTimeout
@@ -69,7 +69,7 @@ func addTo(o *ctrl.Options, cfg *ClientConfig) {
 	}
 }
 
-func addLeaderElectionTo(o *ctrl.Options, cfg *ClientConfig) {
+func (cfg *ClientConfig) addLeaderElectionTo(o *ctrl.Options) {
 	if cfg.LeaderElection == nil {
 		// The source does not have any ClientConfig; noop
 		return
@@ -104,7 +104,7 @@ func addLeaderElectionTo(o *ctrl.Options, cfg *ClientConfig) {
 	}
 }
 
-func addWebhookTo(o *ctrl.Options, cfg *ClientConfig) {
+func (cfg *ClientConfig) addWebhookTo(o *ctrl.Options) {
 	if o.WebhookServer == nil && cfg.Webhook.Host != "" && *cfg.Webhook.Port > 0 && cfg.Webhook.CertDir != "" {
 		o.WebhookServer = webhook.NewServer(webhook.Options{
 			Host:    cfg.Webhook.Host,
@@ -115,7 +115,7 @@ func addWebhookTo(o *ctrl.Options, cfg *ClientConfig) {
 }
 
 // Encode returns a string representation of the given ClientConfig.
-func Encode(scheme *runtime.Scheme, cfg *ClientConfig) (string, error) {
+func (cfg *ClientConfig) Encode(scheme *runtime.Scheme) (string, error) {
 	codecs := serializer.NewCodecFactory(scheme)
 	const mediaType = runtime.ContentTypeYAML
 	info, ok := runtime.SerializerInfoForMediaType(codecs.SupportedMediaTypes(), mediaType)
@@ -131,9 +131,9 @@ func Encode(scheme *runtime.Scheme, cfg *ClientConfig) (string, error) {
 	return buf.String(), nil
 }
 
-// Load returns a set of controller options and ClientConfig from the given file, if the config file path is empty
+// NewClientConfig returns a set of controller options and ClientConfig from the given file, if the config file path is empty
 // it uses the default values.
-func Load(defaultOptions ctrl.Options, scheme *runtime.Scheme, configFile string, defaults *ClientConfig) (ctrl.Options, ClientConfig, error) {
+func NewClientConfig(defaultOptions ctrl.Options, scheme *runtime.Scheme, configFile string, defaults *ClientConfig) (ctrl.Options, ClientConfig, error) {
 	var err error
 
 	options := defaultOptions
@@ -146,11 +146,11 @@ func Load(defaultOptions ctrl.Options, scheme *runtime.Scheme, configFile string
 	if configFile == "" {
 		scheme.Default(cfg)
 	} else {
-		err := fromFile(configFile, scheme, cfg)
+		err := cfg.fromFile(configFile, scheme)
 		if err != nil {
 			return options, *cfg, err
 		}
 	}
-	addTo(&options, cfg)
+	cfg.addTo(&options)
 	return options, *cfg, err
 }

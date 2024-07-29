@@ -6,12 +6,6 @@ set -o pipefail
 # error on unset variables
 set -u
 
-licRes=$(
-    find . -type f -iname '*.go' ! -path '*/vendor/*' -exec \
-         sh -c 'head -n3 $1 | grep -Eq "(Copyright|generated|GENERATED)" || echo -e  $1' {} {} \;
-)
+curl -s https://raw.githubusercontent.com/lluissm/license-header-checker/master/install.sh | bash
 
-if [ -n "${licRes}" ]; then
-	echo -e "license header checking failed:\\n${licRes}"
-	exit 255
-fi
+./bin/license-header-checker -a -r -i testdata ./hack/license_header.txt . go && [[ -z `git status -s` ]]

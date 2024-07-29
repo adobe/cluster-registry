@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Adobe. All rights reserved.
+Copyright 2024 Adobe. All rights reserved.
 This file is licensed to you under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License. You may obtain a copy
 of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -56,10 +56,10 @@ type ClusterSpec struct {
 	BusinessUnit string `json:"businessUnit"`
 
 	// The BU responsible for paying for the cluster.
-	ChargebackBusinessUnit string `json:"chargebackBusinessUnit"`
+	ChargebackBusinessUnit string `json:"chargebackBusinessUnit,omitempty"`
 
 	// Whether the cluster is charged back to the chargebackBusinessUnit
-	ChargedBack bool `json:"chargedBack"`
+	ChargedBack bool `json:"chargedBack,omitempty"`
 
 	// The Org that is responsible for the cluster operations
 	// +kubebuilder:validation:Required

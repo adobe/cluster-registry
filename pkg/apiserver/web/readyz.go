@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Adobe. All rights reserved.
+Copyright 2024 Adobe. All rights reserved.
 This file is licensed to you under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License. You may obtain a copy
 of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -31,7 +31,7 @@ type status struct {
 // StatusSessions is used to keep the same objects and state for the database
 // and sqs that are used for the rest of the calls inside the project
 type StatusSessions struct {
-	Consumer  sqs.Consumer
+	SQS       *sqs.Config
 	Db        database.Db
 	AppConfig *config.AppConfig
 	Metrics   monitoring.MetricsI
@@ -45,7 +45,7 @@ func (s *StatusSessions) checkDBStatus() bool {
 }
 
 func (s *StatusSessions) checkSqsStatus() bool {
-	if err := s.Consumer.Status(s.AppConfig, s.Metrics); err != nil {
+	if err := s.SQS.Status(); err != nil {
 		return false
 	}
 	return true
