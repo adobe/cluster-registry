@@ -86,7 +86,10 @@ func sortURLParams(URL *url.URL) {
 
 func GenerateKey(URL string) string {
 	hash := fnv.New64a()
-	hash.Write([]byte(URL))
+	_, err := hash.Write([]byte(URL))
+	if err != nil {
+		return ""
+	}
 
 	return strconv.FormatUint(hash.Sum64(), 36)
 }
