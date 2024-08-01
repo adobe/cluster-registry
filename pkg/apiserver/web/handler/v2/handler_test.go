@@ -473,7 +473,7 @@ func TestListClustersWithEmptyCache(t *testing.T) {
 	r := web.NewRouter()
 	h := NewHandler(appConfig, db, m, &TestClientProvider{}, cacheManager)
 
-	req := httptest.NewRequest(echo.GET, fmt.Sprintf("/api/v2/clusters"), nil)
+	req := httptest.NewRequest(echo.GET, "/api/v2/clusters", nil)
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	ctx := r.NewContext(req, rec)
@@ -529,7 +529,7 @@ func TestListClustersWithCache(t *testing.T) {
 	r := web.NewRouter()
 	h := NewHandler(appConfig, db, m, &TestClientProvider{}, cacheManager)
 
-	req := httptest.NewRequest(echo.GET, fmt.Sprintf("/api/v2/clusters"), nil)
+	req := httptest.NewRequest(echo.GET, "/api/v2/clusters", nil)
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	ctx := r.NewContext(req, rec)

@@ -15,7 +15,6 @@ package v1
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/eko/gocache/lib/v4/cache"
@@ -305,7 +304,7 @@ func TestListClustersWithEmptyCache(t *testing.T) {
 	r := web.NewRouter()
 	h := NewHandler(appConfig, db, m, cacheManager)
 
-	req := httptest.NewRequest(echo.GET, fmt.Sprintf("/api/v1/clusters"), nil)
+	req := httptest.NewRequest(echo.GET, "/api/v1/clusters", nil)
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	ctx := r.NewContext(req, rec)
@@ -361,7 +360,7 @@ func TestListClustersWithCache(t *testing.T) {
 	r := web.NewRouter()
 	h := NewHandler(appConfig, db, m, cacheManager)
 
-	req := httptest.NewRequest(echo.GET, fmt.Sprintf("/api/v1/clusters"), nil)
+	req := httptest.NewRequest(echo.GET, "/api/v1/clusters", nil)
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	ctx := r.NewContext(req, rec)
