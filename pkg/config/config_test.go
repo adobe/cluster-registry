@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/labstack/gommon/log"
 	"github.com/stretchr/testify/assert"
@@ -104,11 +105,16 @@ func TestLoadApiConfig(t *testing.T) {
 				SqsEndpoint:           "http://localhost:9324",
 				SqsAwsRegion:          "sqs-aws-region",
 				SqsQueueName:          "cluster-registry-local",
+				SqsBatchSize:          10,
+				SqsWaitSeconds:        5,
+				SqsRunInterval:        30,
 				K8sResourceId:         "k8s-resource-id",
 				ApiTenantId:           "api-tenant-id",
 				ApiClientId:           "api-client-id",
 				ApiClientSecret:       "api-client-secret",
 				ApiAuthorizedGroupId:  "api-authorized-group-id",
+				ApiCacheTTL:           time.Hour,
+				ApiCacheRedisHost:     "localhost:6379",
 			},
 			expectedError: nil,
 		},
