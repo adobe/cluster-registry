@@ -49,7 +49,7 @@ echo 'Run a local redis...'
 docker run -d \
     --name ${CONTAINER_REDIS} \
     -p 6379:6379 \
-	--network ${NETWORK} \
+    --network ${NETWORK} \
     ${IMAGE_REDIS}
 
 echo 'Run mocking oidc instance'
