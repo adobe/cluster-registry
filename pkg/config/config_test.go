@@ -168,7 +168,7 @@ func TestLoadApiConfig(t *testing.T) {
 			test.Error(err, "there should be an error processing the message")
 			test.Contains(fmt.Sprintf("%v", err), fmt.Sprintf("%v", tc.expectedError), "the error message should be as expected")
 		} else {
-			test.Equal(*tc.expectedAppConfig, *appConfig)
+			test.Equal(tc.expectedAppConfig, appConfig)
 		}
 
 		for k := range tc.envVars {
@@ -228,7 +228,7 @@ func TestLoadClientConfig(t *testing.T) {
 			test.Error(err, "there should be an error processing the message")
 			test.Contains(fmt.Sprintf("%v", err), fmt.Sprintf("%v", tc.expectedError), "the error message should be as expected")
 		} else {
-			test.Equal(*tc.expectedAppConfig, *appConfig)
+			test.Equal(tc.expectedAppConfig, appConfig)
 		}
 
 		for k := range tc.envVars {
