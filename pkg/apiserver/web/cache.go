@@ -57,7 +57,7 @@ func HTTPCache(client *cache.Cache[string], appConfig *config.AppConfig, tags []
 					c.Error(err)
 				}
 				if writer.statusCode < 400 {
-					err := client.Set(c.Request().Context(), key, string(resBody.Bytes()), store.WithExpiration(appConfig.ApiCacheTTL), store.WithTags(tags))
+					err := client.Set(c.Request().Context(), key, resBody.String(), store.WithExpiration(appConfig.ApiCacheTTL), store.WithTags(tags))
 					if err != nil {
 						c.Logger().Errorf("Error setting cache key: %s", err.Error())
 						c.Error(err)
