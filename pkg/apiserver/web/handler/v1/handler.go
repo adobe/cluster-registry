@@ -61,7 +61,7 @@ func (h *handler) Register(v1 *echo.Group) {
 	}
 	clusters := v1.Group("/clusters", a.VerifyToken(), web.RateLimiter(h.appConfig))
 	clusters.GET("/:name", h.GetCluster)
-	clusters.GET("", h.ListClusters)
+	clusters.GET("", h.ListClusters, web.HTTPCache(h.cache, h.appConfig, []string{"clusters"}))
 }
 
 // GetCluster godoc

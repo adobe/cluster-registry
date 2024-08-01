@@ -13,6 +13,7 @@ governing permissions and limitations under the License.
 package main
 
 import (
+	"context"
 	"github.com/adobe/cluster-registry/pkg/apiserver/docs"
 	"github.com/adobe/cluster-registry/pkg/apiserver/event"
 	"github.com/adobe/cluster-registry/pkg/apiserver/web"
@@ -26,6 +27,7 @@ import (
 	"github.com/adobe/cluster-registry/pkg/sqs"
 	awssqs "github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/eko/gocache/lib/v4/cache"
+	"github.com/eko/gocache/lib/v4/store"
 	redisstore "github.com/eko/gocache/store/redis/v4"
 	"github.com/labstack/gommon/log"
 	"github.com/redis/go-redis/v9"
@@ -66,10 +68,10 @@ func main() {
 		AWSRegion:         appConfig.SqsAwsRegion,
 		Endpoint:          appConfig.SqsEndpoint,
 		QueueName:         appConfig.SqsQueueName,
-		BatchSize:         10,
+		BatchSize:         appConfig.SqsBatchSize,
 		VisibilityTimeout: 120,
-		WaitSeconds:       5,
-		RunInterval:       20,
+		WaitSeconds:       appConfig.SqsWaitSeconds,
+		RunInterval:       appConfig.SqsRunInterval,
 		RunOnce:           false,
 		MaxHandlers:       10,
 		BusyTimeout:       30,
@@ -79,6 +81,17 @@ func main() {
 		log.Fatalf("Cannot create SQS client: %s", err.Error())
 		return
 	}
+
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: appConfig.ApiCacheRedisHost,
+	})
+	cmd := redisClient.Info(context.Background())
+	if cmd.Err() != nil {
+		log.Fatalf("Cannot connect to redis: %s", cmd.Err().Error())
+		return
+	}
+	redisStore := redisstore.NewRedis(redisClient)
+	cacheManager := cache.New[string](redisStore)
 
 	handler := event.NewClusterUpdateHandler(db)
 	q.RegisterHandler(func(msg *awssqs.Message) {
@@ -101,16 +114,15 @@ func main() {
 			log.Errorf("Failed to delete message: %s", err.Error())
 			return
 		}
+		log.Debugf("Invalidating clusters cache")
+		err = cacheManager.Invalidate(context.Background(), store.WithInvalidateTags([]string{"clusters"}))
+		if err != nil {
+			log.Errorf("Failed to invalidate clusters cache: %s", err.Error())
+			return
+		}
 	})
 
 	a := api.NewRouter()
-
-	redisStore := redisstore.NewRedis(redis.NewClient(&redis.Options{
-		Addr: "localhost:6379",
-	}))
-
-	cacheManager := cache.New[string](redisStore)
-
 	status := api.StatusSessions{
 		Db:        db,
 		SQS:       q,

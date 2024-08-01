@@ -82,7 +82,7 @@ func (h *handler) Register(v2 *echo.Group) {
 	clusters := v2.Group("/clusters", a.VerifyToken(), web.RateLimiter(h.appConfig))
 	clusters.GET("/:name", h.GetCluster)
 	clusters.PATCH("/:name", h.PatchCluster, a.VerifyGroupAccess(h.appConfig.ApiAuthorizedGroupId))
-	clusters.GET("", h.ListClusters, web.HTTPCache(h.cache, h.appConfig))
+	clusters.GET("", h.ListClusters, web.HTTPCache(h.cache, h.appConfig, []string{"clusters"}))
 
 	services := v2.Group("/services", a.VerifyToken(), web.RateLimiter(h.appConfig))
 	services.GET("/:serviceId", h.GetServiceMetadata)
