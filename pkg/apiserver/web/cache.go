@@ -64,8 +64,7 @@ func HTTPCache(client *cache.Cache[string], appConfig *config.AppConfig, tags []
 				cachedResponse, err := client.Get(c.Request().Context(), key)
 				response := StringToResponse(cachedResponse)
 				if err != nil {
-					c.Logger().Errorf("Error getting key from cache: %s", err.Error())
-					c.Error(err)
+					c.Logger().Warnf("Error getting key from cache: %s", err.Error())
 				}
 
 				// if key in cache
