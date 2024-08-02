@@ -15,6 +15,7 @@ package web
 import (
 	"bufio"
 	"bytes"
+	"encoding/gob"
 	"github.com/adobe/cluster-registry/pkg/config"
 	"github.com/eko/gocache/lib/v4/cache"
 	"github.com/eko/gocache/lib/v4/store"
@@ -26,7 +27,32 @@ import (
 	"net/url"
 	"sort"
 	"strconv"
+	"strings"
 )
+
+type Response struct {
+	// Value is the cached response value.
+	Value []byte
+
+	// Header is the cached response header.
+	Header http.Header
+}
+
+func StringToResponse(s string) Response {
+	var r Response
+	dec := gob.NewDecoder(strings.NewReader(s))
+	_ = dec.Decode(&r)
+
+	return r
+}
+
+func (r Response) String() string {
+	var b bytes.Buffer
+	enc := gob.NewEncoder(&b)
+	_ = enc.Encode(r)
+
+	return b.String()
+}
 
 func HTTPCache(client *cache.Cache[string], appConfig *config.AppConfig, tags []string) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
@@ -35,16 +61,22 @@ func HTTPCache(client *cache.Cache[string], appConfig *config.AppConfig, tags []
 				sortURLParams(c.Request().URL)
 				key := GenerateKey(c.Request().URL.String())
 
-				value, err := client.Get(c.Request().Context(), key)
+				cachedResponse, err := client.Get(c.Request().Context(), key)
+				response := StringToResponse(cachedResponse)
 				if err != nil {
 					c.Logger().Errorf("Error getting key from cache: %s", err.Error())
 					c.Error(err)
 				}
 
 				// if key in cache
-				if value != "" {
+				if cachedResponse != "" {
 					// return body from cache
-					_, _ = c.Response().Write([]byte(value))
+					for k, v := range response.Header {
+						c.Response().Header().Set(k, strings.Join(v, ","))
+					}
+					c.Response().WriteHeader(http.StatusOK)
+					_, _ = c.Response().Write(response.Value)
+
 					return nil
 				}
 
@@ -57,7 +89,11 @@ func HTTPCache(client *cache.Cache[string], appConfig *config.AppConfig, tags []
 					c.Error(err)
 				}
 				if writer.statusCode < 400 {
-					err := client.Set(c.Request().Context(), key, resBody.String(), store.WithExpiration(appConfig.ApiCacheTTL), store.WithTags(tags))
+					newResponse := Response{
+						Value:  resBody.Bytes(),
+						Header: writer.Header(),
+					}
+					err := client.Set(c.Request().Context(), key, newResponse.String(), store.WithExpiration(appConfig.ApiCacheTTL), store.WithTags(tags))
 					if err != nil {
 						c.Logger().Errorf("Error setting cache key: %s", err.Error())
 						c.Error(err)

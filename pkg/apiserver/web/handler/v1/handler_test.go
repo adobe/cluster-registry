@@ -309,15 +309,22 @@ func TestListClustersWithEmptyCache(t *testing.T) {
 	rec := httptest.NewRecorder()
 	ctx := r.NewContext(req, rec)
 
-	expectedResponse := newClusterListResponse(expectedClusters, len(expectedClusters), 0, 200, false)
-	expectedBody, err := json.Marshal(expectedResponse)
+	expectedClusterListResponse := newClusterListResponse(expectedClusters, len(expectedClusters), 0, 200, false)
+	expectedBody, err := json.Marshal(expectedClusterListResponse)
 	test.NoError(err)
+
+	expectedBody = append(expectedBody, "\n"...)
+
+	expectedResponse := web.Response{
+		Value:  expectedBody,
+		Header: http.Header{"Content-Type": []string{echo.MIMEApplicationJSON}},
+	}
 
 	key := web.GenerateKey(ctx.Request().URL.String())
 
 	redisMock.ExpectGet(key).SetVal("")
 
-	redisMock.ExpectSet(key, string(expectedBody)+"\n", appConfig.ApiCacheTTL).SetVal("OK")
+	redisMock.ExpectSet(key, expectedResponse.String(), appConfig.ApiCacheTTL).SetVal("OK")
 
 	err = web.HTTPCache(cacheManager, appConfig, []string{"clusters"})(h.ListClusters)(ctx)
 	test.NoError(err)
@@ -365,14 +372,21 @@ func TestListClustersWithCache(t *testing.T) {
 	rec := httptest.NewRecorder()
 	ctx := r.NewContext(req, rec)
 
-	expectedResponse := newClusterListResponse(expectedClusters, len(expectedClusters), 0, 200, false)
-	expectedBody, err := json.Marshal(expectedResponse)
+	expectedClusterListResponse := newClusterListResponse(expectedClusters, len(expectedClusters), 0, 200, false)
+	expectedBody, err := json.Marshal(expectedClusterListResponse)
 	test.NoError(err)
+
+	expectedBody = append(expectedBody, "\n"...)
+
+	expectedResponse := web.Response{
+		Value:  expectedBody,
+		Header: http.Header{"Content-Type": []string{echo.MIMEApplicationJSON}},
+	}
 
 	key := web.GenerateKey(ctx.Request().URL.String())
 
-	redisMock.ExpectSet(key, string(expectedBody), appConfig.ApiCacheTTL).SetVal("")
-	err = redisStore.Set(context.Background(), key, string(expectedBody), store.WithExpiration(appConfig.ApiCacheTTL))
+	redisMock.ExpectSet(key, expectedResponse.String(), appConfig.ApiCacheTTL).SetVal("")
+	err = redisStore.Set(context.Background(), key, expectedResponse.String(), store.WithExpiration(appConfig.ApiCacheTTL))
 	test.NoError(err)
 
 	redisMock.ExpectGet(key).SetVal(string(expectedBody))
