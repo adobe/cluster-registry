@@ -480,6 +480,7 @@ func TestListClustersWithEmptyCache(t *testing.T) {
 
 	expectedClusterListResponse := newClusterListResponse(expectedClusters, len(expectedClusters), 0, 200, false)
 	expectedBody, err := json.Marshal(expectedClusterListResponse)
+	test.NoError(err)
 
 	expectedBody = append(expectedBody, "\n"...)
 
