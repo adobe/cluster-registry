@@ -95,7 +95,6 @@ func HTTPCache(client *cache.Cache[string], appConfig *config.AppConfig, tags []
 					err := client.Set(c.Request().Context(), key, newResponse.String(), store.WithExpiration(appConfig.ApiCacheTTL), store.WithTags(tags))
 					if err != nil {
 						c.Logger().Errorf("Error setting cache key: %s", err.Error())
-						c.Error(err)
 					}
 				}
 				return nil
