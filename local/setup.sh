@@ -186,5 +186,3 @@ if [[ "${RUN_CLIENT}" == 1 ]]; then
 fi
 
 echo 'Local stack was set up successfully.'
-
-# vim: ts=4 sw=4 et
