@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/labstack/gommon/log"
 	"github.com/stretchr/testify/assert"
@@ -83,12 +84,17 @@ func TestLoadApiConfig(t *testing.T) {
 				"OIDC_ISSUER_URL":         "http://fake-oidc-provider",
 				"API_RATE_LIMITER":        "enabled",
 				"LOG_LEVEL":               "DEBUG",
+				"SQS_BATCH_SIZE":          "10",
+				"SQS_WAIT_SECONDS":        "5",
+				"SQS_RUN_INTERVAL":        "30",
 				"API_HOST":                "custom-host:8080",
 				"K8S_RESOURCE_ID":         "k8s-resource-id",
 				"API_TENANT_ID":           "api-tenant-id",
 				"API_CLIENT_ID":           "api-client-id",
 				"API_CLIENT_SECRET":       "api-client-secret",
 				"API_AUTHORIZED_GROUP_ID": "api-authorized-group-id",
+				"API_CACHE_TTL":           "1h",
+				"API_CACHE_REDIS_HOST":    "localhost:6379",
 			},
 			expectedAppConfig: &AppConfig{
 				ApiRateLimiterEnabled: true,
@@ -104,26 +110,34 @@ func TestLoadApiConfig(t *testing.T) {
 				SqsEndpoint:           "http://localhost:9324",
 				SqsAwsRegion:          "sqs-aws-region",
 				SqsQueueName:          "cluster-registry-local",
+				SqsBatchSize:          10,
+				SqsWaitSeconds:        5,
+				SqsRunInterval:        30,
 				K8sResourceId:         "k8s-resource-id",
 				ApiTenantId:           "api-tenant-id",
 				ApiClientId:           "api-client-id",
 				ApiClientSecret:       "api-client-secret",
 				ApiAuthorizedGroupId:  "api-authorized-group-id",
+				ApiCacheTTL:           time.Hour,
+				ApiCacheRedisHost:     "localhost:6379",
 			},
 			expectedError: nil,
 		},
 		{
 			name: "invalid app config",
 			envVars: map[string]string{
-				"AWS_REGION":     "aws-region",
-				"DB_ENDPOINT":    "http://localhost:8000",
-				"DB_AWS_REGION":  "db-aws-region",
-				"DB_TABLE_NAME":  "cluster-registry-local",
-				"DB_INDEX_NAME":  "search-index-local",
-				"SQS_ENDPOINT":   "http://localhost:9324",
-				"SQS_AWS_REGION": "sqs-aws-region",
-				"SQS_QUEUE_NAME": "cluster-registry-local",
-				"OIDC_CLIENT_ID": "oidc-client-id",
+				"AWS_REGION":       "aws-region",
+				"DB_ENDPOINT":      "http://localhost:8000",
+				"DB_AWS_REGION":    "db-aws-region",
+				"DB_TABLE_NAME":    "cluster-registry-local",
+				"DB_INDEX_NAME":    "search-index-local",
+				"SQS_ENDPOINT":     "http://localhost:9324",
+				"SQS_AWS_REGION":   "sqs-aws-region",
+				"SQS_QUEUE_NAME":   "cluster-registry-local",
+				"OIDC_CLIENT_ID":   "oidc-client-id",
+				"SQS_BATCH_SIZE":   "10",
+				"SQS_WAIT_SECONDS": "5",
+				"SQS_RUN_INTERVAL": "30",
 			},
 			expectedAppConfig: &AppConfig{
 				ApiRateLimiterEnabled: true,
@@ -162,7 +176,7 @@ func TestLoadApiConfig(t *testing.T) {
 			test.Error(err, "there should be an error processing the message")
 			test.Contains(fmt.Sprintf("%v", err), fmt.Sprintf("%v", tc.expectedError), "the error message should be as expected")
 		} else {
-			test.Equal(*tc.expectedAppConfig, *appConfig)
+			test.Equal(tc.expectedAppConfig, appConfig)
 		}
 
 		for k := range tc.envVars {
@@ -222,7 +236,7 @@ func TestLoadClientConfig(t *testing.T) {
 			test.Error(err, "there should be an error processing the message")
 			test.Contains(fmt.Sprintf("%v", err), fmt.Sprintf("%v", tc.expectedError), "the error message should be as expected")
 		} else {
-			test.Equal(*tc.expectedAppConfig, *appConfig)
+			test.Equal(tc.expectedAppConfig, appConfig)
 		}
 
 		for k := range tc.envVars {
