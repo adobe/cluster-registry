@@ -98,6 +98,17 @@ elif container_exists "${CONTAINER_SQS}" && ! container_running "${CONTAINER_SQS
     docker start "${CONTAINER_SQS}" || die "Failed to start stopped $CONTAINER_SQS container."
 fi
 
+if ! container_exists "${CONTAINER_REDIS}"; then
+    echo 'Run a local redis...'
+    docker run -d \
+        --name ${CONTAINER_REDIS} \
+        -p 6379:6379 \
+        --network ${NETWORK} \
+        "${IMAGE_REDIS}" || die "Failed to create $IMAGE_REDIS container."
+elif container_exists "${CONTAINER_REDIS}" && ! container_running "${CONTAINER_REDIS}"; then
+    docker start "${CONTAINER_REDIS}" || die "Failed to start stopped $CONTAINER_REDIS container."
+fi
+
 if ! container_exists "${CONTAINER_OIDC}"; then
     echo 'Run mocking oidc instance'
     docker run -d \
@@ -139,31 +150,36 @@ if [[ "${RUN_APISERVER}" == 1 ]]; then
         container_running "${CONTAINER_API}" && { docker stop "$CONTAINER_API" || die "Failed to stop cluster-registry api container $CONTAINER_API"; }
         docker rm "${CONTAINER_API}" || die "Failed to remove cluster-registry api container $CONTAINER_API"
     fi
-        docker run -d \
-            --name "${CONTAINER_API}" \
-            -p 8080:8080 \
-            -e AWS_REGION \
-            -e AWS_ACCESS_KEY_ID \
-            -e AWS_SECRET_ACCESS_KEY \
-            -e DB_AWS_REGION \
-            -e DB_ENDPOINT=http://"${CONTAINER_DB}":8000 \
-            -e DB_TABLE_NAME="${DB_TABLE_NAME}" \
-            -e DB_INDEX_NAME="${DB_INDEX_NAME}" \
-            -e OIDC_ISSUER_URL=http://"${CONTAINER_OIDC}" \
-            -e OIDC_CLIENT_ID \
-            -e SQS_AWS_REGION \
-            -e SQS_ENDPOINT=http://"${CONTAINER_SQS}":9324 \
-            -e SQS_QUEUE_NAME="${SQS_QUEUE_NAME}" \
-            -e API_RATE_LIMITER="${API_RATE_LIMITER}" \
-            -e LOG_LEVEL="${LOG_LEVEL}" \
-            -e API_HOST="${API_HOST}" \
-            -e K8S_RESOURCE_ID="${K8S_RESOURCE_ID}" \
-            -e API_TENANT_ID="${API_TENANT_ID}" \
-            -e API_CLIENT_ID="${API_CLIENT_ID}" \
-            -e API_CLIENT_SECRET="${API_CLIENT_SECRET}" \
-            -e API_AUTHORIZED_GROUP_ID="${API_AUTHORIZED_GROUP_ID}" \
-            --network "${NETWORK}" \
-            "${IMAGE_APISERVER}":"${TAG}" || die "Failed to create $CONTAINER_API container."
+    docker run -d \
+        --name "${CONTAINER_API}" \
+        -p 8080:8080 \
+        -e AWS_REGION \
+        -e AWS_ACCESS_KEY_ID \
+        -e AWS_SECRET_ACCESS_KEY \
+        -e DB_AWS_REGION \
+        -e DB_ENDPOINT=http://"${CONTAINER_DB}":8000 \
+        -e DB_TABLE_NAME="${DB_TABLE_NAME}" \
+        -e DB_INDEX_NAME="${DB_INDEX_NAME}" \
+        -e OIDC_ISSUER_URL=http://"${CONTAINER_OIDC}" \
+        -e OIDC_CLIENT_ID \
+        -e SQS_AWS_REGION \
+        -e SQS_ENDPOINT=http://"${CONTAINER_SQS}":9324 \
+        -e SQS_QUEUE_NAME="${SQS_QUEUE_NAME}" \
+        -e SQS_BATCH_SIZE \
+        -e SQS_WAIT_SECONDS \
+        -e SQS_RUN_INTERVAL \
+        -e API_RATE_LIMITER="${API_RATE_LIMITER}" \
+        -e LOG_LEVEL="${LOG_LEVEL}" \
+        -e API_HOST="${API_HOST}" \
+        -e K8S_RESOURCE_ID="${K8S_RESOURCE_ID}" \
+        -e API_TENANT_ID="${API_TENANT_ID}" \
+        -e API_CLIENT_ID="${API_CLIENT_ID}" \
+        -e API_CLIENT_SECRET="${API_CLIENT_SECRET}" \
+        -e API_AUTHORIZED_GROUP_ID="${API_AUTHORIZED_GROUP_ID}" \
+        -e API_CACHE_TTL \
+        -e API_CACHE_REDIS_HOST=${CONTAINER_REDIS}:6379 \
+        --network "${NETWORK}" \
+        "${IMAGE_APISERVER}":"${TAG}" || die "Failed to create $CONTAINER_API container."
 fi
 
 if [[ "${RUN_CLIENT}" == 1 ]]; then

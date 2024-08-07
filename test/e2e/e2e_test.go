@@ -74,7 +74,7 @@ func (s *e2eTestSuite) Test_EndToEnd_GetClusters() {
 	jwtToken := jwt.GenerateDefaultSignedToken(appConfig)
 	bearer := "Bearer " + jwtToken
 
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/api/v1/clusters", s.apiPort), nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/api/v2/clusters", s.apiPort), nil)
 	if err != nil {
 		s.T().Fatalf("Cannot build http request: %v", err.Error())
 	}
@@ -96,7 +96,7 @@ func (s *e2eTestSuite) Test_EndToEnd_GetClusters() {
 		s.T().Fatalf("Cannot read response body: %v", err.Error())
 	}
 
-	err = json.Unmarshal([]byte(body), &clusters)
+	err = json.Unmarshal(body, &clusters)
 	if err != nil {
 		s.T().Fatalf("Failed to unmarshal data: %v", err.Error())
 	}
@@ -115,7 +115,7 @@ func (s *e2eTestSuite) Test_EndToEnd_CreateCluster() {
 		s.T().Fatalf("Failed to read data from file %s.", input_file)
 	}
 
-	err = json.Unmarshal([]byte(data), &inputCluster)
+	err = json.Unmarshal(data, &inputCluster)
 	if err != nil {
 		s.T().Fatalf("Failed to unmarshal data: %v", err.Error())
 	}
@@ -176,7 +176,7 @@ func (s *e2eTestSuite) Test_EndToEnd_CreateCluster() {
 		s.T().Fatalf("Failed read response body: %v", err.Error())
 	}
 
-	err = json.Unmarshal([]byte(body), &outputCluster)
+	err = json.Unmarshal(body, &outputCluster)
 
 	s.Assert().Equal(http.StatusOK, resp.StatusCode)
 
@@ -227,7 +227,7 @@ func (s *e2eTestSuite) TBD_Test_EndToEnd_UpdateCluster() {
 		log.Fatal(err.Error())
 	}
 
-	err = json.Unmarshal([]byte(data), &inputCluster)
+	err = json.Unmarshal(data, &inputCluster)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -281,7 +281,7 @@ func (s *e2eTestSuite) TBD_Test_EndToEnd_UpdateCluster() {
 		log.Fatal(err)
 	}
 
-	err = json.Unmarshal([]byte(body), &outputCluster)
+	err = json.Unmarshal(body, &outputCluster)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -318,7 +318,6 @@ func (s *e2eTestSuite) Test_EndToEnd_RateLimiter() {
 		if err != nil {
 			s.T().Fatalf("Cannot make http request: %v", err.Error())
 		}
-		defer resp.Body.Close()
 
 		s.NoError(err)
 
@@ -329,6 +328,7 @@ func (s *e2eTestSuite) Test_EndToEnd_RateLimiter() {
 		} else {
 			s.T().Errorf("Unexpected status code: %d", resp.StatusCode)
 		}
+		_ = resp.Body.Close()
 	}
 
 	s.Assert().LessOrEqual(statusOK, expectedMaxStatusOK)
