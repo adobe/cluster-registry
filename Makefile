@@ -63,7 +63,7 @@ setup:
 ############
 
 .PHONY: build
-build: build-apiserver build-client
+build: build-apiserver build-client build-sync-manager
 
 .PHONY: build-apiserver
 build-apiserver:
