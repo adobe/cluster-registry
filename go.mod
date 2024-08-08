@@ -5,7 +5,7 @@ go 1.22.4
 require (
 	dario.cat/mergo v1.0.0
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.13
-	github.com/aws/aws-sdk-go v1.55.4
+	github.com/aws/aws-sdk-go v1.55.5
 	github.com/coreos/go-oidc/v3 v3.11.0
 	github.com/eko/gocache/lib/v4 v4.1.6
 	github.com/eko/gocache/store/redis/v4 v4.2.2
