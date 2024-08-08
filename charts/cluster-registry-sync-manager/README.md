@@ -17,31 +17,30 @@ Cluster Registry is a Rest API representing the source of record for all Kuberne
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| clusterRegistryClient.alertmanagerWebhook.alertMap | list | `[]` |  |
-| clusterRegistryClient.alertmanagerWebhook.bindAddress | string | `"0.0.0.0:9092"` |  |
-| clusterRegistryClient.health.healthProbeBindAddress | string | `":9091"` |  |
-| clusterRegistryClient.leaderElection.leaderElect | bool | `true` |  |
-| clusterRegistryClient.leaderElection.resourceName | string | `"0c4967d2.registry.ethos.adobe.com"` |  |
-| clusterRegistryClient.leaderElection.resourceNamespace | string | `"cluster-registry"` |  |
-| clusterRegistryClient.metrics.bindAddress | string | `"0.0.0.0:9090"` |  |
-| clusterRegistryClient.webhook.port | int | `9443` |  |
-| fullnameOverride | string | `"cluster-registry-client"` |  |
+| clusterRegistrySyncManager.health.healthProbeBindAddress | string | `":8081"` |  |
+| clusterRegistrySyncManager.leaderElection.leaderElect | bool | `false` |  |
+| clusterRegistrySyncManager.leaderElection.resourceLock | string | `"leases"` |  |
+| clusterRegistrySyncManager.leaderElection.resourceName | string | `"sync.registry.ethos.adobe.com"` |  |
+| clusterRegistrySyncManager.leaderElection.resourceNamespace | string | `"cluster-registry"` |  |
+| clusterRegistrySyncManager.metrics.bindAddress | string | `"0.0.0.0:9090"` |  |
+| clusterRegistrySyncManager.namespace | string | `"cluster-registry"` |  |
+| clusterRegistrySyncManager.watchedGVKs | object | `{}` |  |
+| clusterRegistrySyncManager.webhook.port | int | `9443` |  |
+| fullnameOverride | string | `"cluster-registry-sync-manager"` |  |
 | image.pullPolicy | string | `"IfNotPresent"` |  |
-| image.registry | string | `"ghcr.io/adobe/cluster-registry-client"` |  |
+| image.registry | string | `"ghcr.io/adobe/cluster-registry-sync-manager"` |  |
 | imagePullSecrets | list | `[]` |  |
 | livenessProbe.httpGet.path | string | `"/healthz"` |  |
 | livenessProbe.httpGet.port | int | `9091` |  |
 | livenessProbe.initialDelaySeconds | int | `15` |  |
 | livenessProbe.periodSeconds | int | `20` |  |
-| nameOverride | string | `"cluster-registry-client"` |  |
+| nameOverride | string | `"cluster-registry-sync-manager"` |  |
 | podDisruptionBudget.enabled | bool | `true` |  |
 | podDisruptionBudget.minAvailable | string | `"50%"` |  |
 | podMonitor.enabled | bool | `false` |  |
 | podMonitor.extraLabels | object | `{}` |  |
 | ports[0].containerPort | int | `9090` |  |
 | ports[0].name | string | `"metrics"` |  |
-| ports[1].containerPort | int | `9092` |  |
-| ports[1].name | string | `"amwebhook"` |  |
 | rbac.create | bool | `true` |  |
 | readinessProbe.httpGet.path | string | `"/readyz"` |  |
 | readinessProbe.httpGet.port | int | `9091` |  |
@@ -53,7 +52,7 @@ Cluster Registry is a Rest API representing the source of record for all Kuberne
 | resources.requests.cpu | string | `"100m"` |  |
 | resources.requests.memory | string | `"200Mi"` |  |
 | serviceAccount.create | bool | `true` |  |
-| serviceAccount.name | string | `"cluster-registry-client"` |  |
+| serviceAccount.name | string | `"cluster-registry-sync-manager"` |  |
 | terminationGracePeriodSeconds | int | `10` |  |
 
 ----------------------------------------------
