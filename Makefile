@@ -38,14 +38,22 @@ all: format generate build test test-e2e
 ###############
 
 SETUP_CMD = "./local/setup.sh"
-ifeq ($(API),true)
-	ifeq ($(CLIENT),)
-		SETUP_CMD += "1 0"
-	endif
-else ifeq ($(API),)
-	ifeq ($(CLIENT),true)
-		SETUP_CMD += "0 1"
-	endif
+# By default run all components in the local setup
+# To exclude a component, set the corresponding variable to false
+ifeq ($(API),false)
+	SETUP_CMD += "0"
+else
+	SETUP_CMD += "1"
+endif
+ifeq ($(CLIENT),false)
+	SETUP_CMD += "0"
+else
+	SETUP_CMD += "1"
+endif
+ifeq ($(SYNC_MANAGER),false)
+	SETUP_CMD += "0"
+else
+	SETUP_CMD += "1"
 endif
 
 .PHONY: clean
@@ -56,7 +64,7 @@ clean:
 .PHONY: setup
 setup:
 	@echo "Running local setup..."
-	@ $(SETUP_CMD)
+	@echo $(SETUP_CMD)
 
 ############
 # Building #
