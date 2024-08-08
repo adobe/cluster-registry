@@ -1,0 +1,19 @@
+apiVersion: v2
+name: cluster-registry-sync-manager
+
+description: Cluster Registry is a Rest API representing the source of record for
+  all Kubernetes clusters in the infrastructure fleet. All clusters are automatically
+  registered, and the information is accurately reflected in the Cluster Registry
+  using a client-server architecture.
+
+type: application
+home: https://github.com/adobe/cluster-registry
+
+maintainers:
+  - name: aalexandru
+    email: aalexand@adobe.com
+  - name: radu-catalina
+    email: caradu@adobe.com
+
+version: 0.1.0
+appVersion: v1.6.0

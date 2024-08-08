@@ -1,0 +1,30 @@
+{{- if .Values.clusterRegistrySyncManager }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sync-manager-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cluster-registry-sync-manager.labels" . | nindent 4 }}
+data:
+  config.yaml: |-
+    apiVersion: config.registry.ethos.adobe.com/v1
+    kind: SyncConfig
+    health:
+      healthProbeBindAddress: {{ .Values.clusterRegistrySyncManager.health.healthProbeBindAddress }}
+    metrics:
+      bindAddress: {{ .Values.clusterRegistrySyncManager.metrics.bindAddress }}
+    webhook:
+      port: {{ .Values.clusterRegistrySyncManager.webhook.port }}
+    leaderElection:
+      leaderElect: {{ .Values.clusterRegistrySyncManager.leaderElection.leaderElect }}
+      resourceNamespace: {{ .Release.Namespace }}
+      resourceName:  {{ .Values.clusterRegistrySyncManager.leaderElection.resourceName }}
+    namespace: {{ .Release.Namespace }}
+    watchedGVKs:
+    {{- range $_, $gvk := .Values.clusterRegistrySyncManager.watchedGVKs }}
+      - group: {{ $gvk.group }}
+        version: {{ $gvk.version }}
+        kind: {{ $gvk.kind }}
+    {{- end }}
+{{- end }}
