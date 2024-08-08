@@ -64,7 +64,7 @@ clean:
 .PHONY: setup
 setup:
 	@echo "Running local setup..."
-	@echo $(SETUP_CMD)
+	@ $(SETUP_CMD)
 
 ############
 # Building #
