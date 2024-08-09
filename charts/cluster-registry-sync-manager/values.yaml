@@ -43,7 +43,6 @@ clusterRegistrySyncManager:
     port: 9443
   leaderElection:
     leaderElect: false
-    resourceNamespace: cluster-registry
     resourceName: sync.registry.ethos.adobe.com
     resourceLock: leases
   watchedGVKs: {}
