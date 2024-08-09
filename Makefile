@@ -38,14 +38,22 @@ all: format generate build test test-e2e
 ###############
 
 SETUP_CMD = "./local/setup.sh"
-ifeq ($(API),true)
-	ifeq ($(CLIENT),)
-		SETUP_CMD += "1 0"
-	endif
-else ifeq ($(API),)
-	ifeq ($(CLIENT),true)
-		SETUP_CMD += "0 1"
-	endif
+# By default run all components in the local setup
+# To exclude a component, set the corresponding variable to false
+ifeq ($(API),false)
+	SETUP_CMD += "0"
+else
+	SETUP_CMD += "1"
+endif
+ifeq ($(CLIENT),false)
+	SETUP_CMD += "0"
+else
+	SETUP_CMD += "1"
+endif
+ifeq ($(SYNC_MANAGER),false)
+	SETUP_CMD += "0"
+else
+	SETUP_CMD += "1"
 endif
 
 .PHONY: clean
@@ -63,7 +71,7 @@ setup:
 ############
 
 .PHONY: build
-build: build-apiserver build-client
+build: build-apiserver build-client build-sync-manager
 
 .PHONY: build-apiserver
 build-apiserver:
@@ -73,13 +81,17 @@ build-apiserver:
 build-client:
 	$(GO_BUILD_RECIPE) -o cluster-registry-client cmd/client/client.go
 
+.PHONY: build-sync-manager
+build-sync-manager:
+	$(GO_BUILD_RECIPE) -o cluster-registry-sync-manager cmd/sync/manager/manager.go
+
 .PHONY: release
 release:
 	./hack/release.sh
 
 .PHONY: image
 image: GOOS := linux
-image: .hack-apiserver-image .hack-client-image
+image: .hack-apiserver-image .hack-client-image .hack-sync-manager-image
 
 .hack-apiserver-image: cmd/apiserver/Dockerfile build-apiserver
 	docker build -t $(IMAGE_APISERVER):$(TAG) -f cmd/apiserver/Dockerfile .
@@ -87,6 +99,10 @@ image: .hack-apiserver-image .hack-client-image
 
 .hack-client-image: cmd/client/Dockerfile build-client
 	docker build -t $(IMAGE_CLIENT):$(TAG) -f cmd/client/Dockerfile .
+	touch $@
+
+.hack-sync-manager-image: cmd/sync/manager/Dockerfile build-sync-manager
+	docker build -t $(IMAGE_SYNC_MANAGER):$(TAG) -f cmd/sync/manager/Dockerfile .
 	touch $@
 
 .PHONY: update-go-deps

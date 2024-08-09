@@ -41,9 +41,10 @@ done
 
 docker info -f json > /dev/null || die 'Cannot talk to the docker daemon. Ensure docker is running and your user can access the socket.'
 
-# by default run the apiserver and client
+# by default run all components
 RUN_APISERVER="${1:-1}"
 RUN_CLIENT="${2:-1}"
+RUN_SYNC_MANAGER="${3:-1}"
 
 ROOT_DIR="$(cd "$(dirname "$0")/.."; pwd)"
 
@@ -199,6 +200,25 @@ if [[ "${RUN_CLIENT}" == 1 ]]; then
         -e SQS_QUEUE_NAME="${SQS_QUEUE_NAME}" \
         --network "${NETWORK}" \
         "${IMAGE_CLIENT}":"${TAG}" || die "Failed to create $CONTAINER_CLIENT container."
+fi
+
+if [[ "${RUN_SYNC_MANAGER}" == 1 ]]; then
+    echo 'Running cluster-registry-sync-manager'
+    if container_exists "${CONTAINER_SYNC_MANAGER}"; then
+        container_running "${CONTAINER_SYNC_MANAGER}" && { docker stop "CONTAINER_SYNC_MANAGER" || die "Failed to stop cluster-registry-sync-manager container $CONTAINER_SYNC_MANAGER"; }
+        docker rm "${CONTAINER_SYNC_MANAGER}" || die "Failed to remove cluster-registry-sync-manager container CONTAINER_SYNC_MANAGER"
+    fi
+    docker run -d \
+        --name "${CONTAINER_SYNC_MANAGER}" \
+        -v "${ROOT_DIR}/kubeconfig_client":/kubeconfig \
+        -e AWS_ACCESS_KEY_ID \
+        -e AWS_SECRET_ACCESS_KEY \
+        -e KUBECONFIG=/kubeconfig \
+        -e SQS_AWS_REGION \
+        -e SQS_ENDPOINT=http://"${CONTAINER_SQS}":9324 \
+        -e SQS_QUEUE_NAME="${SQS_QUEUE_NAME}" \
+        --network "${NETWORK}" \
+        "${IMAGE_SYNC_MANAGER}":"${TAG}" || die "Failed to create $CONTAINER_SYNC_MANAGER container."
 fi
 
 echo 'Local stack was set up successfully.'
