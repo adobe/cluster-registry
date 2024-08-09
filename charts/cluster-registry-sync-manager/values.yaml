@@ -46,7 +46,6 @@ clusterRegistrySyncManager:
     resourceNamespace: cluster-registry
     resourceName: sync.registry.ethos.adobe.com
     resourceLock: leases
-  namespace: cluster-registry
   watchedGVKs: {}
 
 rbac:
