@@ -254,6 +254,6 @@ swagger:
 	@[ -f $(SWAGGER_CLI) ] || GOBIN=$(shell pwd)/bin go install github.com/swaggo/swag/cmd/swag@v1.16.2
 	$(SWAGGER_CLI) init --parseDependency --parseInternal --parseDepth 2 -g cmd/apiserver/apiserver.go --output pkg/apiserver/docs/
 
-HELM_DOCS_VERSION ?= "1.12.0"
+HELM_DOCS_VERSION ?= "1.14.2"
 helm-docs:
 	@export use_docker="true"; if [ $$(command -v helm-docs) ]; then version=$$(helm-docs --version); if [ "$${version}" != "helm-docs version ${HELM_DOCS_VERSION}" ]; then use_docker="true"; else use_docker="false"; fi; fi; if [ "$$use_docker" == "true" ]; then docker run --rm --volume "$$(pwd):/helm-docs" jnorwood/helm-docs:v${HELM_DOCS_VERSION}; else helm-docs; fi
