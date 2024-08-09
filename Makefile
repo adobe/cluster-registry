@@ -235,6 +235,12 @@ kustomize: ## Download kustomize locally if necessary.
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=$(MANAGER_ROLE) webhook paths="$(shell pwd)/pkg/..." output:crd:artifacts:config=$(shell pwd)/config/crd/bases output:rbac:artifacts:config=$(shell pwd)/config/rbac
 
+	@echo 'Copying CRDs to the appropriate helm charts...'
+	@cp -r $(shell pwd)/config/crd/bases/registry.ethos.adobe.com_clusters.yaml $(shell pwd)/charts/cluster-registry-client/crds/
+	@cp -r $(shell pwd)/config/crd/bases/registry.ethos.adobe.com_servicemetadatawatchers.yaml $(shell pwd)/charts/cluster-registry-client/crds/
+	@cp -r $(shell pwd)/config/crd/bases/registry.ethos.adobe.com_clustersyncs.yaml $(shell pwd)/charts/cluster-registry-sync-manager/crds/
+
+
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="$(shell pwd)/hack/license_header.txt" paths="$(shell pwd)/pkg/api/..."
 
@@ -247,3 +253,7 @@ SWAGGER_CLI = $(shell pwd)/bin/swag
 swagger:
 	@[ -f $(SWAGGER_CLI) ] || GOBIN=$(shell pwd)/bin go install github.com/swaggo/swag/cmd/swag@v1.16.2
 	$(SWAGGER_CLI) init --parseDependency --parseInternal --parseDepth 2 -g cmd/apiserver/apiserver.go --output pkg/apiserver/docs/
+
+HELM_DOCS_VERSION ?= "1.12.0"
+helm-docs:
+	@export use_docker="true"; if [ $$(command -v helm-docs) ]; then version=$$(helm-docs --version); if [ "$${version}" != "helm-docs version ${HELM_DOCS_VERSION}" ]; then use_docker="true"; else use_docker="false"; fi; fi; if [ "$$use_docker" == "true" ]; then docker run --rm --volume "$$(pwd):/helm-docs" jnorwood/helm-docs:v${HELM_DOCS_VERSION}; else helm-docs; fi
