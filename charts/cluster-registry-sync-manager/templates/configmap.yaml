@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: sync-manager-config
+  name: {{ include "cluster-registry-sync-manager.fullname" . }}-config
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "cluster-registry-sync-manager.labels" . | nindent 4 }}

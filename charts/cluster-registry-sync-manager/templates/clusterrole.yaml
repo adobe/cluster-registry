@@ -1,7 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: cluster-registry-sync-manager
+  name: {{ include "cluster-registry-sync-manager.fullname" . }}
   labels:
     {{- include "cluster-registry-sync-manager.labels" . | nindent 4 }}
 rules:

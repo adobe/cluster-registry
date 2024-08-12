@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: client-config
+  name: {{ include "cluster-registry-client.fullname" . }}-config
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "cluster-registry-client.labels" . | nindent 4 }}

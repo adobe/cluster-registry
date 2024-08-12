@@ -1,7 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  labels:   {{- include "cluster-registry-sync-manager.labels" . | nindent 4 }}
+  labels:
+    {{- include "cluster-registry-sync-manager.labels" . | nindent 4 }}
   name: {{ include "cluster-registry-sync-manager.fullname" . }}
   namespace: {{ .Release.Namespace }}
 spec:
@@ -29,7 +30,7 @@ spec:
           image: "{{ .Values.image.registry }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           volumeMounts:
-            - name: sync-manager-config
+            - name: {{ include "cluster-registry-sync-manager.fullname" . }}-config
               mountPath: /config.yaml
               subPath: config.yaml
           ports:
@@ -81,8 +82,8 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
       volumes:
-        - name: sync-manager-config
+        - name: {{ include "cluster-registry-sync-manager.fullname" . }}-config
           configMap:
-            name: sync-manager-config
+            name: {{ include "cluster-registry-sync-manager.fullname" . }}-config
       serviceAccountName: {{ include "cluster-registry-sync-manager.serviceAccountName" . }}
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds | required ".Values.terminationGracePeriodSeconds is required"  }}
