@@ -8,7 +8,7 @@ kind: PodDisruptionBudget
 metadata:
   labels:
     {{- include "cluster-registry-sync-manager.labels" . | nindent 4 }}
-  name: {{ template "cluster-registry-sync-manager.fullname" . }}
+  name: {{ include "cluster-registry-sync-manager.fullname" . }}
   namespace: {{ .Release.Namespace }}
 spec:
   selector:

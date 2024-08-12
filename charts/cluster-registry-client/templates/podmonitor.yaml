@@ -7,7 +7,7 @@ metadata:
     {{- if .Values.podMonitor.extraLabels }}
     {{- toYaml .Values.podMonitor.extraLabels | nindent 4 }}
     {{- end }}
-  name: cluster-registry-client
+  name: {{ include "cluster-registry-client.fullname" . }}
   namespace: {{ .Release.Namespace }}
 spec:
   jobLabel: app

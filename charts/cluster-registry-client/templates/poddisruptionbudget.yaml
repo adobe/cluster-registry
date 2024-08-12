@@ -8,7 +8,7 @@ kind: PodDisruptionBudget
 metadata:
   labels:
     {{- include "cluster-registry-client.labels" . | nindent 4 }}
-  name: {{ template "cluster-registry-client.fullname" . }}
+  name: {{ include "cluster-registry-client.fullname" . }}
   namespace: {{ .Release.Namespace }}
 spec:
   selector:

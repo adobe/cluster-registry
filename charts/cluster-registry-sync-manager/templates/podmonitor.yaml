@@ -7,7 +7,7 @@ metadata:
     {{- if .Values.podMonitor.extraLabels }}
     {{- toYaml .Values.podMonitor.extraLabels | nindent 4 }}
     {{- end }}
-  name: cluster-registry-sync-manager
+  name: {{ include "cluster-registry-sync-manager.fullname" . }}
   namespace: {{ .Release.Namespace }}
 spec:
   jobLabel: app
