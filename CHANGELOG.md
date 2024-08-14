@@ -1,3 +1,10 @@
+# 1.6.1
+
+### 🐛 Bug Fixes
+
+- cluster-registry-sync-manager nil pointer dereference (#219)
+
+
 # 1.6.0
 
 ### 🚀 Features
