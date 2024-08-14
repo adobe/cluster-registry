@@ -325,9 +325,12 @@ func (c *SyncController) hasDifferentHash(object runtime.Object) bool {
 	instance := object.(*registryv1alpha1.ClusterSync)
 
 	oldHash := instance.Status.SyncedDataHash
-	newHash := ptr.To(hash(instance.Status.SyncedData))
 
-	return *oldHash != *newHash
+	if oldHash == nil || instance.Status.SyncedData == nil {
+		return true
+	}
+
+	return *oldHash != hash(instance.Status.SyncedData)
 }
 
 func (c *SyncController) updateStatus(ctx context.Context, instance *registryv1alpha1.ClusterSync) error {
