@@ -2,6 +2,25 @@ apiVersion: v1
 entries:
   cluster-registry-client:
   - apiVersion: v2
+    appVersion: v1.6.2
+    created: "2024-08-16T13:32:32.770477655Z"
+    description: Cluster Registry is a Rest API representing the source of record
+      for all Kubernetes clusters in the infrastructure fleet. All clusters are automatically
+      registered, and the information is accurately reflected in the Cluster Registry
+      using a client-server architecture.
+    digest: 09fead4b5700b39e88831bd3758c124318daa374a821461069fda823e9e7b163
+    home: https://github.com/adobe/cluster-registry
+    maintainers:
+    - email: aalexand@adobe.com
+      name: aalexandru
+    - email: caradu@adobe.com
+      name: radu-catalina
+    name: cluster-registry-client
+    type: application
+    urls:
+    - https://github.com/adobe/cluster-registry/releases/download/cluster-registry-client-0.3.2/cluster-registry-client-0.3.2.tgz
+    version: 0.3.2
+  - apiVersion: v2
     appVersion: v1.6.0
     created: "2024-08-12T13:55:59.562335643Z"
     description: Cluster Registry is a Rest API representing the source of record
@@ -326,6 +345,25 @@ entries:
     version: 0.1.2
   cluster-registry-sync-manager:
   - apiVersion: v2
+    appVersion: v1.6.2
+    created: "2024-08-16T13:32:32.901552983Z"
+    description: Cluster Registry is a Rest API representing the source of record
+      for all Kubernetes clusters in the infrastructure fleet. All clusters are automatically
+      registered, and the information is accurately reflected in the Cluster Registry
+      using a client-server architecture.
+    digest: e4eb837f900a5dbf6874b55dc85d79928c2adb4100cc342a1dbcd13ebd4fe305
+    home: https://github.com/adobe/cluster-registry
+    maintainers:
+    - email: aalexand@adobe.com
+      name: aalexandru
+    - email: caradu@adobe.com
+      name: radu-catalina
+    name: cluster-registry-sync-manager
+    type: application
+    urls:
+    - https://github.com/adobe/cluster-registry/releases/download/cluster-registry-sync-manager-0.1.5/cluster-registry-sync-manager-0.1.5.tgz
+    version: 0.1.5
+  - apiVersion: v2
     appVersion: v1.6.1
     created: "2024-08-14T14:58:22.396261209Z"
     description: Cluster Registry is a Rest API representing the source of record
@@ -420,4 +458,4 @@ entries:
     urls:
     - https://github.com/adobe/cluster-registry/releases/download/helm-chart-v0.1.0/cluster-registry-sync-manager-0.1.0.tgz
     version: 0.1.0
-generated: "2024-08-14T14:58:22.39633685Z"
+generated: "2024-08-16T13:32:32.901730897Z"
