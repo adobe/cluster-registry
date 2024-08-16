@@ -1,3 +1,12 @@
+# 1.6.2
+
+### 🐛 Bug Fixes
+
+- Fix issue with sync-manager reconciliation logic (#223)
+- *(deps)* Update module github.com/prometheus/client_golang to v1.20.0 (#221)
+- *(deps)* Bump controller-gen version to 0.16.1 (#224)
+
+
 # 1.6.1
 
 ### 🐛 Bug Fixes
