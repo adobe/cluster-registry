@@ -166,15 +166,12 @@ type AllowedOnboardingTeam struct {
 // Extra information
 type Extra struct {
 	// Name of the domain
-	// +kubebuilder:validation:Required
 	DomainName string `json:"domainName"`
 
 	// Load balancer endpoints
-	// +kubebuilder:validation:Required
 	LbEndpoints map[string]string `json:"lbEndpoints"`
 
 	// Logging endpoints
-	// +kubebuilder:validation:Required
 	LoggingEndpoints []map[string]string `json:"loggingEndpoints,omitempty"`
 
 	// List of IAM Arns
