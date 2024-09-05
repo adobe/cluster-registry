@@ -497,11 +497,20 @@ const docTemplate = `{
                 "clusterCapacity": {
                     "type": "integer"
                 },
+                "clusterCurrentBqu": {
+                    "type": "integer"
+                },
+                "clusterMaxBqu": {
+                    "type": "integer"
+                },
                 "clusterProvisioning": {
                     "type": "integer"
                 },
                 "lastUpdated": {
                     "type": "string"
+                },
+                "maxBquPerRequest": {
+                    "type": "integer"
                 }
             }
         },
@@ -674,7 +683,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "domainName": {
-                    "description": "Name of the domain\n+kubebuilder:validation:Required",
+                    "description": "Name of the domain",
                     "type": "string"
                 },
                 "ecrIamArns": {
@@ -696,14 +705,14 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "lbEndpoints": {
-                    "description": "Load balancer endpoints\n+kubebuilder:validation:Required",
+                    "description": "Load balancer endpoints",
                     "type": "object",
                     "additionalProperties": {
                         "type": "string"
                     }
                 },
                 "loggingEndpoints": {
-                    "description": "Logging endpoints\n+kubebuilder:validation:Required",
+                    "description": "Logging endpoints",
                     "type": "array",
                     "items": {
                         "type": "object",

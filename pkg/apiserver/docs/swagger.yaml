@@ -40,10 +40,16 @@ definitions:
     properties:
       clusterCapacity:
         type: integer
+      clusterCurrentBqu:
+        type: integer
+      clusterMaxBqu:
+        type: integer
       clusterProvisioning:
         type: integer
       lastUpdated:
         type: string
+      maxBquPerRequest:
+        type: integer
     type: object
   github_com_adobe_cluster-registry_pkg_api_registry_v1.ClusterSpec:
     properties:
@@ -204,9 +210,7 @@ definitions:
   github_com_adobe_cluster-registry_pkg_api_registry_v1.Extra:
     properties:
       domainName:
-        description: |-
-          Name of the domain
-          +kubebuilder:validation:Required
+        description: Name of the domain
         type: string
       ecrIamArns:
         additionalProperties:
@@ -224,14 +228,10 @@ definitions:
       lbEndpoints:
         additionalProperties:
           type: string
-        description: |-
-          Load balancer endpoints
-          +kubebuilder:validation:Required
+        description: Load balancer endpoints
         type: object
       loggingEndpoints:
-        description: |-
-          Logging endpoints
-          +kubebuilder:validation:Required
+        description: Logging endpoints
         items:
           additionalProperties:
             type: string

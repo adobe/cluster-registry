@@ -260,6 +260,9 @@ type Capacity struct {
 	LastUpdated         string `json:"lastUpdated"`
 	ClusterCapacity     int    `json:"clusterCapacity"`
 	ClusterProvisioning int    `json:"clusterProvisioning"`
+	MaxBQUPerRequest    int    `json:"maxBquPerRequest"`
+	ClusterMaxBQU       int    `json:"clusterMaxBqu"`
+	ClusterCurrentBQU   int    `json:"clusterCurrentBqu"`
 }
 
 type ServiceMetadata map[string]ServiceMetadataItem
