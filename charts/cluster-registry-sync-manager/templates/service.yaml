@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    {{- include "cluster-registry-sync-manager.labels" . | nindent 4 }}
+  name: {{ include "cluster-registry-sync-manager.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  ports:
+    {{- range $_, $port := .Values.ports }}
+    - name: {{ $port.name }}
+      port: {{ $port.containerPort }}
+      targetPort: {{ $port.name }}
+    {{- else }}
+      {{ fail "No ports defined" }}
+    {{- end }}
+  selector:
+    {{- include "cluster-registry-sync-manager.selectorLabels" . | nindent 4 }}

@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Adobe. All rights reserved.
+Copyright 2024 Adobe. All rights reserved.
 This file is licensed to you under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License. You may obtain a copy
 of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -13,6 +13,7 @@ governing permissions and limitations under the License.
 package v1
 
 import (
+	"github.com/eko/gocache/lib/v4/cache"
 	"net/http"
 	"strconv"
 
@@ -39,14 +40,16 @@ type handler struct {
 	db        database.Db
 	appConfig *config.AppConfig
 	metrics   monitoring.MetricsI
+	cache     *cache.Cache[string]
 }
 
 // NewHandler func
-func NewHandler(appConfig *config.AppConfig, d database.Db, m monitoring.MetricsI) Handler {
+func NewHandler(appConfig *config.AppConfig, d database.Db, m monitoring.MetricsI, cache *cache.Cache[string]) Handler {
 	h := &handler{
 		db:        d,
 		metrics:   m,
 		appConfig: appConfig,
+		cache:     cache,
 	}
 	return h
 }
@@ -58,7 +61,7 @@ func (h *handler) Register(v1 *echo.Group) {
 	}
 	clusters := v1.Group("/clusters", a.VerifyToken(), web.RateLimiter(h.appConfig))
 	clusters.GET("/:name", h.GetCluster)
-	clusters.GET("", h.ListClusters)
+	clusters.GET("", h.ListClusters, web.HTTPCache(h.cache, h.appConfig, []string{"clusters"}))
 }
 
 // GetCluster godoc

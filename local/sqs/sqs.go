@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Adobe. All rights reserved.
+Copyright 2024 Adobe. All rights reserved.
 This file is licensed to you under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License. You may obtain a copy
 of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -14,8 +14,12 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	awssqs "github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/google/uuid"
 	"log"
 	"os"
 	"time"
@@ -40,7 +44,22 @@ func main() {
 		log.Fatalf("Cannot load the api configuration: '%v'", err.Error())
 	}
 
-	p := sqs.NewProducer(appConfig, m)
+	q, err := sqs.NewSQS(sqs.Config{
+		AWSRegion:         appConfig.SqsAwsRegion,
+		Endpoint:          appConfig.SqsEndpoint,
+		QueueName:         appConfig.SqsQueueName,
+		BatchSize:         10,
+		VisibilityTimeout: 120,
+		WaitSeconds:       5,
+		RunInterval:       20,
+		RunOnce:           false,
+		MaxHandlers:       10,
+		BusyTimeout:       30,
+	})
+	if err != nil {
+		log.Panicf("Error while trying to create SQS client: %v", err.Error())
+	}
+
 	input_file := flag.String("input-file", "../db/dummy-data.yaml", "yaml file path")
 	flag.Parse()
 
@@ -49,13 +68,35 @@ func main() {
 		log.Panicf("Error while trying to read file: %v", err.Error())
 	}
 
-	err = yaml.Unmarshal([]byte(data), &clusters)
+	err = yaml.Unmarshal(data, &clusters)
 	if err != nil {
 		log.Panicf("Error while trying to unmarshal data: %v", err.Error())
 	}
 
+	id, err := uuid.NewUUID()
+	if err != nil {
+		log.Panicf(err.Error())
+	}
+
 	for _, cluster := range clusters {
-		err = p.Send(ctx, &cluster)
+		data, _ := json.Marshal(cluster)
+		err = q.Enqueue(ctx, []*awssqs.SendMessageBatchRequestEntry{
+			{
+				Id:           aws.String(id.String()),
+				DelaySeconds: aws.Int64(10),
+				MessageAttributes: map[string]*awssqs.MessageAttributeValue{
+					"Type": {
+						DataType:    aws.String("String"),
+						StringValue: aws.String(sqs.ClusterUpdateEvent),
+					},
+					"ClusterName": {
+						DataType:    aws.String("String"),
+						StringValue: aws.String(cluster.Spec.Name),
+					},
+				},
+				MessageBody: aws.String(string(data)),
+			},
+		})
 		if err != nil {
 			log.Panicf("Error sending message to sqs: %v", err.Error())
 		}

@@ -1,8 +1,9 @@
 /*
-Copyright 2021 Adobe. All rights reserved.
+Copyright 2024 Adobe. All rights reserved.
 This file is licensed to you under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License. You may obtain a copy
 of the License at http://www.apache.org/licenses/LICENSE-2.0
+
 Unless required by applicable law or agreed to in writing, software distributed under
 the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
 OF ANY KIND, either express or implied. See the License for the specific language
@@ -12,161 +13,99 @@ governing permissions and limitations under the License.
 package sqs
 
 import (
-	"errors"
-	"strconv"
-	"testing"
-
-	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
+	"context"
+	"encoding/json"
+	"fmt"
 	"github.com/adobe/cluster-registry/pkg/config"
-	"github.com/adobe/cluster-registry/pkg/database"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/service/sqs"
-	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
-	"github.com/labstack/gommon/log"
-	"github.com/stretchr/testify/assert"
+	awssqs "github.com/aws/aws-sdk-go/service/sqs"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
-// mockDatabase database.db
-type mockDatabase struct {
-	database.Db
-	clusters []registryv1.Cluster
-}
+var _ = Describe("SQS suite", func() {
 
-func (m mockDatabase) GetCluster(name string) (*registryv1.Cluster, error) {
-	for _, c := range m.clusters {
-		if c.Spec.Name == name {
-			return &c, nil
+	var (
+		q           *Config
+		appConfig   *config.AppConfig
+		messageBody = map[string]string{
+			"foo": "bar",
 		}
-	}
-	return nil, nil
-}
+	)
 
-func (m mockDatabase) ListClusters(offset int, limit int, region string, environment string, status string, lastUpdated string) ([]registryv1.Cluster, int, bool, error) {
-	return m.clusters, len(m.clusters), false, nil
-}
+	BeforeEach(func() {
+		var err error
 
-func (m *mockDatabase) PutCluster(cluster *registryv1.Cluster) error {
-	found := false
-
-	for i, c := range m.clusters {
-		if c.Spec.Name == cluster.Spec.Name {
-			m.clusters[i] = *cluster
-			found = true
+		appConfig = &config.AppConfig{
+			SqsEndpoint:  container.Endpoint,
+			SqsAwsRegion: "dummy-region",
+			SqsQueueName: "cluster-registry-local",
 		}
-	}
 
-	if !found {
-		m.clusters = append(m.clusters, *cluster)
-	}
-	return nil
-}
-
-func (m *mockDatabase) DeleteCluster(name string) error {
-	for i, c := range m.clusters {
-		if c.Spec.Name == name {
-			m.clusters = append(m.clusters[:i], m.clusters[i+1:]...)
-		}
-	}
-	return nil
-}
-
-func (m *mockDatabase) Status() error {
-	return nil
-}
-
-type mockSQS struct {
-	sqsiface.SQSAPI
-	messages []*sqs.Message
-}
-
-func (m *mockSQS) GetQueueUrl(in *sqs.GetQueueUrlInput) (*sqs.GetQueueUrlOutput, error) {
-
-	switch {
-	case *in.QueueName == "dummy-que-name":
-		queryUrl := "https://dummy-que-name.com"
-		return &sqs.GetQueueUrlOutput{
-			QueueUrl: &queryUrl,
-		}, nil
-	}
-
-	return &sqs.GetQueueUrlOutput{}, errors.New("No sqs found with the name " + *in.QueueName)
-}
-
-func (m *mockSQS) SendMessageWithContext(ctx aws.Context, in *sqs.SendMessageInput, r ...request.Option) (*sqs.SendMessageOutput, error) {
-	m.messages = append(m.messages, &sqs.Message{
-		Body: in.MessageBody,
+		q, err = NewSQS(Config{
+			AWSRegion:         appConfig.SqsAwsRegion,
+			Endpoint:          appConfig.SqsEndpoint,
+			QueueName:         appConfig.SqsQueueName,
+			QueueURL:          fmt.Sprintf("%s/%s/%s", container.Endpoint, "1234567890", appConfig.SqsQueueName),
+			BatchSize:         1,
+			VisibilityTimeout: 120,
+			WaitSeconds:       10,
+			RunInterval:       5,
+			RunOnce:           true,
+			MaxHandlers:       10,
+			BusyTimeout:       30,
+		})
+		Expect(err).To(BeNil())
 	})
-	messageID := "TWVzc2FnZUlkCg=="
 
-	return &sqs.SendMessageOutput{
-		MessageId: &messageID,
-	}, nil
-}
+	AfterEach(func() {
 
-func (m *mockSQS) DeleteMessage(in *sqs.DeleteMessageInput) (*sqs.DeleteMessageOutput, error) {
-	if len(m.messages) == 0 {
-		return nil, errors.New("no messages to delete")
-	}
-	m.messages = m.messages[1:]
-	return &sqs.DeleteMessageOutput{}, nil
-}
+	})
 
-func (m *mockSQS) ReceiveMessage(in *sqs.ReceiveMessageInput) (*sqs.ReceiveMessageOutput, error) {
-	if len(m.messages) == 0 {
-		return &sqs.ReceiveMessageOutput{}, nil
-	}
-	response := m.messages[0:1]
-	m.messages = m.messages[1:]
+	Context("SQS tests", func() {
 
-	return &sqs.ReceiveMessageOutput{
-		Messages: response,
-	}, nil
-}
+		It("should handle SQS status successfully", func() {
+			err := q.Status()
+			Expect(err).To(BeNil())
+		})
 
-// Used to get queue length - ApproximateNumberOfMessages
-func (m *mockSQS) GetQueueAttributes(in *sqs.GetQueueAttributesInput) (*sqs.GetQueueAttributesOutput, error) {
+		It("should successfully enqueue a message", func() {
+			data, err := json.Marshal(messageBody)
+			Expect(err).To(BeNil())
 
-	response := make(map[string]*string)
-	value := strconv.Itoa(len(m.messages))
+			err = q.Enqueue(context.Background(), []*awssqs.SendMessageBatchRequestEntry{
+				{
+					Id: aws.String("test-message"),
+					MessageAttributes: map[string]*awssqs.MessageAttributeValue{
+						MessageAttributeType: {
+							DataType:    aws.String("String"),
+							StringValue: aws.String(ClusterUpdateEvent),
+						},
+					},
+					MessageBody: aws.String(string(data)),
+				},
+			})
+			Expect(err).To(BeNil())
+		})
 
-	response["locationNameKey"] = in.AttributeNames[0]
-	response["locationNameValue"] = &value
+		It("should successfully consume an enqueued message", func() {
+			var count = 0
+			q.RegisterHandler(func(msg *awssqs.Message) {
+				defer GinkgoRecover()
 
-	return &sqs.GetQueueAttributesOutput{
-		Attributes: response,
-	}, nil
-}
+				if msg == nil {
+					return
+				}
 
-func getQueueDepth(s sqsiface.SQSAPI) (int, error) {
-	attributeName := "ApproximateNumberOfMessages"
-	params := &sqs.GetQueueAttributesInput{
-		QueueUrl: aws.String("mock-queue"),
-		AttributeNames: []*string{
-			&attributeName,
-		},
-	}
+				Expect(*msg.Body).To(Equal(`{"foo":"bar"}`))
+				count++
 
-	r, err := s.GetQueueAttributes(params)
-	if err != nil {
-		log.Error(err.Error())
-		return -1, err
-	}
+				err := q.Delete(msg)
+				Expect(err).To(BeNil())
+			})
 
-	result, _ := strconv.Atoi(*r.Attributes["locationNameValue"])
-	return result, nil
-}
-
-func TestNewSqs(t *testing.T) {
-	test := assert.New(t)
-
-	t.Log("Test initializing the sqs.")
-
-	appConfig := &config.AppConfig{
-		SqsEndpoint:  "dummy-url",
-		SqsAwsRegion: "dummy-region",
-	}
-
-	s := NewSQS(appConfig)
-	test.NotNil(s)
-}
+			q.Poll()
+			Eventually(count).Should(Equal(1))
+		})
+	})
+})

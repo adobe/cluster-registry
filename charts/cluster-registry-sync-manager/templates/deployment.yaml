@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    {{- include "cluster-registry-sync-manager.labels" . | nindent 4 }}
+  name: {{ include "cluster-registry-sync-manager.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.replicaCount | required ".Values.replicaCount is required" }}
+  selector:
+    matchLabels:
+      {{- include "cluster-registry-sync-manager.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+      {{- include "cluster-registry-sync-manager.selectorLabels" . | nindent 8 }}
+      annotations:
+        kubectl.kubernetes.io/default-container: manager
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - args:
+            - --leader-elect
+            - --config=config.yaml
+          command:
+            - /bin/sync-manager
+          image: "{{ .Values.image.registry }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          volumeMounts:
+            - name: {{ include "cluster-registry-sync-manager.fullname" . }}-config
+              mountPath: /config.yaml
+              subPath: config.yaml
+          ports:
+            {{- toYaml .Values.ports | nindent 12 }}
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  key: AWS_ACCESS_KEY_ID
+                  name: cluster-registry-aws
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: AWS_SECRET_ACCESS_KEY
+                  name: cluster-registry-aws
+            - name: SQS_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  key: SQS_ENDPOINT
+                  name: cluster-registry-aws
+            - name: SQS_QUEUE_NAME
+              valueFrom:
+                secretKeyRef:
+                  key: SQS_QUEUE_NAME
+                  name: cluster-registry-aws
+            - name: AWS_REGION
+              valueFrom:
+                secretKeyRef:
+                  key: SQS_AWS_REGION
+                  name: cluster-registry-aws
+            - name: SQS_AWS_REGION
+              valueFrom:
+                secretKeyRef:
+                  key: SQS_AWS_REGION
+                  name: cluster-registry-aws
+          {{- if .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.resources }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
+          name: manager
+          securityContext:
+            allowPrivilegeEscalation: false
+      volumes:
+        - name: {{ include "cluster-registry-sync-manager.fullname" . }}-config
+          configMap:
+            name: {{ include "cluster-registry-sync-manager.fullname" . }}-config
+      serviceAccountName: {{ include "cluster-registry-sync-manager.serviceAccountName" . }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds | required ".Values.terminationGracePeriodSeconds is required"  }}

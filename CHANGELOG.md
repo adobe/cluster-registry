@@ -1,3 +1,98 @@
+# 1.6.2
+
+### 🐛 Bug Fixes
+
+- Fix issue with sync-manager reconciliation logic (#223)
+- *(deps)* Update module github.com/prometheus/client_golang to v1.20.0 (#221)
+- *(deps)* Bump controller-gen version to 0.16.1 (#224)
+
+
+# 1.6.1
+
+### 🐛 Bug Fixes
+
+- cluster-registry-sync-manager nil pointer dereference (#219)
+
+
+# 1.6.0
+
+### 🚀 Features
+
+- cluster-registry-sync-manager (#177)
+- cluster-registry-api caching (#202)
+- Add cluster-registry-sync-manager chart (#211)
+
+### 🐛 Bug Fixes
+
+- *(deps)* Update module github.com/aws/aws-sdk-go to v1.55.3 (#165)
+- *(deps)* Update golang.org/x/exp digest to 8a7402a (#190)
+- *(deps)* Update kubernetes packages to v0.30.3 (#154)
+- *(deps)* Update module github.com/azure/go-autorest/autorest/azure/auth to v0.5.13 (#166)
+- *(deps)* Update module github.com/testcontainers/testcontainers-go to v0.32.0 (#182)
+- *(deps)* Update module github.com/go-jose/go-jose/v3 to v4 (#163)
+- *(deps)* Update module github.com/onsi/ginkgo to v2 (#164)
+- *(deps)* Update k8s.io/utils digest to 18e509b (#191)
+- *(deps)* Update module github.com/go-jose/go-jose/v3 to v4 (#193)
+- *(deps)* Update module github.com/coreos/go-oidc/v3 to v3.11.0 (#192)
+- *(deps)* Update module github.com/onsi/ginkgo to v2 (#195)
+- *(deps)* Update module github.com/go-jose/go-jose/v3 to v4 (#194)
+- *(deps)* Update module github.com/onsi/gomega to v1.34.1 (#199)
+- *(deps)* Update module github.com/aws/aws-sdk-go to v1.55.4 (#198)
+- *(deps)* Update module github.com/go-jose/go-jose/v3 to v4 (#196)
+- *(deps)* Update module github.com/redis/go-redis/v9 to v9.6.1 (#206)
+- *(deps)* Update module golang.org/x/net to v0.28.0 (#205)
+- *(deps)* Update module github.com/onsi/ginkgo to v2 (#197)
+- *(deps)* Update module github.com/go-jose/go-jose/v3 to v4 (#200)
+- *(deps)* Update module github.com/go-jose/go-jose/v3 to v4 (#208)
+- *(deps)* Update module github.com/onsi/ginkgo to v2 (#207)
+- *(deps)* Update golang.org/x/exp digest to 0cdaa3a (#212)
+- *(deps)* Bump github.com/aws/aws-sdk-go from 1.55.4 to 1.55.5 (#203)
+
+
+# 1.5.8
+
+## cluster-registry-api
+
+- Chargeback - Swagger docs (#175)
+
+## cluster-registry-client
+
+- Chargeback - Swagger docs (#175)
+
+# 1.5.7
+
+## cluster-registry-api
+
+- Make chargeback fields as optional (#167)
+- fix(deps): update module github.com/go-jose/go-jose/v3 to v4 (#162)
+- fix(deps): update module github.com/onsi/ginkgo to v2 (#161)
+- fix(deps): update module github.com/go-jose/go-jose/v3 to v4 (#157)
+- fix(deps): update module github.com/onsi/ginkgo to v2 (#158)
+- fix(deps): update k8s.io/utils digest to fe8a2dd (#151)
+- fix(deps): update module github.com/go-logr/logr to v1.4.2 (#152)
+- Add renovate.json (#134)
+- dependabot(deps): bump github.com/labstack/echo/v4 from 4.11.4 to 4.12.0 (#141)
+- dependabot(deps): bump github.com/onsi/gomega from 1.32.0 to 1.33.1 (#145)
+- dependabot(deps): bump github.com/prometheus/client_golang (#146)
+- dependabot(deps): bump github.com/testcontainers/testcontainers-go (#147)
+- dependabot(deps): bump github.com/aws/aws-sdk-go from 1.51.16 to 1.53.10 (#150)
+
+## cluster-registry-client
+
+- Make chargeback fields as optional (#167)
+- fix(deps): update module github.com/go-jose/go-jose/v3 to v4 (#162)
+- fix(deps): update module github.com/onsi/ginkgo to v2 (#161)
+- fix(deps): update module github.com/go-jose/go-jose/v3 to v4 (#157)
+- fix(deps): update module github.com/onsi/ginkgo to v2 (#158)
+- fix(deps): update k8s.io/utils digest to fe8a2dd (#151)
+- fix(deps): update module github.com/go-logr/logr to v1.4.2 (#152)
+- Add renovate.json (#134)
+- dependabot(deps): bump github.com/labstack/echo/v4 from 4.11.4 to 4.12.0 (#141)
+- dependabot(deps): bump github.com/onsi/gomega from 1.32.0 to 1.33.1 (#145)
+- dependabot(deps): bump github.com/prometheus/client_golang (#146)
+- dependabot(deps): bump github.com/testcontainers/testcontainers-go (#147)
+- dependabot(deps): bump github.com/aws/aws-sdk-go from 1.51.16 to 1.53.10 (#150)
+
 # 1.5.6
 
 ## cluster-registry-api

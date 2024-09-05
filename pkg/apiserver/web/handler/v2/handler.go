@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Adobe. All rights reserved.
+Copyright 2024 Adobe. All rights reserved.
 This file is licensed to you under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License. You may obtain a copy
 of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"github.com/adobe/cluster-registry/pkg/apiserver/models"
 	"github.com/adobe/cluster-registry/pkg/k8s"
+	"github.com/eko/gocache/lib/v4/cache"
 	"k8s.io/apimachinery/pkg/types"
 	"net/http"
 	"strconv"
@@ -58,15 +59,17 @@ type handler struct {
 	appConfig *config.AppConfig
 	metrics   monitoring.MetricsI
 	kcp       k8s.ClientProviderI
+	cache     *cache.Cache[string]
 }
 
 // NewHandler func
-func NewHandler(appConfig *config.AppConfig, d database.Db, m monitoring.MetricsI, kcp k8s.ClientProviderI) Handler {
+func NewHandler(appConfig *config.AppConfig, d database.Db, m monitoring.MetricsI, kcp k8s.ClientProviderI, cache *cache.Cache[string]) Handler {
 	h := &handler{
 		db:        d,
 		metrics:   m,
 		appConfig: appConfig,
 		kcp:       kcp,
+		cache:     cache,
 	}
 	return h
 }
@@ -79,7 +82,7 @@ func (h *handler) Register(v2 *echo.Group) {
 	clusters := v2.Group("/clusters", a.VerifyToken(), web.RateLimiter(h.appConfig))
 	clusters.GET("/:name", h.GetCluster)
 	clusters.PATCH("/:name", h.PatchCluster, a.VerifyGroupAccess(h.appConfig.ApiAuthorizedGroupId))
-	clusters.GET("", h.ListClusters)
+	clusters.GET("", h.ListClusters, web.HTTPCache(h.cache, h.appConfig, []string{"clusters"}))
 
 	services := v2.Group("/services", a.VerifyToken(), web.RateLimiter(h.appConfig))
 	services.GET("/:serviceId", h.GetServiceMetadata)

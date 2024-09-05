@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Adobe. All rights reserved.
+Copyright 2024 Adobe. All rights reserved.
 This file is licensed to you under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License. You may obtain a copy
 of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -143,13 +143,22 @@ func main() {
 		os.Exit(1)
 	}
 
-	sqsProducer := sqs.NewProducer(appConfig, m)
+	q, err := sqs.NewSQS(sqs.Config{
+		AWSRegion: appConfig.SqsAwsRegion,
+		Endpoint:  appConfig.SqsEndpoint,
+		QueueName: appConfig.SqsQueueName,
+	})
+
+	if err != nil {
+		setupLog.Error(err, "cannot create SQS client")
+		os.Exit(1)
+	}
 
 	if err = (&controllers.ClusterReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("Cluster"),
 		Scheme: mgr.GetScheme(),
-		Queue:  sqsProducer,
+		Queue:  q,
 		CAData: base64.StdEncoding.EncodeToString(mgr.GetConfig().CAData),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Cluster")
@@ -220,12 +229,12 @@ func loadWatchedGVKs(cfg configv1.ClientConfig) []schema.GroupVersionKind {
 }
 
 func apply(defaultOptions ctrl.Options, configFile string, clientConfigDefaults *configv1.ClientConfig) (ctrl.Options, configv1.ClientConfig, error) {
-	options, cfg, err := configv1.Load(defaultOptions, scheme, configFile, clientConfigDefaults)
+	options, cfg, err := configv1.NewClientConfig(defaultOptions, scheme, configFile, clientConfigDefaults)
 	if err != nil {
 		return options, cfg, err
 	}
 
-	cfgStr, err := configv1.Encode(scheme, &cfg)
+	cfgStr, err := cfg.Encode(scheme)
 	if err != nil {
 		return options, cfg, err
 	}

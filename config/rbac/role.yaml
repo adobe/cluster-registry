@@ -8,31 +8,6 @@ rules:
   - registry.ethos.adobe.com
   resources:
   - clusters
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - registry.ethos.adobe.com
-  resources:
-  - clusters/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - registry.ethos.adobe.com
-  resources:
-  - clusters/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - registry.ethos.adobe.com
-  resources:
   - servicemetadatawatchers
   verbs:
   - create
@@ -45,12 +20,14 @@ rules:
 - apiGroups:
   - registry.ethos.adobe.com
   resources:
+  - clusters/finalizers
   - servicemetadatawatchers/finalizers
   verbs:
   - update
 - apiGroups:
   - registry.ethos.adobe.com
   resources:
+  - clusters/status
   - servicemetadatawatchers/status
   verbs:
   - get

@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Adobe. All rights reserved.
+Copyright 2024 Adobe. All rights reserved.
 This file is licensed to you under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License. You may obtain a copy
 of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,24 +10,28 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-package sqs
+package handler
 
 import (
-	"context"
-
-	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
-	monitoring "github.com/adobe/cluster-registry/pkg/monitoring/client"
+	"fmt"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"strings"
 )
 
-type fakeproducer struct {
+type ParseError struct {
+	Fields []string
+	Object unstructured.Unstructured
+	Err    error
 }
 
-// NewFakeProducer creates a fake producer
-func NewFakeProducer(m monitoring.MetricsI) Producer {
-	return &fakeproducer{}
+func (e *ParseError) Error() string {
+	return fmt.Sprintf("failed to get value (%s) from object (namespace: %s, name: %s, gvk: %s): %s",
+		strings.Join(e.Fields, "."),
+		e.Object.GetNamespace(), e.Object.GetName(), e.Object.GroupVersionKind().String(),
+		e.Err.Error())
 }
 
-// Send message in sqs queue
-func (p *fakeproducer) Send(ctx context.Context, c *registryv1.Cluster) error {
-	return nil
+func (e *ParseError) Wrap(err error) error {
+	e.Err = err
+	return e
 }

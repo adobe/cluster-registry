@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Adobe. All rights reserved.
+Copyright 2024 Adobe. All rights reserved.
 This file is licensed to you under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License. You may obtain a copy
 of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -13,6 +13,7 @@ governing permissions and limitations under the License.
 package v2
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
@@ -22,9 +23,14 @@ import (
 	monitoring "github.com/adobe/cluster-registry/pkg/monitoring/apiserver"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/eko/gocache/lib/v4/cache"
+	"github.com/eko/gocache/lib/v4/store"
+	redisstore "github.com/eko/gocache/store/redis/v4"
+	"github.com/go-redis/redismock/v9"
 	"github.com/gusaul/go-dynamock"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"github.com/labstack/echo/v4"
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/kubernetes"
 	testclient "k8s.io/client-go/kubernetes/fake"
@@ -36,10 +42,14 @@ import (
 )
 
 var (
-	appConfig *config.AppConfig
-	m         *monitoring.Metrics
-	db        database.Db
-	dbMock    *dynamock.DynaMock
+	appConfig    *config.AppConfig
+	m            *monitoring.Metrics
+	db           database.Db
+	dbMock       *dynamock.DynaMock
+	redisClient  *redis.Client
+	redisMock    redismock.ClientMock
+	redisStore   *redisstore.RedisStore
+	cacheManager *cache.Cache[string]
 )
 
 type TestClientProvider struct{}
@@ -53,11 +63,14 @@ func init() {
 	m = monitoring.NewMetrics("cluster_registry_api_handler_test", true)
 	db = database.NewDb(appConfig, m)
 	dbMock = db.Mock()
+	redisClient, redisMock = redismock.NewClientMock()
+	redisStore = redisstore.NewRedis(redisClient)
+	cacheManager = cache.New[string](redisStore)
 }
 
 func TestNewHandler(t *testing.T) {
 	test := assert.New(t)
-	h := NewHandler(appConfig, db, m, &TestClientProvider{})
+	h := NewHandler(appConfig, db, m, &TestClientProvider{}, cacheManager)
 	test.NotNil(h)
 }
 
@@ -110,7 +123,7 @@ func TestGetCluster(t *testing.T) {
 
 	for _, tc := range tcs {
 		r := web.NewRouter()
-		h := NewHandler(appConfig, db, m, &TestClientProvider{})
+		h := NewHandler(appConfig, db, m, &TestClientProvider{}, cacheManager)
 
 		req := httptest.NewRequest(echo.GET, "/api/v2/clusters/:name", nil)
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
@@ -212,7 +225,7 @@ func TestListClusters(t *testing.T) {
 	}
 	for _, tc := range tcs {
 		r := web.NewRouter()
-		h := NewHandler(appConfig, db, m, &TestClientProvider{})
+		h := NewHandler(appConfig, db, m, &TestClientProvider{}, cacheManager)
 
 		for i, v := range tc.filter {
 			tc.filter[i] = fmt.Sprintf("conditions=%s", v)
@@ -380,7 +393,7 @@ func TestPatchCluster(t *testing.T) {
 
 	for _, tc := range tcs {
 		r := web.NewRouter()
-		h := NewHandler(appConfig, db, m, &TestClientProvider{})
+		h := NewHandler(appConfig, db, m, &TestClientProvider{}, cacheManager)
 
 		patch, _ := json.Marshal(tc.clusterSpec)
 		body := strings.NewReader(string(patch))
@@ -410,5 +423,147 @@ func TestPatchCluster(t *testing.T) {
 
 		test.Equal(tc.expectedStatus, rec.Code)
 		test.Equal(tc.expectedBody, strings.TrimSpace(rec.Body.String()))
+	}
+}
+
+func TestListClustersWithEmptyCache(t *testing.T) {
+	test := assert.New(t)
+
+	t.Log("Test caching cluster list results.")
+
+	redisMock.MatchExpectationsInOrder(true)
+
+	expectedClusters := []registryv1.Cluster{
+		{
+			Spec: registryv1.ClusterSpec{
+				Name:         "cluster1",
+				LastUpdated:  "2020-02-14T06:15:32Z",
+				RegisteredAt: "2019-02-14T06:15:32Z",
+				Status:       "Active",
+				Phase:        "Running",
+				Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
+			},
+		},
+		{
+			Spec: registryv1.ClusterSpec{
+				Name:         "cluster2",
+				LastUpdated:  "2020-03-14T06:15:32Z",
+				RegisteredAt: "2019-03-14T06:15:32Z",
+				Status:       "Active",
+				Phase:        "Upgrading",
+				Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
+			},
+		},
+	}
+
+	var expectedItems []map[string]*dynamodb.AttributeValue
+	for _, c := range expectedClusters {
+		item, err := dynamodbattribute.MarshalMap(database.ClusterDb{
+			Cluster: &c,
+		})
+		test.NoError(err)
+		expectedItems = append(expectedItems, item)
+	}
+
+	expectedResult := dynamodb.QueryOutput{
+		Items: expectedItems,
+	}
+	dbMock.ExpectQuery().WillReturns(expectedResult)
+
+	r := web.NewRouter()
+	h := NewHandler(appConfig, db, m, &TestClientProvider{}, cacheManager)
+
+	req := httptest.NewRequest(echo.GET, "/api/v2/clusters", nil)
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	ctx := r.NewContext(req, rec)
+
+	expectedClusterListResponse := newClusterListResponse(expectedClusters, len(expectedClusters), 0, 200, false)
+	expectedBody, err := json.Marshal(expectedClusterListResponse)
+	test.NoError(err)
+
+	expectedBody = append(expectedBody, "\n"...)
+
+	expectedResponse := web.Response{
+		Value:  expectedBody,
+		Header: http.Header{"Content-Type": []string{echo.MIMEApplicationJSON}},
+	}
+
+	key := web.GenerateKey(ctx.Request().URL.String())
+
+	redisMock.ExpectGet(key).SetVal("")
+
+	redisMock.ExpectSet(key, expectedResponse.String(), appConfig.ApiCacheTTL).SetVal("OK")
+
+	err = web.HTTPCache(cacheManager, appConfig, []string{"clusters"})(h.ListClusters)(ctx)
+	test.NoError(err)
+
+	if err := redisMock.ExpectationsWereMet(); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestListClustersWithCache(t *testing.T) {
+	test := assert.New(t)
+
+	t.Log("Test caching cluster list results.")
+
+	redisMock.MatchExpectationsInOrder(true)
+
+	expectedClusters := []registryv1.Cluster{
+		{
+			Spec: registryv1.ClusterSpec{
+				Name:         "cluster1",
+				LastUpdated:  "2020-02-14T06:15:32Z",
+				RegisteredAt: "2019-02-14T06:15:32Z",
+				Status:       "Active",
+				Phase:        "Running",
+				Tags:         map[string]string{"onboarding": "on", "scaling": "off"},
+			},
+		},
+		{
+			Spec: registryv1.ClusterSpec{
+				Name:         "cluster2",
+				LastUpdated:  "2020-03-14T06:15:32Z",
+				RegisteredAt: "2019-03-14T06:15:32Z",
+				Status:       "Active",
+				Phase:        "Upgrading",
+				Tags:         map[string]string{"onboarding": "on", "scaling": "on"},
+			},
+		},
+	}
+
+	r := web.NewRouter()
+	h := NewHandler(appConfig, db, m, &TestClientProvider{}, cacheManager)
+
+	req := httptest.NewRequest(echo.GET, "/api/v2/clusters", nil)
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	ctx := r.NewContext(req, rec)
+
+	expectedClusterListResponse := newClusterListResponse(expectedClusters, len(expectedClusters), 0, 200, false)
+	expectedBody, err := json.Marshal(expectedClusterListResponse)
+	test.NoError(err)
+
+	expectedBody = append(expectedBody, "\n"...)
+
+	expectedResponse := web.Response{
+		Value:  expectedBody,
+		Header: http.Header{"Content-Type": []string{echo.MIMEApplicationJSON}},
+	}
+
+	key := web.GenerateKey(ctx.Request().URL.String())
+
+	redisMock.ExpectSet(key, expectedResponse.String(), appConfig.ApiCacheTTL).SetVal("")
+	err = redisStore.Set(context.Background(), key, expectedResponse.String(), store.WithExpiration(appConfig.ApiCacheTTL))
+	test.NoError(err)
+
+	redisMock.ExpectGet(key).SetVal(expectedResponse.String())
+
+	err = web.HTTPCache(cacheManager, appConfig, []string{"clusters"})(h.ListClusters)(ctx)
+	test.NoError(err)
+
+	if err := redisMock.ExpectationsWereMet(); err != nil {
+		t.Error(err)
 	}
 }

@@ -1,0 +1,63 @@
+nameOverride: cluster-registry-sync-manager
+fullnameOverride: cluster-registry-sync-manager
+
+replicaCount: 2
+
+imagePullSecrets: []
+image:
+  pullPolicy: IfNotPresent
+  registry: ghcr.io/adobe/cluster-registry-sync-manager
+
+ports:
+  - name: metrics
+    containerPort: 9090
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 400Mi
+  requests:
+    cpu: 100m
+    memory: 200Mi
+
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 9091
+  initialDelaySeconds: 15
+  periodSeconds: 20
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: 9091
+  initialDelaySeconds: 5
+  periodSeconds: 10
+terminationGracePeriodSeconds: 10
+
+clusterRegistrySyncManager:
+  health:
+    healthProbeBindAddress: :8081
+  metrics:
+    bindAddress: 0.0.0.0:9090
+  webhook:
+    port: 9443
+  leaderElection:
+    leaderElect: false
+    resourceName: sync.registry.ethos.adobe.com
+    resourceLock: leases
+  watchedGVKs: {}
+
+rbac:
+  create: true
+
+serviceAccount:
+  create: true
+  name: cluster-registry-sync-manager
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 50%
+
+podMonitor:
+  enabled: false
+  extraLabels: {}

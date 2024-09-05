@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Adobe. All rights reserved.
+Copyright 2024 Adobe. All rights reserved.
 This file is licensed to you under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License. You may obtain a copy
 of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -15,6 +15,8 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
+	"time"
 
 	"github.com/labstack/gommon/log"
 )
@@ -33,11 +35,16 @@ type AppConfig struct {
 	SqsEndpoint           string
 	SqsAwsRegion          string
 	SqsQueueName          string
+	SqsBatchSize          int64
+	SqsWaitSeconds        int64
+	SqsRunInterval        int
 	K8sResourceId         string
 	ApiTenantId           string
 	ApiClientId           string
 	ApiClientSecret       string
 	ApiAuthorizedGroupId  string
+	ApiCacheTTL           time.Duration
+	ApiCacheRedisHost     string
 }
 
 func LoadApiConfig() (*AppConfig, error) {
@@ -76,6 +83,33 @@ func LoadApiConfig() (*AppConfig, error) {
 	sqsQueueName := getEnv("SQS_QUEUE_NAME", "")
 	if sqsQueueName == "" {
 		return nil, fmt.Errorf("environment variable SQS_QUEUE_NAME is not set")
+	}
+
+	sqsBatchSize := getEnv("SQS_BATCH_SIZE", "")
+	if sqsBatchSize == "" {
+		return nil, fmt.Errorf("environment variable SQS_BATCH_SIZE is not set")
+	}
+	sqsBatchSizeInt, err := strconv.ParseInt(sqsBatchSize, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing SQS_BATCH_SIZE: %v", err)
+	}
+
+	sqsWaitSeconds := getEnv("SQS_WAIT_SECONDS", "")
+	if sqsWaitSeconds == "" {
+		return nil, fmt.Errorf("environment variable SQS_WAIT_SECONDS is not set")
+	}
+	sqsWaitSecondsInt, err := strconv.ParseInt(sqsWaitSeconds, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing SQS_WAIT_SECONDS: %v", err)
+	}
+
+	sqsRunInterval := getEnv("SQS_RUN_INTERVAL", "")
+	if sqsRunInterval == "" {
+		return nil, fmt.Errorf("environment variable SQS_RUN_INTERVAL is not set")
+	}
+	sqsRunIntervalInt, err := strconv.Atoi(sqsRunInterval)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing SQS_RUN_INTERVAL: %v", err)
 	}
 
 	oidcClientId := getEnv("OIDC_CLIENT_ID", "")
@@ -129,6 +163,17 @@ func LoadApiConfig() (*AppConfig, error) {
 		return nil, fmt.Errorf("environment variable API_AUTHORIZED_GROUP_ID is not set")
 	}
 
+	apiCacheTTLstr := getEnv("API_CACHE_TTL", "1h")
+	apiCacheTTL, err := time.ParseDuration(apiCacheTTLstr)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing API_CACHE_TTL: %v", err)
+	}
+
+	apiCacheRedisHost := getEnv("API_CACHE_REDIS_HOST", "")
+	if apiCacheRedisHost == "" {
+		return nil, fmt.Errorf("environment variable API_CACHE_REDIS_HOST is not set")
+	}
+
 	return &AppConfig{
 		AwsRegion:             awsRegion,
 		DbEndpoint:            dbEndpoint,
@@ -138,6 +183,9 @@ func LoadApiConfig() (*AppConfig, error) {
 		SqsEndpoint:           sqsEndpoint,
 		SqsAwsRegion:          sqsAwsRegion,
 		SqsQueueName:          sqsQueueName,
+		SqsBatchSize:          sqsBatchSizeInt,
+		SqsWaitSeconds:        sqsWaitSecondsInt,
+		SqsRunInterval:        sqsRunIntervalInt,
 		OidcClientId:          oidcClientId,
 		OidcIssuerUrl:         oidcIssuerUrl,
 		ApiRateLimiterEnabled: apiRateLimiterEnabled,
@@ -148,6 +196,8 @@ func LoadApiConfig() (*AppConfig, error) {
 		ApiClientId:           apiClientId,
 		ApiClientSecret:       apiClientSecret,
 		ApiAuthorizedGroupId:  authorizedGroupId,
+		ApiCacheTTL:           apiCacheTTL,
+		ApiCacheRedisHost:     apiCacheRedisHost,
 	}, nil
 }
 

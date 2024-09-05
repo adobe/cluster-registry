@@ -38,14 +38,22 @@ all: format generate build test test-e2e
 ###############
 
 SETUP_CMD = "./local/setup.sh"
-ifeq ($(API),true)
-	ifeq ($(CLIENT),)
-		SETUP_CMD += "1 0"
-	endif
-else ifeq ($(API),)
-	ifeq ($(CLIENT),true)
-		SETUP_CMD += "0 1"
-	endif
+# By default run all components in the local setup
+# To exclude a component, set the corresponding variable to false
+ifeq ($(API),false)
+	SETUP_CMD += "0"
+else
+	SETUP_CMD += "1"
+endif
+ifeq ($(CLIENT),false)
+	SETUP_CMD += "0"
+else
+	SETUP_CMD += "1"
+endif
+ifeq ($(SYNC_MANAGER),false)
+	SETUP_CMD += "0"
+else
+	SETUP_CMD += "1"
 endif
 
 .PHONY: clean
@@ -63,7 +71,7 @@ setup:
 ############
 
 .PHONY: build
-build: build-apiserver build-client
+build: build-apiserver build-client build-sync-manager
 
 .PHONY: build-apiserver
 build-apiserver:
@@ -73,13 +81,17 @@ build-apiserver:
 build-client:
 	$(GO_BUILD_RECIPE) -o cluster-registry-client cmd/client/client.go
 
+.PHONY: build-sync-manager
+build-sync-manager:
+	$(GO_BUILD_RECIPE) -o cluster-registry-sync-manager cmd/sync/manager/manager.go
+
 .PHONY: release
 release:
 	./hack/release.sh
 
 .PHONY: image
 image: GOOS := linux
-image: .hack-apiserver-image .hack-client-image
+image: .hack-apiserver-image .hack-client-image .hack-sync-manager-image
 
 .hack-apiserver-image: cmd/apiserver/Dockerfile build-apiserver
 	docker build -t $(IMAGE_APISERVER):$(TAG) -f cmd/apiserver/Dockerfile .
@@ -87,6 +99,10 @@ image: .hack-apiserver-image .hack-client-image
 
 .hack-client-image: cmd/client/Dockerfile build-client
 	docker build -t $(IMAGE_CLIENT):$(TAG) -f cmd/client/Dockerfile .
+	touch $@
+
+.hack-sync-manager-image: cmd/sync/manager/Dockerfile build-sync-manager
+	docker build -t $(IMAGE_SYNC_MANAGER):$(TAG) -f cmd/sync/manager/Dockerfile .
 	touch $@
 
 .PHONY: update-go-deps
@@ -121,7 +137,7 @@ format-prereq:
 	@[ -f $(GOSEC) ] || GOBIN=$(shell pwd)/bin go get "github.com/securego/gosec/v2/cmd/gosec";
 
 .PHONY: format
-format: format-prereq go-fmt go-vet go-lint go-sec check-license
+format: format-prereq go-fmt go-vet go-lint go-sec
 
 .PHONY: go-fmt
 go-fmt:
@@ -210,7 +226,7 @@ MANAGER_ROLE ?= "cluster-registry"
 
 CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
 controller-gen: ## Download controller-gen locally if necessary.
-	@[ -f $(CONTROLLER_GEN) ] || GOBIN=$(shell pwd)/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.13.0
+	@[ -f $(CONTROLLER_GEN) ] || GOBIN=$(shell pwd)/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.16.1
 
 KUSTOMIZE = $(shell pwd)/bin/kustomize
 kustomize: ## Download kustomize locally if necessary.
@@ -219,8 +235,14 @@ kustomize: ## Download kustomize locally if necessary.
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=$(MANAGER_ROLE) webhook paths="$(shell pwd)/pkg/..." output:crd:artifacts:config=$(shell pwd)/config/crd/bases output:rbac:artifacts:config=$(shell pwd)/config/rbac
 
+	@echo 'Copying CRDs to the appropriate helm charts...'
+	@cp -r $(shell pwd)/config/crd/bases/registry.ethos.adobe.com_clusters.yaml $(shell pwd)/charts/cluster-registry-client/crds/
+	@cp -r $(shell pwd)/config/crd/bases/registry.ethos.adobe.com_servicemetadatawatchers.yaml $(shell pwd)/charts/cluster-registry-client/crds/
+	@cp -r $(shell pwd)/config/crd/bases/registry.ethos.adobe.com_clustersyncs.yaml $(shell pwd)/charts/cluster-registry-sync-manager/crds/
+
+
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
-	$(CONTROLLER_GEN) object:headerFile="$(shell pwd)/hack/boilerplate.go.txt" paths="$(shell pwd)/pkg/api/..."
+	$(CONTROLLER_GEN) object:headerFile="$(shell pwd)/hack/license_header.txt" paths="$(shell pwd)/pkg/api/..."
 
 
 #################
@@ -231,3 +253,7 @@ SWAGGER_CLI = $(shell pwd)/bin/swag
 swagger:
 	@[ -f $(SWAGGER_CLI) ] || GOBIN=$(shell pwd)/bin go install github.com/swaggo/swag/cmd/swag@v1.16.2
 	$(SWAGGER_CLI) init --parseDependency --parseInternal --parseDepth 2 -g cmd/apiserver/apiserver.go --output pkg/apiserver/docs/
+
+HELM_DOCS_VERSION ?= "1.14.2"
+helm-docs:
+	@export use_docker="true"; if [ $$(command -v helm-docs) ]; then version=$$(helm-docs --version); if [ "$${version}" != "helm-docs version ${HELM_DOCS_VERSION}" ]; then use_docker="true"; else use_docker="false"; fi; fi; if [ "$$use_docker" == "true" ]; then docker run --rm --volume "$$(pwd):/helm-docs" jnorwood/helm-docs:v${HELM_DOCS_VERSION}; else helm-docs; fi

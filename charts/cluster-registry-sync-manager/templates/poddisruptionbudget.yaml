@@ -1,0 +1,19 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+{{- $isPercentage := regexMatch "^[0-9]+%$" (.Values.podDisruptionBudget.minAvailable | quote) }}
+{{- if and (not $isPercentage) (le (.Values.replicaCount | int) (.Values.podDisruptionBudget.minAvailable | int)) }}
+{{- fail ".Values.replicaCount should be greater than .Values.podDisruptionBudget.minAvailable" }}
+{{- else }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  labels:
+    {{- include "cluster-registry-sync-manager.labels" . | nindent 4 }}
+  name: {{ include "cluster-registry-sync-manager.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "cluster-registry-sync-manager.selectorLabels" . | nindent 6 }}
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+{{- end }}
+{{- end }}

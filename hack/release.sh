@@ -8,6 +8,7 @@ REGISTRY="ghcr.io"
 
 export IMAGE_APISERVER="${IMAGE_APISERVER:-"adobe/cluster-registry-api"}"
 export IMAGE_CLIENT="${IMAGE_CLIENT:-"adobe/cluster-registry-client"}"
+export IMAGE_SYNC_MANAGER="${IMAGE_SYNC_MANAGER:-"adobe/cluster-registry-sync-manager"}"
 export TAG="${GITHUB_REF##*/}"
 
 IMAGE_SUFFIX="-dev"
@@ -20,8 +21,9 @@ fi
 
 APISERVER="${REGISTRY}/${IMAGE_APISERVER}${IMAGE_SUFFIX}"
 CLIENT="${REGISTRY}/${IMAGE_CLIENT}${IMAGE_SUFFIX}"
+SYNC_MANAGER="${REGISTRY}/${IMAGE_SYNC_MANAGER}${IMAGE_SUFFIX}"
 
-for img in ${APISERVER} ${CLIENT}; do
+for img in ${APISERVER} ${CLIENT} ${SYNC_MANAGER}; do
 	echo "Building image: $img:$TAG"
 done
 
@@ -29,6 +31,8 @@ make --always-make image TAG="${TAG}"
 
 docker tag "${IMAGE_APISERVER}:${TAG}" "${APISERVER}:${TAG}"
 docker tag "${IMAGE_CLIENT}:${TAG}" "${CLIENT}:${TAG}"
+docker tag "${IMAGE_SYNC_MANAGER}:${TAG}" "${SYNC_MANAGER}:${TAG}"
 
 docker push "${APISERVER}:${TAG}"
 docker push "${CLIENT}:${TAG}"
+docker push "${SYNC_MANAGER}:${TAG}"
