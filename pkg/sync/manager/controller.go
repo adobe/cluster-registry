@@ -16,6 +16,7 @@ import (
 	"context"
 	v1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
 	registryv1alpha1 "github.com/adobe/cluster-registry/pkg/api/registry/v1alpha1"
+	monitoring "github.com/adobe/cluster-registry/pkg/monitoring/manager"
 	"github.com/adobe/cluster-registry/pkg/sqs"
 	"github.com/adobe/cluster-registry/pkg/sync/parser"
 	"github.com/aws/aws-sdk-go/aws"
@@ -54,6 +55,7 @@ type SyncController struct {
 	WatchedGVKs    []schema.GroupVersionKind
 	Queue          *sqs.Config
 	ResourceParser *parser.ResourceParser
+	Metrics        monitoring.MetricsI
 }
 
 func (c *SyncController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -61,11 +63,20 @@ func (c *SyncController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	log := c.Log.WithValues("name", req.Name, "namespace", req.Namespace)
 	log.Info("start")
-	defer log.Info("end", "duration", time.Since(start))
+	defer func() {
+		elapsed := time.Since(start)
+		log.Info("end", "duration", elapsed)
+		// TODO Should I try to get the cluster name out of this? Or is the sync object name good enough?
+		c.Metrics.RecordReconciliationDur(req.Name, float64(elapsed)/float64(time.Second))
+		c.Metrics.RecordRequeueCnt(req.Name)
+	}()
 
 	instance := new(registryv1alpha1.ClusterSync)
 	if err := c.Get(ctx, req.NamespacedName, instance); err != nil {
+		c.Metrics.RecordErrorCnt(req.Name)
 		log.Error(err, "unable to fetch object")
+		// TODO I'd love to build the requeue metrics into result.go so requeues can't be missed, but I'm hesitant to
+		// pollute them. Should I do this?
 		return requeueIfError(client.IgnoreNotFound(err))
 	}
 
@@ -100,8 +111,10 @@ func (c *SyncController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		instance.Status.LastSyncError = ptr.To(errList[0].Error())
 		instance.Status.LastSyncTime = &metav1.Time{Time: time.Now()}
 		log.Error(errList[0], "failed to sync resources")
+		c.Metrics.RecordErrorCnt(req.Name)
 
 		if err := c.updateStatus(ctx, instance); err != nil {
+			c.Metrics.RecordRequeueCnt(req.Name)
 			return requeueAfter(10*time.Second, err)
 		}
 		return noRequeue()
@@ -109,6 +122,7 @@ func (c *SyncController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	syncedData, err := c.ResourceParser.Diff()
 	if err != nil {
+		c.Metrics.RecordErrorCnt(req.Name)
 		return noRequeue()
 	}
 
@@ -119,12 +133,16 @@ func (c *SyncController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		instance.Status.LastSyncTime = &metav1.Time{Time: time.Now()}
 		if err := c.enqueueData(instance); err != nil {
 			log.Error(err, "failed to enqueue message")
+			c.Metrics.RecordErrorCnt(req.Name)
 			if err := c.updateStatus(ctx, instance); err != nil {
+				c.Metrics.RecordRequeueCnt(req.Name)
 				return requeueAfter(10*time.Second, err)
 			}
 			return noRequeue()
 		}
 		if err := c.updateStatus(ctx, instance); err != nil {
+			c.Metrics.RecordErrorCnt(req.Name)
+			c.Metrics.RecordRequeueCnt(req.Name)
 			return requeueAfter(10*time.Second, err)
 		}
 		return noRequeue()
@@ -259,6 +277,7 @@ func (c *SyncController) enqueueRequestsFromMapFunc(gvk schema.GroupVersionKind)
 				break
 			}
 		}
+		// TODO consider adding error handling/metrics if we don't find our object
 
 		return requests
 	}
@@ -294,6 +313,8 @@ func (c *SyncController) enqueueData(instance *registryv1alpha1.ClusterSync) err
 	})
 	elapsed := float64(time.Since(start)) / float64(time.Second)
 	c.Log.Info("Enqueue time", "time", elapsed)
+	c.Metrics.RecordEnqueueDur(instance.Name, elapsed)
+	c.Metrics.RecordEnqueueCnt(instance.Name)
 
 	if err != nil {
 		return err

@@ -19,7 +19,7 @@ import (
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
 	registryv1alpha1 "github.com/adobe/cluster-registry/pkg/api/registry/v1alpha1"
 	"github.com/adobe/cluster-registry/pkg/config"
-	monitoring "github.com/adobe/cluster-registry/pkg/monitoring/client"
+	monitoring "github.com/adobe/cluster-registry/pkg/monitoring/manager"
 	"github.com/adobe/cluster-registry/pkg/sqs"
 	"github.com/adobe/cluster-registry/pkg/sync/manager"
 	"github.com/adobe/cluster-registry/pkg/sync/parser"
@@ -161,6 +161,7 @@ func main() {
 		WatchedGVKs:    loadWatchedGVKs(syncConfig),
 		Queue:          q,
 		ResourceParser: rp,
+		Metrics:        m,
 	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "SyncController")
 		os.Exit(1)
