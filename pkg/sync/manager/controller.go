@@ -66,18 +66,15 @@ func (c *SyncController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	defer func() {
 		elapsed := time.Since(start)
 		log.Info("end", "duration", elapsed)
-		// TODO Should I try to get the cluster name out of this? Or is the sync object name good enough?
 		c.Metrics.RecordReconciliationDur(req.Name, float64(elapsed)/float64(time.Second))
-		c.Metrics.RecordRequeueCnt(req.Name)
+		c.Metrics.RecordReconciliationCnt(req.Name)
 	}()
 
 	instance := new(registryv1alpha1.ClusterSync)
 	if err := c.Get(ctx, req.NamespacedName, instance); err != nil {
 		c.Metrics.RecordErrorCnt(req.Name)
 		log.Error(err, "unable to fetch object")
-		// TODO I'd love to build the requeue metrics into result.go so requeues can't be missed, but I'm hesitant to
-		// pollute them. Should I do this?
-		return requeueIfError(client.IgnoreNotFound(err))
+		return requeueIfError(c, req, client.IgnoreNotFound(err))
 	}
 
 	if instance.ObjectMeta.DeletionTimestamp != nil {
@@ -114,8 +111,7 @@ func (c *SyncController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		c.Metrics.RecordErrorCnt(req.Name)
 
 		if err := c.updateStatus(ctx, instance); err != nil {
-			c.Metrics.RecordRequeueCnt(req.Name)
-			return requeueAfter(10*time.Second, err)
+			return requeueAfter(c, req, 10*time.Second, err)
 		}
 		return noRequeue()
 	}
@@ -135,15 +131,13 @@ func (c *SyncController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			log.Error(err, "failed to enqueue message")
 			c.Metrics.RecordErrorCnt(req.Name)
 			if err := c.updateStatus(ctx, instance); err != nil {
-				c.Metrics.RecordRequeueCnt(req.Name)
-				return requeueAfter(10*time.Second, err)
+				return requeueAfter(c, req, 10*time.Second, err)
 			}
 			return noRequeue()
 		}
 		if err := c.updateStatus(ctx, instance); err != nil {
 			c.Metrics.RecordErrorCnt(req.Name)
-			c.Metrics.RecordRequeueCnt(req.Name)
-			return requeueAfter(10*time.Second, err)
+			return requeueAfter(c, req, 10*time.Second, err)
 		}
 		return noRequeue()
 	}
