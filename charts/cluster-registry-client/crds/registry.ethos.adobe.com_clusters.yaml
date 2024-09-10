@@ -107,14 +107,23 @@ spec:
                 properties:
                   clusterCapacity:
                     type: integer
+                  clusterCurrentBqu:
+                    type: integer
+                  clusterMaxBqu:
+                    type: integer
                   clusterProvisioning:
                     type: integer
                   lastUpdated:
                     type: string
+                  maxBquPerRequest:
+                    type: integer
                 required:
                 - clusterCapacity
+                - clusterCurrentBqu
+                - clusterMaxBqu
                 - clusterProvisioning
                 - lastUpdated
+                - maxBquPerRequest
                 type: object
               chargebackBusinessUnit:
                 description: The BU responsible for paying for the cluster.
