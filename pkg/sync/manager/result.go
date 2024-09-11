@@ -17,7 +17,10 @@ import (
 	"time"
 )
 
-func requeueIfError(err error) (ctrl.Result, error) {
+func requeueIfError(c *SyncController, req ctrl.Request, err error) (ctrl.Result, error) {
+	if err != nil {
+		c.Metrics.RecordRequeueCnt(req.Name)
+	}
 	return ctrl.Result{}, err
 }
 
@@ -25,6 +28,7 @@ func noRequeue() (ctrl.Result, error) {
 	return ctrl.Result{}, nil
 }
 
-func requeueAfter(interval time.Duration, err error) (ctrl.Result, error) {
+func requeueAfter(c *SyncController, req ctrl.Request, interval time.Duration, err error) (ctrl.Result, error) {
+	c.Metrics.RecordRequeueCnt(req.Name)
 	return ctrl.Result{RequeueAfter: interval}, err
 }
