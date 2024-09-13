@@ -1,3 +1,23 @@
+# 1.6.3
+
+### 🚀 Features
+
+- Add Metrics to the sync manager (#244)
+- Add BQU fields (#241)
+
+
+### 🐛 Bug Fixes
+
+- Temporarily removing Codecov workflow (#247)
+- fix(deps): update module golang.org/x/net to v0.29.0 (#242)
+- fix(deps): update module github.com/prometheus/client_golang to v1.20.3 (#229)
+- fix(deps): update module github.com/testcontainers/testcontainers-go to v0.33.0 (#230)
+- fix(deps): update k8s.io/utils digest to 702e33f (#231)
+- fix(deps): update golang.org/x/exp digest to e7e105d (#233)
+- dependabot(deps): bump github.com/onsi/gomega from 1.34.1 to 1.34.2 (#239)
+- fix(deps): update module dario.cat/mergo to v1.0.1 (#227)
+
+
 # 1.6.2
 
 ### 🐛 Bug Fixes
