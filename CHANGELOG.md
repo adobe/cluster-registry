@@ -1,3 +1,10 @@
+# 1.6.4
+
+### 🐛 Bug Fixes
+
+- Add TLS config to redis client (#254)
+
+
 # 1.6.3
 
 ### 🚀 Features
