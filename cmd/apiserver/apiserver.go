@@ -14,6 +14,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"github.com/adobe/cluster-registry/pkg/apiserver/docs"
 	"github.com/adobe/cluster-registry/pkg/apiserver/event"
 	"github.com/adobe/cluster-registry/pkg/apiserver/web"
@@ -32,6 +33,8 @@ import (
 	"github.com/labstack/gommon/log"
 	"github.com/redis/go-redis/v9"
 	echoSwagger "github.com/swaggo/echo-swagger"
+	"net"
+	"strings"
 )
 
 // Version it's passed as ldflags in the build process
@@ -82,9 +85,21 @@ func main() {
 		return
 	}
 
-	redisClient := redis.NewClient(&redis.Options{
+	redisOptions := &redis.Options{
 		Addr: appConfig.ApiCacheRedisHost,
-	})
+	}
+
+	if appConfig.ApiCacheRedisTLSEnabled {
+		redisOptions.TLSConfig = &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		}
+		redisHost := strings.Split(appConfig.ApiCacheRedisHost, ":")[0]
+		if ipAddr := net.ParseIP(redisHost); ipAddr == nil {
+			redisOptions.TLSConfig.ServerName = redisHost
+		}
+	}
+
+	redisClient := redis.NewClient(redisOptions)
 	cmd := redisClient.Info(context.Background())
 	if cmd.Err() != nil {
 		log.Fatalf("Cannot connect to redis: %s", cmd.Err().Error())

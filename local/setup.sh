@@ -179,6 +179,7 @@ if [[ "${RUN_APISERVER}" == 1 ]]; then
         -e API_AUTHORIZED_GROUP_ID="${API_AUTHORIZED_GROUP_ID}" \
         -e API_CACHE_TTL \
         -e API_CACHE_REDIS_HOST=${CONTAINER_REDIS}:6379 \
+        -e API_CACHE_REDIS_TLS_ENABLED \
         --network "${NETWORK}" \
         "${IMAGE_APISERVER}":"${TAG}" || die "Failed to create $CONTAINER_API container."
 fi
