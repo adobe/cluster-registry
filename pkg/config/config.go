@@ -22,29 +22,30 @@ import (
 )
 
 type AppConfig struct {
-	ApiRateLimiterEnabled bool
-	ApiHost               string
-	AwsRegion             string
-	DbEndpoint            string
-	DbAwsRegion           string
-	DbTableName           string
-	DbIndexName           string
-	LogLevel              log.Lvl
-	OidcClientId          string
-	OidcIssuerUrl         string
-	SqsEndpoint           string
-	SqsAwsRegion          string
-	SqsQueueName          string
-	SqsBatchSize          int64
-	SqsWaitSeconds        int64
-	SqsRunInterval        int
-	K8sResourceId         string
-	ApiTenantId           string
-	ApiClientId           string
-	ApiClientSecret       string
-	ApiAuthorizedGroupId  string
-	ApiCacheTTL           time.Duration
-	ApiCacheRedisHost     string
+	ApiRateLimiterEnabled   bool
+	ApiHost                 string
+	AwsRegion               string
+	DbEndpoint              string
+	DbAwsRegion             string
+	DbTableName             string
+	DbIndexName             string
+	LogLevel                log.Lvl
+	OidcClientId            string
+	OidcIssuerUrl           string
+	SqsEndpoint             string
+	SqsAwsRegion            string
+	SqsQueueName            string
+	SqsBatchSize            int64
+	SqsWaitSeconds          int64
+	SqsRunInterval          int
+	K8sResourceId           string
+	ApiTenantId             string
+	ApiClientId             string
+	ApiClientSecret         string
+	ApiAuthorizedGroupId    string
+	ApiCacheTTL             time.Duration
+	ApiCacheRedisHost       string
+	ApiCacheRedisTLSEnabled bool
 }
 
 func LoadApiConfig() (*AppConfig, error) {
@@ -174,30 +175,37 @@ func LoadApiConfig() (*AppConfig, error) {
 		return nil, fmt.Errorf("environment variable API_CACHE_REDIS_HOST is not set")
 	}
 
+	apiCacheRedisTLSEnabled := getEnv("API_CACHE_REDIS_TLS_ENABLED", "true")
+	apiCacheRedisTLSEnabledBool, err := strconv.ParseBool(apiCacheRedisTLSEnabled)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing API_CACHE_REDIS_TLS_ENABLED: %v", err)
+	}
+
 	return &AppConfig{
-		AwsRegion:             awsRegion,
-		DbEndpoint:            dbEndpoint,
-		DbAwsRegion:           dbAwsRegion,
-		DbTableName:           dbTableName,
-		DbIndexName:           dbIndexName,
-		SqsEndpoint:           sqsEndpoint,
-		SqsAwsRegion:          sqsAwsRegion,
-		SqsQueueName:          sqsQueueName,
-		SqsBatchSize:          sqsBatchSizeInt,
-		SqsWaitSeconds:        sqsWaitSecondsInt,
-		SqsRunInterval:        sqsRunIntervalInt,
-		OidcClientId:          oidcClientId,
-		OidcIssuerUrl:         oidcIssuerUrl,
-		ApiRateLimiterEnabled: apiRateLimiterEnabled,
-		LogLevel:              logLevel,
-		ApiHost:               apiHost,
-		K8sResourceId:         k8sResourceId,
-		ApiTenantId:           apiTenantId,
-		ApiClientId:           apiClientId,
-		ApiClientSecret:       apiClientSecret,
-		ApiAuthorizedGroupId:  authorizedGroupId,
-		ApiCacheTTL:           apiCacheTTL,
-		ApiCacheRedisHost:     apiCacheRedisHost,
+		AwsRegion:               awsRegion,
+		DbEndpoint:              dbEndpoint,
+		DbAwsRegion:             dbAwsRegion,
+		DbTableName:             dbTableName,
+		DbIndexName:             dbIndexName,
+		SqsEndpoint:             sqsEndpoint,
+		SqsAwsRegion:            sqsAwsRegion,
+		SqsQueueName:            sqsQueueName,
+		SqsBatchSize:            sqsBatchSizeInt,
+		SqsWaitSeconds:          sqsWaitSecondsInt,
+		SqsRunInterval:          sqsRunIntervalInt,
+		OidcClientId:            oidcClientId,
+		OidcIssuerUrl:           oidcIssuerUrl,
+		ApiRateLimiterEnabled:   apiRateLimiterEnabled,
+		LogLevel:                logLevel,
+		ApiHost:                 apiHost,
+		K8sResourceId:           k8sResourceId,
+		ApiTenantId:             apiTenantId,
+		ApiClientId:             apiClientId,
+		ApiClientSecret:         apiClientSecret,
+		ApiAuthorizedGroupId:    authorizedGroupId,
+		ApiCacheTTL:             apiCacheTTL,
+		ApiCacheRedisHost:       apiCacheRedisHost,
+		ApiCacheRedisTLSEnabled: apiCacheRedisTLSEnabledBool,
 	}, nil
 }
 

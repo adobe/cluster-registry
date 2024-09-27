@@ -87,14 +87,16 @@ func main() {
 
 	redisOptions := &redis.Options{
 		Addr: appConfig.ApiCacheRedisHost,
-		TLSConfig: &tls.Config{
-			MinVersion: tls.VersionTLS12,
-		},
 	}
 
-	redisHost := strings.Split(appConfig.ApiCacheRedisHost, ":")[0]
-	if ipAddr := net.ParseIP(redisHost); ipAddr == nil {
-		redisOptions.TLSConfig.ServerName = redisHost
+	if appConfig.ApiCacheRedisTLSEnabled {
+		redisOptions.TLSConfig = &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		}
+		redisHost := strings.Split(appConfig.ApiCacheRedisHost, ":")[0]
+		if ipAddr := net.ParseIP(redisHost); ipAddr == nil {
+			redisOptions.TLSConfig.ServerName = redisHost
+		}
 	}
 
 	redisClient := redis.NewClient(redisOptions)
