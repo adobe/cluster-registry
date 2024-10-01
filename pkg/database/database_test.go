@@ -15,6 +15,7 @@ package database
 import (
 	"fmt"
 	"github.com/adobe/cluster-registry/pkg/apiserver/models"
+	"k8s.io/utils/ptr"
 	"sort"
 
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
@@ -101,7 +102,7 @@ var _ = Describe("Database Suite", func() {
 							Environment:            "Prod",
 							BusinessUnit:           "BU1",
 							ChargebackBusinessUnit: "BU1",
-							ChargedBack:            true,
+							ChargedBack:            ptr.To(true),
 							Offering:               []registryv1.Offering{"caas", "paas"},
 							AccountID:              "11111-2222-3333-4444-555555555",
 							Tiers: []registryv1.Tier{
@@ -439,7 +440,7 @@ var _ = Describe("Database Suite", func() {
 								Environment:            "Prod",
 								BusinessUnit:           "BU1",
 								ChargebackBusinessUnit: "BU1",
-								ChargedBack:            true,
+								ChargedBack:            ptr.To(true),
 								Offering:               []registryv1.Offering{"caas", "paas"},
 								AccountID:              "11111-2222-3333-4444-555555555",
 								Tiers: []registryv1.Tier{
@@ -533,7 +534,7 @@ var _ = Describe("Database Suite", func() {
 								Environment:            "Prod",
 								BusinessUnit:           "BU2",
 								ChargebackBusinessUnit: "BU2",
-								ChargedBack:            false,
+								ChargedBack:            ptr.To(false),
 								Offering:               []registryv1.Offering{"caas", "paas"},
 								AccountID:              "11111-2222-3333-4444-55555555",
 								Tiers: []registryv1.Tier{
@@ -604,7 +605,7 @@ var _ = Describe("Database Suite", func() {
 								Environment:            "Prod",
 								BusinessUnit:           "BU1",
 								ChargebackBusinessUnit: "BU1",
-								ChargedBack:            true,
+								ChargedBack:            ptr.To(true),
 								Offering:               []registryv1.Offering{"paas"},
 								AccountID:              "12345678",
 								Tiers: []registryv1.Tier{
@@ -701,7 +702,7 @@ var _ = Describe("Database Suite", func() {
 								Environment:            "Prod",
 								BusinessUnit:           "BU1",
 								ChargebackBusinessUnit: "BU1",
-								ChargedBack:            true,
+								ChargedBack:            ptr.To(true),
 								Offering:               []registryv1.Offering{"caas", "paas"},
 								AccountID:              "11111-2222-3333-4444-555555555",
 								Tiers: []registryv1.Tier{
@@ -811,7 +812,7 @@ var _ = Describe("Database Suite", func() {
 								Environment:            "Prod",
 								BusinessUnit:           "BU2",
 								ChargebackBusinessUnit: "BU2",
-								ChargedBack:            false,
+								ChargedBack:            ptr.To(false),
 								Offering:               []registryv1.Offering{"caas", "paas"},
 								AccountID:              "11111-2222-3333-4444-55555555",
 								Tiers: []registryv1.Tier{
@@ -946,7 +947,7 @@ var _ = Describe("Database Suite", func() {
 							Environment:            "Prod",
 							BusinessUnit:           "BU1",
 							ChargebackBusinessUnit: "BU1",
-							ChargedBack:            true,
+							ChargedBack:            ptr.To(true),
 							Offering:               []registryv1.Offering{"caas", "paas"},
 							AccountID:              "11111-2222-3333-4444-555555555",
 							Tiers: []registryv1.Tier{
@@ -1040,7 +1041,7 @@ var _ = Describe("Database Suite", func() {
 							Environment:            "Prod",
 							BusinessUnit:           "BU2",
 							ChargebackBusinessUnit: "BU2",
-							ChargedBack:            false,
+							ChargedBack:            ptr.To(false),
 							Offering:               []registryv1.Offering{"caas", "paas"},
 							AccountID:              "11111-2222-3333-4444-55555555",
 							Tiers: []registryv1.Tier{
@@ -1111,7 +1112,7 @@ var _ = Describe("Database Suite", func() {
 							Environment:            "Prod",
 							BusinessUnit:           "BU1",
 							ChargebackBusinessUnit: "BU1",
-							ChargedBack:            true,
+							ChargedBack:            ptr.To(true),
 							Offering:               []registryv1.Offering{"paas"},
 							AccountID:              "12345678",
 							Tiers: []registryv1.Tier{
@@ -1188,7 +1189,7 @@ var _ = Describe("Database Suite", func() {
 							Environment:            "Prod",
 							BusinessUnit:           "BU1",
 							ChargebackBusinessUnit: "BU1",
-							ChargedBack:            true,
+							ChargedBack:            ptr.To(true),
 							Offering:               []registryv1.Offering{"caas", "paas"},
 							AccountID:              "11111-2222-3333-4444-555555555",
 							Tiers: []registryv1.Tier{
@@ -1282,7 +1283,7 @@ var _ = Describe("Database Suite", func() {
 							Environment:            "Prod",
 							BusinessUnit:           "BU2",
 							ChargebackBusinessUnit: "BU2",
-							ChargedBack:            false,
+							ChargedBack:            ptr.To(false),
 							Offering:               []registryv1.Offering{"caas", "paas"},
 							AccountID:              "11111-2222-3333-4444-55555555",
 							Tiers: []registryv1.Tier{
@@ -1364,7 +1365,7 @@ var _ = Describe("Database Suite", func() {
 							Environment:            "Prod",
 							BusinessUnit:           "BU1",
 							ChargebackBusinessUnit: "BU1",
-							ChargedBack:            true,
+							ChargedBack:            ptr.To(true),
 							Offering:               []registryv1.Offering{"caas", "paas"},
 							AccountID:              "11111-2222-3333-4444-555555555",
 							Tiers: []registryv1.Tier{
@@ -1458,7 +1459,7 @@ var _ = Describe("Database Suite", func() {
 							Environment:            "Prod",
 							BusinessUnit:           "BU1",
 							ChargebackBusinessUnit: "BU1",
-							ChargedBack:            true,
+							ChargedBack:            ptr.To(true),
 							Offering:               []registryv1.Offering{"paas"},
 							AccountID:              "12345678",
 							Tiers: []registryv1.Tier{
@@ -1538,7 +1539,7 @@ var _ = Describe("Database Suite", func() {
 							Environment:            "Prod",
 							BusinessUnit:           "BU1",
 							ChargebackBusinessUnit: "BU1",
-							ChargedBack:            true,
+							ChargedBack:            ptr.To(true),
 							Offering:               []registryv1.Offering{"caas", "paas"},
 							AccountID:              "11111-2222-3333-4444-555555555",
 							Tiers: []registryv1.Tier{
@@ -1632,7 +1633,7 @@ var _ = Describe("Database Suite", func() {
 							Environment:            "Prod",
 							BusinessUnit:           "BU2",
 							ChargebackBusinessUnit: "BU2",
-							ChargedBack:            false,
+							ChargedBack:            ptr.To(false),
 							Offering:               []registryv1.Offering{"caas", "paas"},
 							AccountID:              "11111-2222-3333-4444-55555555",
 							Tiers: []registryv1.Tier{

@@ -14,6 +14,7 @@ package controllers
 
 import (
 	"context"
+	"k8s.io/utils/ptr"
 	"time"
 
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
@@ -75,7 +76,7 @@ var _ = Describe("Cluster Controller", func() {
 					Environment:            "Prod",
 					BusinessUnit:           "BU1",
 					ChargebackBusinessUnit: "BU1",
-					ChargedBack:            true,
+					ChargedBack:            ptr.To(true),
 					Offering:               []registryv1.Offering{},
 					AccountID:              "",
 					Tiers:                  []registryv1.Tier{},
