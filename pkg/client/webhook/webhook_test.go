@@ -25,6 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	"net/http"
 	"net/http/httptest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -190,7 +191,7 @@ var _ = Describe("Webhook Server", func() {
 					Environment:            "Prod",
 					BusinessUnit:           "BU1",
 					ChargebackBusinessUnit: "BU1",
-					ChargedBack:            true,
+					ChargedBack:            ptr.To(true),
 					Offering:               []registryv1.Offering{},
 					AccountID:              "",
 					Tiers:                  []registryv1.Tier{},
