@@ -14,6 +14,7 @@ package controllers
 
 import (
 	"context"
+	"k8s.io/utils/ptr"
 	"time"
 
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
