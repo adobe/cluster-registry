@@ -15,5 +15,5 @@ maintainers:
   - name: radu-catalina
     email: caradu@adobe.com
 
-version: 0.1.6
-appVersion: v1.6.3
+version: 0.1.7
+appVersion: v1.6.4
