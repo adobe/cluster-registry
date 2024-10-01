@@ -59,7 +59,7 @@ type ClusterSpec struct {
 	ChargebackBusinessUnit string `json:"chargebackBusinessUnit,omitempty"`
 
 	// Whether the cluster is charged back to the chargebackBusinessUnit
-	ChargedBack bool `json:"chargedBack,omitempty"`
+	ChargedBack *bool `json:"chargedBack,omitempty"`
 
 	// The Org that is responsible for the cluster operations
 	// +kubebuilder:validation:Required

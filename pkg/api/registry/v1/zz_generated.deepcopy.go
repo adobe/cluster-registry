@@ -153,6 +153,11 @@ func (in *ClusterList) DeepCopyObject() runtime.Object {
 func (in *ClusterSpec) DeepCopyInto(out *ClusterSpec) {
 	*out = *in
 	out.APIServer = in.APIServer
+	if in.ChargedBack != nil {
+		in, out := &in.ChargedBack, &out.ChargedBack
+		*out = new(bool)
+		**out = **in
+	}
 	if in.Offering != nil {
 		in, out := &in.Offering, &out.Offering
 		*out = make([]Offering, len(*in))
