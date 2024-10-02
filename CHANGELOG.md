@@ -1,3 +1,13 @@
+# 1.6.5
+
+### 🐛 Bug Fixes
+
+- Fix ChargedBack field marshaling issue (#257)
+- *(deps)* Update kubernetes packages to v0.31.1 (#248)
+- *(deps)* Update module github.com/prometheus/client_golang to v1.20.4 (#251)
+- *(deps)* Update k8s.io/utils digest to 49e7df5 (#252)
+
+
 # 1.6.4
 
 ### 🐛 Bug Fixes
