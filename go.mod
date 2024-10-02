@@ -21,7 +21,7 @@ require (
 	github.com/labstack/gommon v0.4.2
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.34.2
-	github.com/prometheus/client_golang v1.20.3
+	github.com/prometheus/client_golang v1.20.4
 	github.com/redis/go-redis/v9 v9.6.1
 	github.com/stretchr/testify v1.9.0
 	github.com/swaggo/echo-swagger v1.4.1
