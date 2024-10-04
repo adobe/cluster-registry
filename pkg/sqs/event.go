@@ -19,8 +19,9 @@ import (
 )
 
 const (
-	MessageAttributeType        = "Type"
-	MessageAttributeClusterName = "ClusterName"
+	MessageAttributeType                  = "Type"
+	MessageAttributeClusterName           = "ClusterName"
+	MessageAttributeSkipCacheInvalidation = "SkipCacheInvalidation"
 
 	// ClusterUpdateEvent refers to an update of the Cluster object that
 	// is sent by the client controller. This event is sent to the SQS queue and

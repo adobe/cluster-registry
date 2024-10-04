@@ -46,6 +46,9 @@ type ClusterReconciler struct {
 const (
 	// HashAnnotation ...
 	HashAnnotation = "registry.ethos.adobe.com/hash"
+
+	// SkipCacheInvalidationAnnotation ...
+	SkipCacheInvalidationAnnotation = "registry.ethos.adobe.com/skip-cache-invalidation"
 )
 
 //+kubebuilder:rbac:groups=registry.ethos.adobe.com,resources=clusters,verbs=get;list;watch;create;update;patch;delete
@@ -89,10 +92,18 @@ func (r *ClusterReconciler) ReconcileCreateUpdate(instance *registryv1.Cluster, 
 	if annotations == nil {
 		annotations = make(map[string]string, 1)
 	}
+
 	annotations[HashAnnotation] = hash
+
+	skipCacheInvalidation := false
+	if _, ok := annotations[SkipCacheInvalidationAnnotation]; ok {
+		delete(annotations, SkipCacheInvalidationAnnotation)
+		skipCacheInvalidation = true
+	}
+
 	instance.SetAnnotations(annotations)
 
-	err := r.enqueue(instance)
+	err := r.enqueue(instance, skipCacheInvalidation)
 	if err != nil {
 		r.Log.Error(err, "error enqueuing message")
 		return ctrl.Result{}, err
@@ -132,7 +143,7 @@ func (r *ClusterReconciler) eventFilters() predicate.Predicate {
 	}
 }
 
-func (r *ClusterReconciler) enqueue(instance *registryv1.Cluster) error {
+func (r *ClusterReconciler) enqueue(instance *registryv1.Cluster, skipCacheInvalidation bool) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -160,6 +171,10 @@ func (r *ClusterReconciler) enqueue(instance *registryv1.Cluster) error {
 					DataType:    aws.String("String"),
 					StringValue: aws.String(instance.Spec.Name),
 				},
+				"SkipCacheInvalidation": {
+					DataType:    aws.String("String"),
+					StringValue: aws.String(fmt.Sprintf("%t", skipCacheInvalidation)),
+				},
 			},
 			MessageBody: aws.String(string(obj)),
 		},
@@ -182,12 +197,13 @@ func (r *ClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 // hashCluster returns a SHA256 hash of the Cluster object, after removing the ResourceVersion,
-// ManagedFields and hashCluster annotation
+// ManagedFields and hash/no-cache annotation
 func hashCluster(instance *registryv1.Cluster) string {
 	clone := instance.DeepCopyObject().(*registryv1.Cluster)
 
 	annotations := clone.GetAnnotations()
 	delete(annotations, HashAnnotation)
+	delete(annotations, SkipCacheInvalidationAnnotation)
 	clone.SetAnnotations(annotations)
 
 	clone.SetResourceVersion("")

@@ -129,6 +129,12 @@ func main() {
 			log.Errorf("Failed to delete message: %s", err.Error())
 			return
 		}
+
+		if val, ok := msg.MessageAttributes[sqs.MessageAttributeSkipCacheInvalidation]; ok && *val.StringValue == "true" {
+			log.Debugf("Skipping cache invalidation")
+			return
+		}
+
 		log.Debugf("Invalidating clusters cache")
 		err = cacheManager.Invalidate(context.Background(), store.WithInvalidateTags([]string{"clusters"}))
 		if err != nil {

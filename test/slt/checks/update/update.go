@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/adobe/cluster-registry/pkg/client/controllers"
 	"time"
 
 	h "github.com/adobe/cluster-registry/test/slt/helpers"
@@ -124,6 +125,14 @@ func updateCrd(namespace string) (string, string, error) {
 	// Remove immutable Kubernetes field
 	(*cluster).ObjectMeta.ManagedFields = []metav1.ManagedFieldsEntry{}
 
+	// Set SkipCacheInvalidationAnnotation to true
+	annotations := (*cluster).GetAnnotations()
+	if annotations == nil {
+		annotations = make(map[string]string, 1)
+	}
+	annotations[controllers.SkipCacheInvalidationAnnotation] = ""
+	(*cluster).SetAnnotations(annotations)
+
 	data, err := json.Marshal(*cluster)
 	if err != nil {
 		return "", "", fmt.Errorf("could not marshal updated CRD: %s", err.Error())
@@ -153,8 +162,7 @@ func checkAPIforUpdate(url, clusterName, tagSLTValue, jwtToken string) error {
 	if cluster.Tags == nil {
 		return errors.New("tags field is empty")
 	} else if tagSLTValue != cluster.Tags[tagSLT] {
-		return fmt.Errorf("the 'Tags' field is not what expected. The "+
-			"value is '%s', expected '%s'.", cluster.Tags[tagSLT], tagSLTValue)
+		return fmt.Errorf("the 'Tags' field is not what expected. The value is '%s', expected '%s'", cluster.Tags[tagSLT], tagSLTValue)
 	}
 
 	return nil
@@ -174,7 +182,7 @@ func Run(config TestConfig, jwtToken string) (int, error) {
 	for nrOfTries <= maxNrOfTries {
 		// Give to the CR client time to push to the SQS queue and for the API to read
 		// from the queue and update the DB. By local tests it takes around 11s
-		time.Sleep(11 * time.Second)
+		time.Sleep(30 * time.Second)
 
 		logger.Infof("checking the API for the update (check %d/%d)...",
 			nrOfTries, maxNrOfTries)
