@@ -93,6 +93,10 @@ func main() {
 						DataType:    aws.String("String"),
 						StringValue: aws.String(cluster.Spec.Name),
 					},
+					"SkipCacheInvalidation": {
+						DataType:    aws.String("Bool"),
+						StringValue: aws.String(fmt.Sprintf("%t", false)),
+					},
 				},
 				MessageBody: aws.String(string(data)),
 			},

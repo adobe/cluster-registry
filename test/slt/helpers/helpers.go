@@ -127,14 +127,14 @@ func reqGet(endpoint, bearer string) (*[]byte, int, error) {
 func GetCluster(url, clusterName, jwtToken string) (*cr.ClusterSpec, error) {
 	var cluster cr.ClusterSpec
 
-	endpoint := fmt.Sprintf("%s/api/v1/clusters/%s", url, clusterName)
+	endpoint := fmt.Sprintf("%s/api/v2/clusters/%s", url, clusterName)
 	bearer := "Bearer " + jwtToken
 
 	start := time.Now()
 	body, respCode, err := reqGet(endpoint, bearer)
 	timeTook := float64(time.Since(start).Seconds())
 	metrics.EgressReqDuration.WithLabelValues(
-		"/api/v1/clusters/[cluster]",
+		"/api/v2/clusters/[cluster]",
 		"GET",
 		strconv.Itoa(respCode)).Observe(timeTook)
 	if err != nil {
@@ -156,14 +156,14 @@ func GetCluster(url, clusterName, jwtToken string) (*cr.ClusterSpec, error) {
 func GetClusters(url, perPageLimit, pageNr, jwtToken string) (*ClusterList, error) {
 	var clusters ClusterList
 
-	endpoint := fmt.Sprintf("%s/api/v1/clusters?offset=%s&limit=%s", url, pageNr, perPageLimit)
+	endpoint := fmt.Sprintf("%s/api/v2/clusters?offset=%s&limit=%s", url, pageNr, perPageLimit)
 	bearer := "Bearer " + jwtToken
 
 	start := time.Now()
 	body, respCode, err := reqGet(endpoint, bearer)
 	timeTook := float64(time.Since(start).Seconds())
 	metrics.EgressReqDuration.WithLabelValues(
-		"/api/v1/clusters",
+		"/api/v2/clusters",
 		"GET",
 		strconv.Itoa(respCode)).Observe(timeTook)
 	if err != nil {

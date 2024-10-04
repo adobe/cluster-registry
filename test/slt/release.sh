@@ -24,7 +24,7 @@ IMAGE_SLT="${IMAGE_SLT:-"${default_image_name}"}"
 IMAGE_SLT="${IMAGE_SLT}${IMAGE_SUFFIX}"
 
 
-printf "Realeasing image %s...\n\n" "${IMAGE_SLT}:${TAG}"
+printf "Releasing image %s...\n\n" "${IMAGE_SLT}:${TAG}"
 
 make -C "${ROOT_DIR}" --always-make build-slt \
     TAG="${TAG}" \
