@@ -25,7 +25,7 @@ require (
 	github.com/redis/go-redis/v9 v9.6.1
 	github.com/stretchr/testify v1.9.0
 	github.com/swaggo/echo-swagger v1.4.1
-	github.com/swaggo/swag v1.16.3
+	github.com/swaggo/swag v1.16.4
 	github.com/testcontainers/testcontainers-go v0.33.0
 	golang.org/x/exp v0.0.0-20241004190924-225e2abe05e6
 	golang.org/x/net v0.30.0
