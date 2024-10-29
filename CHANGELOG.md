@@ -1,3 +1,19 @@
+# 1.6.6
+
+### 🐛 Bug Fixes
+
+- Skip cache invalidation for SLTs (#260)
+- *(deps)* Update module golang.org/x/net to v0.30.0 (#261)
+- *(deps)* Update golang.org/x/exp digest to 225e2ab (#245)
+- *(deps)* Update golang.org/x/exp digest to f66d83c (#264)
+- *(deps)* Update module github.com/redis/go-redis/v9 to v9.7.0 (#265)
+- *(deps)* Update module github.com/swaggo/swag to v1.16.4 (#267)
+- *(deps)* Update kubernetes packages to v0.31.2 (#269)
+- *(deps)* Update module sigs.k8s.io/controller-runtime to v0.19.1 (#270)
+- *(deps)* Update module github.com/testcontainers/testcontainers-go to v0.34.0 (#268)
+- *(deps)* Update module github.com/prometheus/client_golang to v1.20.5 (#266)
+
+
 # 1.6.5
 
 ### 🐛 Bug Fixes
