@@ -19,7 +19,7 @@ If you want to test one of the Cluster Registry components call directly setup s
 * run the stack without cluster-registry-api: `API=false make setup`
 * run the stack without cluster-registry-client: `CLIENT=false make setup`
 * run the stack without cluster-registry-sync-manager : `SYNC_MANAGER=false make setup`
-* run the stack with all components: `make setup` 
+* run the stack with all components: `make setup`
 
 To clean up your local setup run:
 `make clean`
