@@ -75,7 +75,7 @@ func main() {
 
 	id, err := uuid.NewUUID()
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panic(err.Error())
 	}
 
 	for _, cluster := range clusters {

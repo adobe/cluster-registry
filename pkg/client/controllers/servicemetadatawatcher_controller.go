@@ -62,7 +62,9 @@ func (r *ServiceMetadataWatcherReconciler) Reconcile(ctx context.Context, req ct
 
 	log := r.Log.WithValues("name", req.NamespacedName)
 	log.Info("start")
-	defer log.Info("end", "duration", time.Since(start))
+	defer func() {
+		log.Info("end", "duration", time.Since(start))
+	}()
 
 	instance := new(registryv1alpha1.ServiceMetadataWatcher)
 	if err := r.Get(ctx, req.NamespacedName, instance); err != nil {
