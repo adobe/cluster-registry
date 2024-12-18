@@ -18,9 +18,11 @@ import (
 	"fmt"
 	registryv1alpha1 "github.com/adobe/cluster-registry/pkg/api/registry/v1alpha1"
 	"github.com/adobe/cluster-registry/pkg/client/controllers"
+	"github.com/adobe/cluster-registry/pkg/client/publicip"
 	"github.com/adobe/cluster-registry/pkg/config"
 	monitoring "github.com/adobe/cluster-registry/pkg/monitoring/client"
 	"github.com/adobe/cluster-registry/pkg/sqs"
+	"github.com/go-co-op/gocron/v2"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
@@ -28,6 +30,7 @@ import (
 	"net/http"
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	"time"
 
 	configv1 "github.com/adobe/cluster-registry/pkg/api/config/v1"
 	registryv1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
@@ -198,6 +201,46 @@ func main() {
 			setupLog.Error(err, "unable to start alertmanager webhook server")
 			os.Exit(1)
 		}
+	}()
+	go func() {
+		scanInterval := 60 * time.Second
+
+		setupLog.Info("starting public IP scanner",
+			"interval", fmt.Sprintf("%s", scanInterval))
+		scheduler, err := gocron.NewScheduler(gocron.WithLocation(time.UTC))
+		defer func() { _ = scheduler.Shutdown() }()
+
+		if err != nil {
+			setupLog.Error(err, "failed to create scheduler")
+			os.Exit(1)
+		}
+
+		scanner, err := publicip.NewScanner(func(o *publicip.Options) {
+			o.Client = mgr.GetClient()
+			o.Logger = ctrl.Log.WithName("publicip-scanner")
+			o.Namespace = clientConfig.Namespace
+		})
+
+		if err != nil {
+			setupLog.Error(err, "failed to create public IP scanner")
+			os.Exit(1)
+		}
+
+		job, err := scheduler.NewJob(
+			gocron.DurationJob(scanInterval),
+			gocron.NewTask(scanner.Run, ctx),
+		)
+
+		if err != nil {
+			setupLog.Error(err, "failed to schedule public IP scanner job")
+			os.Exit(1)
+		}
+
+		scheduler.Start()
+		setupLog.Info("started public IP scanner job",
+			"id", job.ID(),
+			"interval", fmt.Sprintf("%s", scanInterval))
+		select {}
 	}()
 
 	setupLog.Info("starting cluster-registry-client")

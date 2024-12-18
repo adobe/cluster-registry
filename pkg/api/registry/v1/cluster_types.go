@@ -132,6 +132,9 @@ type ClusterSpec struct {
 
 	// AvailabilityZones cluster availability zones
 	AvailabilityZones []AvailabilityZone `json:"availabilityZones,omitempty"`
+
+	// PublicIPs cluster public IPs
+	PublicIPs []string `json:"publicIPs,omitempty"`
 }
 
 // Offering the cluster is meant for

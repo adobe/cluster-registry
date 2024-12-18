@@ -239,6 +239,11 @@ spec:
                 - Running
                 - Upgrading
                 type: string
+              publicIPs:
+                description: PublicIPs cluster public IPs
+                items:
+                  type: string
+                type: array
               region:
                 description: Cluster internal region name
                 type: string
