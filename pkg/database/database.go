@@ -124,7 +124,7 @@ func (d *db) Status() error {
 		d.metrics.RecordErrorCnt(egressTarget)
 		msg := fmt.Sprintf("Connectivity check using DescribeTable failed. Error: '%v'", err.Error())
 		log.Errorf(msg)
-		return fmt.Errorf(msg)
+		return fmt.Errorf("%s", msg)
 	}
 
 	return nil
@@ -151,7 +151,7 @@ func (d *db) GetCluster(name string) (*registryv1.Cluster, error) {
 	if err != nil {
 		msg := fmt.Sprintf("Cannot get cluster '%s' from the database. Error: '%v'", name, err.Error())
 		log.Errorf(msg)
-		return nil, fmt.Errorf(msg)
+		return nil, fmt.Errorf("%s", msg)
 	}
 
 	if resp.Item == nil {
@@ -164,7 +164,7 @@ func (d *db) GetCluster(name string) (*registryv1.Cluster, error) {
 	if err != nil {
 		msg := fmt.Sprintf("Cannot unmarshal cluster '%s': '%v'", name, err.Error())
 		log.Errorf(msg)
-		return nil, fmt.Errorf(msg)
+		return nil, fmt.Errorf("%s", msg)
 	}
 
 	return clusterDb.Cluster, err
@@ -199,7 +199,7 @@ func (d *db) ListClusters(offset int, limit int, region string, environment stri
 		if err != nil {
 			msg := fmt.Sprintf("Error converting lastUpdated parameter to RFC3339: '%v'.", err)
 			log.Errorf(msg)
-			return nil, 0, false, fmt.Errorf(msg)
+			return nil, 0, false, fmt.Errorf("%s", msg)
 		}
 		filter = filter.And(expression.Name("lastUpdatedUnix").GreaterThanEqual(expression.Value(t.Unix())))
 	}
@@ -209,8 +209,8 @@ func (d *db) ListClusters(offset int, limit int, region string, environment stri
 
 	if err != nil {
 		msg := fmt.Sprintf("Building dynamodb query expersion failed: '%v'.", err)
-		log.Errorf(msg)
-		return nil, 0, false, fmt.Errorf(msg)
+		log.Errorf("%s", msg)
+		return nil, 0, false, fmt.Errorf("%s", msg)
 	}
 
 	queryInput = &dynamodb.QueryInput{
@@ -233,7 +233,7 @@ func (d *db) ListClusters(offset int, limit int, region string, environment stri
 		if err != nil {
 			msg := fmt.Sprintf("DynamonDB API query call failed: '%v'.", err.Error())
 			log.Errorf(msg)
-			return nil, 0, false, fmt.Errorf(msg)
+			return nil, 0, false, fmt.Errorf("%s", msg)
 		}
 
 		for _, i := range result.Items {
@@ -243,7 +243,7 @@ func (d *db) ListClusters(offset int, limit int, region string, environment stri
 			if err != nil {
 				msg := fmt.Sprintf("Error when trying to unmarshal cluster: '%v'.", err.Error())
 				log.Errorf(msg)
-				return nil, 0, false, fmt.Errorf(msg)
+				return nil, 0, false, fmt.Errorf("%s", msg)
 			}
 			clusters = append(clusters, *item.Cluster)
 		}
@@ -283,7 +283,7 @@ func (d *db) ListClustersWithFilter(offset int, limit int, filter *DynamoDBFilte
 	if err != nil {
 		msg := fmt.Sprintf("Building dynamodb scan expersion failed: '%v'.", err)
 		log.Errorf(msg)
-		return nil, 0, false, fmt.Errorf(msg)
+		return nil, 0, false, fmt.Errorf("%s", msg)
 	}
 
 	scanInput = &dynamodb.ScanInput{
@@ -305,7 +305,7 @@ func (d *db) ListClustersWithFilter(offset int, limit int, filter *DynamoDBFilte
 		if err != nil {
 			msg := fmt.Sprintf("DynamoDB API scan call failed: '%v'.", err.Error())
 			log.Errorf(msg)
-			return nil, 0, false, fmt.Errorf(msg)
+			return nil, 0, false, fmt.Errorf("%s", msg)
 		}
 
 		for _, i := range result.Items {
@@ -315,7 +315,7 @@ func (d *db) ListClustersWithFilter(offset int, limit int, filter *DynamoDBFilte
 			if err != nil {
 				msg := fmt.Sprintf("Error when trying to unmarshal cluster: '%v'.", err.Error())
 				log.Errorf(msg)
-				return nil, 0, false, fmt.Errorf(msg)
+				return nil, 0, false, fmt.Errorf("%s", msg)
 			}
 			clusters = append(clusters, *item.Cluster)
 		}
@@ -347,7 +347,7 @@ func (d *db) PutCluster(cluster *registryv1.Cluster) error {
 	if err != nil {
 		msg := fmt.Sprintf("Error converting lastUpdated parameter to RFC3339 for cluster %s: '%v'.", cluster.Spec.Name, err)
 		log.Errorf(msg)
-		return fmt.Errorf(msg)
+		return fmt.Errorf("%s", msg)
 	}
 
 	existingCluster, _ := d.GetCluster(cluster.Spec.Name)
@@ -369,7 +369,7 @@ func (d *db) PutCluster(cluster *registryv1.Cluster) error {
 	if err != nil {
 		msg := fmt.Sprintf("Cannot marshal cluster '%s' into AttributeValue map.", cluster.Spec.Name)
 		log.Errorf(msg)
-		return fmt.Errorf(msg)
+		return fmt.Errorf("%s", msg)
 	}
 
 	params := &dynamodb.PutItemInput{
@@ -387,7 +387,7 @@ func (d *db) PutCluster(cluster *registryv1.Cluster) error {
 	if err != nil {
 		msg := fmt.Sprintf("Cluster '%s' cannot be updated or created in the database. Error: '%v'", cluster.Spec.Name, err.Error())
 		log.Errorf(msg)
-		return fmt.Errorf(msg)
+		return fmt.Errorf("%s", msg)
 	}
 
 	log.Infof("Cluster '%s' updated.", cluster.Spec.Name)
@@ -416,7 +416,7 @@ func (d *db) DeleteCluster(name string) error {
 	if err != nil {
 		msg := fmt.Sprintf("Error while deleting cluster %s from db: %v", name, err.Error())
 		log.Errorf(msg)
-		return fmt.Errorf(msg)
+		return fmt.Errorf("%s", msg)
 	}
 
 	log.Infof("Cluster %s deleted.", name)
@@ -462,7 +462,7 @@ func (d *db) ListClustersWithServiceAndFilter(serviceId string, offset int, limi
 	if err != nil {
 		msg := fmt.Sprintf("Failed to list clusters with filter: '%v'.", err)
 		log.Errorf(msg)
-		return nil, 0, false, fmt.Errorf(msg)
+		return nil, 0, false, fmt.Errorf("%s", msg)
 	}
 
 	var clustersWithService []registryv1.Cluster
