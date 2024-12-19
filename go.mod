@@ -19,7 +19,7 @@ require (
 	github.com/gusaul/go-dynamock v0.0.0-20210107061312-3e989056e1e6
 	github.com/jinzhu/gorm v1.9.16
 	github.com/json-iterator/go v1.1.12
-	github.com/labstack/echo/v4 v4.13.2
+	github.com/labstack/echo/v4 v4.13.3
 	github.com/labstack/gommon v0.4.2
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.36.1
@@ -30,7 +30,7 @@ require (
 	github.com/swaggo/swag v1.16.4
 	github.com/testcontainers/testcontainers-go v0.34.0
 	golang.org/x/exp v0.0.0-20241217172543-b2144cdd0a67
-	golang.org/x/net v0.32.0
+	golang.org/x/net v0.33.0
 	gopkg.in/go-playground/validator.v9 v9.31.0
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
