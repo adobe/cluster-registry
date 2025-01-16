@@ -8,7 +8,7 @@ require (
 	dario.cat/mergo v1.0.1
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.13
 	github.com/aws/aws-sdk-go v1.55.6
-	github.com/coreos/go-oidc/v3 v3.11.0
+	github.com/coreos/go-oidc/v3 v3.12.0
 	github.com/eko/gocache/lib/v4 v4.2.0
 	github.com/eko/gocache/store/redis/v4 v4.2.2
 	github.com/evanphx/json-patch/v5 v5.9.0
