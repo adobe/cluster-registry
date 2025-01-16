@@ -15,6 +15,8 @@ package event
 import (
 	"errors"
 	"github.com/adobe/cluster-registry/pkg/sqs"
+	"github.com/davecgh/go-spew/spew"
+	log "github.com/sirupsen/logrus"
 )
 
 type PartialClusterUpdateHandler struct {
@@ -38,7 +40,8 @@ func (h *PartialClusterUpdateHandler) Handle(event *sqs.Event) error {
 		return errors.New("event type does not match handler type")
 	}
 
-	// TODO
+	log.Info("Handling partial cluster update event")
+	log.Info(spew.Sdump(event))
 
 	return nil
 }
