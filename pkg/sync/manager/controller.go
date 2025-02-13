@@ -145,8 +145,7 @@ func (c *SyncController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	return noRequeue()
 }
 
-func (c *SyncController) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
-	options := controller.Options{MaxConcurrentReconciles: 10}
+func (c *SyncController) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	b := ctrl.NewControllerManagedBy(mgr).For(&registryv1alpha1.ClusterSync{}, builder.WithPredicates(c.eventFilters()))
 	for _, gvk := range c.WatchedGVKs {
 		obj := new(unstructured.Unstructured)
@@ -219,11 +218,9 @@ func (c *SyncController) enqueueRequestsFromMapFunc(gvk schema.GroupVersionKind)
 			return requests
 		}
 
-		// limit the search to the cluster sync namespace
 		list := &registryv1alpha1.ClusterSyncList{}
-		if err := c.List(ctx, list, &client.ListOptions{Namespace: obj.GetNamespace()}); err != nil {
-			c.Log.Error(err, "failed to list ClusterSync objects",
-				"namespace", obj.GetNamespace())
+		if err := c.List(ctx, list, &client.ListOptions{}); err != nil {
+			c.Log.Error(err, "failed to list ClusterSync objects")
 			return requests
 		}
 
@@ -234,7 +231,13 @@ func (c *SyncController) enqueueRequestsFromMapFunc(gvk schema.GroupVersionKind)
 					c.Log.Error(err, "failed to parse resource API version")
 					return requests
 				}
-				if gv != gvk.GroupVersion() || res.Kind != gvk.Kind || clusterSync.Namespace != obj.GetNamespace() {
+				// if the namespace is specified, only enqueue if the object namespace matches
+				if res.Namespace != "" {
+					if res.Namespace != obj.GetNamespace() {
+						continue
+					}
+				}
+				if gv != gvk.GroupVersion() || res.Kind != gvk.Kind {
 					continue
 				}
 				// if the name is specified, only enqueue if the object name matches

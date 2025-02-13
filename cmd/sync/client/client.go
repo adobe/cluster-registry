@@ -81,7 +81,7 @@ func run(cmd *cobra.Command, args []string) {
 		Endpoint:          appConfig.SqsEndpoint,
 		QueueName:         appConfig.SqsQueueName,
 		BatchSize:         10,
-		VisibilityTimeout: 120,
+		VisibilityTimeout: 0,
 		WaitSeconds:       5,
 		RunInterval:       20,
 		RunOnce:           false,

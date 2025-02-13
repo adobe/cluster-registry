@@ -35,9 +35,11 @@ import (
 	"net/http"
 	"os"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	"time"
 )
 
 var (
@@ -55,11 +57,19 @@ func init() {
 func main() {
 	ctx := ctrl.SetupSignalHandler()
 
-	var configFile string
-	var metricsAddr string
-	var probeAddr string
-	var namespace string
-	var enableLeaderElection bool
+	var (
+		configFile                     string
+		metricsAddr                    string
+		probeAddr                      string
+		namespace                      string
+		enableLeaderElection           bool
+		maxConcurrentReconciles        int
+		workqueueDefaultSyncBackoffStr string
+		workqueueMaxSyncBackoffStr     string
+		workqueueQPS                   int
+		workqueueBurst                 int
+		cacheSyncTimeoutStr            string
+	)
 
 	flag.StringVar(&configFile, "config", "",
 		"The controller will load its initial configuration from this file. "+
@@ -68,9 +78,13 @@ func main() {
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":9090", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":9091", "The address the probe endpoint binds to.")
 	flag.StringVar(&namespace, "namespace", "cluster-registry", "The namespace where cluster-registry-sync-manager will run.")
-	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
-		"Enable leader election for controller manager. "+
-			"Enabling this will ensure there is only one active controller manager.")
+	flag.BoolVar(&enableLeaderElection, "leader-elect", false, "Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
+	flag.IntVar(&maxConcurrentReconciles, "max-concurrent-reconciles", 10, "The maximum number of concurrent reconciles which can be run.")
+	flag.StringVar(&workqueueDefaultSyncBackoffStr, "workqueue-default-sync-backoff", "5ms", "Base backoff period for failed reconciliation in controller's workqueue.")
+	flag.StringVar(&workqueueMaxSyncBackoffStr, "workqueue-max-sync-backoff", "1000s", "Maximum backoff period for failed reconciliation in controller's workqueue.")
+	flag.IntVar(&workqueueQPS, "workqueue-qps", 10, "QPS limit value for controller's workqueue.")
+	flag.IntVar(&workqueueBurst, "workqueue-burst", 100, "Burst limit value for controller's workqueue.")
+	flag.StringVar(&cacheSyncTimeoutStr, "cache-sync-timeout", "5m", "Time limit set to wait for syncing caches.")
 
 	opts := zap.Options{
 		// TODO: change this to false
@@ -144,6 +158,31 @@ func main() {
 	}
 
 	client := mgr.GetClient()
+
+	defaultSyncBackoff, err := time.ParseDuration(workqueueDefaultSyncBackoffStr)
+	if err != nil {
+		setupLog.Error(err, "workqueue-default-sync-backoff is not a valid duration")
+		os.Exit(1)
+	}
+
+	maxSyncBackoff, err := time.ParseDuration(workqueueMaxSyncBackoffStr)
+	if err != nil {
+		setupLog.Error(err, "workqueue-max-sync-backoff is not a valid duration")
+		os.Exit(1)
+	}
+
+	cacheSyncTimeout, err := time.ParseDuration(cacheSyncTimeoutStr)
+	if err != nil {
+		setupLog.Error(err, "cache-sync-timeout is not a valid duration")
+		os.Exit(1)
+	}
+
+	ctrlOpts := controller.Options{
+		MaxConcurrentReconciles: maxConcurrentReconciles,
+		RateLimiter:             manager.NewControllerRateLimiter(defaultSyncBackoff, maxSyncBackoff, workqueueQPS, workqueueBurst),
+		CacheSyncTimeout:        cacheSyncTimeout,
+	}
+
 	ctrlLog := ctrl.Log.WithName("controllers").WithName("SyncController")
 
 	rp := parser.New(client, ctrlLog)
@@ -162,7 +201,7 @@ func main() {
 		Queue:          q,
 		ResourceParser: rp,
 		Metrics:        m,
-	}).SetupWithManager(ctx, mgr); err != nil {
+	}).SetupWithManager(ctx, mgr, ctrlOpts); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "SyncController")
 		os.Exit(1)
 	}

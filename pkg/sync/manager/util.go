@@ -16,6 +16,10 @@ import (
 	"crypto/sha256"
 	"fmt"
 	jsoniter "github.com/json-iterator/go"
+	"golang.org/x/time/rate"
+	"k8s.io/client-go/util/workqueue"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"time"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -25,4 +29,18 @@ func hash(obj interface{}) string {
 	h := sha256.New()
 	h.Write([]byte(fmt.Sprintf("%v", b)))
 	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+func NewControllerRateLimiter(
+	exponentialFailureBaseDelay time.Duration,
+	exponentialFailureMaxDelay time.Duration,
+	overallBucketQPS int,
+	overallBucketBurst int) workqueue.TypedRateLimiter[reconcile.Request] {
+	return workqueue.NewTypedMaxOfRateLimiter[reconcile.Request](
+		workqueue.NewTypedItemExponentialFailureRateLimiter[reconcile.Request](
+			exponentialFailureBaseDelay,
+			exponentialFailureMaxDelay),
+		&workqueue.TypedBucketRateLimiter[reconcile.Request]{
+			Limiter: rate.NewLimiter(rate.Limit(overallBucketQPS), overallBucketBurst)},
+	)
 }
