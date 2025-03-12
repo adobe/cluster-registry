@@ -39,6 +39,8 @@ spec:
           spec:
             description: ClusterSyncSpec defines the desired state of ClusterSync
             properties:
+              clusterName:
+                type: string
               initialData:
                 type: string
               watchedResources:
@@ -109,6 +111,7 @@ spec:
                   type: object
                 type: array
             required:
+            - clusterName
             - watchedResources
             type: object
           status:

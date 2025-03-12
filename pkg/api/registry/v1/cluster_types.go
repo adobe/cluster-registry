@@ -23,115 +23,115 @@ type ClusterSpec struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MaxLength=64
 	// +kubebuilder:validation:MinLength=3
-	Name string `json:"name"`
+	Name string `json:"name" yaml:"name"`
 
 	// Cluster name, without dash
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MaxLength=64
 	// +kubebuilder:validation:MinLength=3
-	ShortName string `json:"shortName"`
+	ShortName string `json:"shortName" yaml:"shortName"`
 
 	// Information about K8s API endpoint and CA cert
 	// +kubebuilder:validation:Required
-	APIServer APIServer `json:"apiServer"`
+	APIServer APIServer `json:"apiServer" yaml:"apiServer"`
 
 	// Cluster internal region name
 	// +kubebuilder:validation:Required
-	Region string `json:"region"`
+	Region string `json:"region" yaml:"region"`
 
 	// The cloud provider
 	// +kubebuilder:validation:Required
-	CloudType string `json:"cloudType"`
+	CloudType string `json:"cloudType" yaml:"cloudType"`
 
 	// The cloud provider standard region
 	// +kubebuilder:validation:Required
-	CloudProviderRegion string `json:"cloudProviderRegion"`
+	CloudProviderRegion string `json:"cloudProviderRegion" yaml:"cloudProviderRegion"`
 
 	// Cluster environment
 	// +kubebuilder:validation:Required
-	Environment string `json:"environment"`
+	Environment string `json:"environment" yaml:"environment"`
 
 	// The BU that owns the cluster
 	// +kubebuilder:validation:Required
-	BusinessUnit string `json:"businessUnit"`
+	BusinessUnit string `json:"businessUnit" yaml:"businessUnit"`
 
 	// The BU responsible for paying for the cluster.
-	ChargebackBusinessUnit string `json:"chargebackBusinessUnit,omitempty"`
+	ChargebackBusinessUnit string `json:"chargebackBusinessUnit,omitempty" yaml:"chargebackBusinessUnit,omitempty"`
 
 	// Whether the cluster is charged back to the chargebackBusinessUnit
-	ChargedBack *bool `json:"chargedBack,omitempty"`
+	ChargedBack *bool `json:"chargedBack,omitempty" yaml:"chargedBack,omitempty"`
 
 	// The Org that is responsible for the cluster operations
 	// +kubebuilder:validation:Required
-	ManagingOrg string `json:"managingOrg"`
+	ManagingOrg string `json:"managingOrg" yaml:"managingOrg"`
 
 	// The Offering that the cluster is meant for
 	// +kubebuilder:validation:Required
-	Offering []Offering `json:"offering"`
+	Offering []Offering `json:"offering" yaml:"offering"`
 
 	// The cloud account associated with the cluster
 	// +kubebuilder:validation:Required
-	AccountID string `json:"accountId"`
+	AccountID string `json:"accountId" yaml:"accountID"`
 
 	// List of tiers with their associated information
 	// +kubebuilder:validation:Required
-	Tiers []Tier `json:"tiers"`
+	Tiers []Tier `json:"tiers" yaml:"tiers"`
 
 	// Virtual Private Networks information
 	// +kubebuilder:validation:Required
-	VirtualNetworks []VirtualNetwork `json:"virtualNetworks"`
+	VirtualNetworks []VirtualNetwork `json:"virtualNetworks" yaml:"virtualNetworks"`
 
 	// Timestamp when cluster was registered in Cluster Registry
 	// +kubebuilder:validation:Required
-	RegisteredAt string `json:"registeredAt"`
+	RegisteredAt string `json:"registeredAt" yaml:"registeredAt"`
 
 	// Cluster status
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Enum=Inactive;Active;Deprecated;Deleted
-	Status string `json:"status"`
+	Status string `json:"status" yaml:"status"`
 
 	// Cluster phase
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Enum=Building;Testing;Running;Upgrading
-	Phase string `json:"phase"`
+	Phase string `json:"phase" yaml:"phase"`
 
 	// Cluster maintenance group
 	// +kubebuilder:validation:Required
-	MaintenanceGroup string `json:"maintenanceGroup"`
+	MaintenanceGroup string `json:"maintenanceGroup" yaml:"maintenanceGroup"`
 
 	// The corresponding Argo instance of the cluster
 	// +kubebuilder:validation:Required
-	ArgoInstance string `json:"argoInstance"`
+	ArgoInstance string `json:"argoInstance" yaml:"argoInstance"`
 
 	// The type of the cluster
-	Type string `json:"type,omitempty"`
+	Type string `json:"type,omitempty" yaml:"type,omitempty"`
 
 	// Extra information, not necessary related to the cluster
-	Extra Extra `json:"extra,omitempty"`
+	Extra Extra `json:"extra,omitempty" yaml:"extra,omitempty"`
 
 	// Git teams and/or LDAP groups that are allowed to onboard and deploy on the cluster
-	AllowedOnboardingTeams []AllowedOnboardingTeam `json:"allowedOnboardingTeams,omitempty"`
+	AllowedOnboardingTeams []AllowedOnboardingTeam `json:"allowedOnboardingTeams,omitempty" yaml:"allowedOnboardingTeams,omitempty"`
 
 	// List of cluster capabilities
-	Capabilities []string `json:"capabilities,omitempty"`
+	Capabilities []string `json:"capabilities,omitempty" yaml:"capabilities,omitempty"`
 
 	// Information about Virtual Networks manual peered with the cluster
-	PeerVirtualNetworks []PeerVirtualNetwork `json:"peerVirtualNetworks,omitempty"`
+	PeerVirtualNetworks []PeerVirtualNetwork `json:"peerVirtualNetworks,omitempty" yaml:"peerVirtualNetworks,omitempty"`
 
 	// Timestamp when cluster information was updated
-	LastUpdated string `json:"lastUpdated"`
+	LastUpdated string `json:"lastUpdated" yaml:"lastUpdated"`
 
 	// Cluster tags that were applied
-	Tags map[string]string `json:"tags,omitempty"`
+	Tags map[string]string `json:"tags,omitempty" yaml:"tags,omitempty"`
 
 	// Capacity cluster information
-	Capacity Capacity `json:"capacity,omitempty"`
+	Capacity Capacity `json:"capacity,omitempty" yaml:"capacity,omitempty"`
 
 	// ServiceMetadata service specific metadata
-	ServiceMetadata ServiceMetadata `json:"services,omitempty"`
+	ServiceMetadata ServiceMetadata `json:"services,omitempty" yaml:"serviceMetadata,omitempty"`
 
 	// AvailabilityZones cluster availability zones
-	AvailabilityZones []AvailabilityZone `json:"availabilityZones,omitempty"`
+	AvailabilityZones []AvailabilityZone `json:"availabilityZones,omitempty" yaml:"availabilityZones,omitempty"`
 }
 
 // Offering the cluster is meant for
@@ -143,10 +143,10 @@ type APIServer struct {
 
 	// Information about K8s Api Endpoint
 	// +kubebuilder:validation:Required
-	Endpoint string `json:"endpoint"`
+	Endpoint string `json:"endpoint" yaml:"endpoint"`
 
 	// Information about K8s Api CA Cert
-	CertificateAuthorityData string `json:"certificateAuthorityData"`
+	CertificateAuthorityData string `json:"certificateAuthorityData" yaml:"certificateAuthorityData"`
 }
 
 // AllowedOnboardingTeam represents the Git teams and/or LDAP groups that are allowed to onboard
@@ -154,43 +154,43 @@ type AllowedOnboardingTeam struct {
 
 	// Name of the team
 	// +kubebuilder:validation:Required
-	Name string `json:"name"`
+	Name string `json:"name" yaml:"name"`
 
 	// List of git teams
-	GitTeams []string `json:"gitTeams,omitempty"`
+	GitTeams []string `json:"gitTeams,omitempty" yaml:"gitTeams,omitempty"`
 
 	// List of ldap groups
-	LdapGroups []string `json:"ldapGroups,omitempty"`
+	LdapGroups []string `json:"ldapGroups,omitempty" yaml:"ldapGroups,omitempty"`
 }
 
 // Extra information
 type Extra struct {
 	// Name of the domain
-	DomainName string `json:"domainName"`
+	DomainName string `json:"domainName" yaml:"domainName"`
 
 	// Load balancer endpoints
-	LbEndpoints map[string]string `json:"lbEndpoints"`
+	LbEndpoints map[string]string `json:"lbEndpoints" yaml:"lbEndpoints"`
 
 	// Logging endpoints
-	LoggingEndpoints []map[string]string `json:"loggingEndpoints,omitempty"`
+	LoggingEndpoints []map[string]string `json:"loggingEndpoints,omitempty" yaml:"loggingEndpoints,omitempty"`
 
 	// List of IAM Arns
-	EcrIamArns map[string][]string `json:"ecrIamArns,omitempty"`
+	EcrIamArns map[string][]string `json:"ecrIamArns,omitempty" yaml:"ecrIamArns,omitempty"`
 
 	// Egress ports allowed outside of the namespace
-	EgressPorts string `json:"egressPorts,omitempty"`
+	EgressPorts string `json:"egressPorts,omitempty" yaml:"egressPorts,omitempty"`
 
 	// NFS information
-	NFSInfo []map[string]string `json:"nfsInfo,omitempty"`
+	NFSInfo []map[string]string `json:"nfsInfo,omitempty" yaml:"nfsInfo,omitempty"`
 
 	// ExtendedRegion information
-	ExtendedRegion string `json:"extendedRegion,omitempty"`
+	ExtendedRegion string `json:"extendedRegion,omitempty" yaml:"extendedRegion,omitempty"`
 
 	// OIDC Issuer URL
-	OidcIssuer string `json:"oidcIssuer,omitempty"`
+	OidcIssuer string `json:"oidcIssuer,omitempty" yaml:"oidcIssuer,omitempty"`
 
 	// Namespace Profile Infrastructure Type
-	NamespaceProfileInfraType string `json:"namespaceProfileInfraType,omitempty"`
+	NamespaceProfileInfraType string `json:"namespaceProfileInfraType,omitempty" yaml:"namespaceProfileInfraType,omitempty"`
 }
 
 // Tier details
@@ -198,36 +198,36 @@ type Tier struct {
 
 	// Name of the tier
 	// +kubebuilder:validation:Required
-	Name string `json:"name"`
+	Name string `json:"name" yaml:"name"`
 
 	// Type of the instances
 	// +kubebuilder:validation:Required
-	InstanceType string `json:"instanceType"`
+	InstanceType string `json:"instanceType" yaml:"instanceType"`
 
 	// Container runtime
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Enum=docker;cri-o
-	ContainerRuntime string `json:"containerRuntime"`
+	ContainerRuntime string `json:"containerRuntime" yaml:"containerRuntime"`
 
 	// Min number of instances
 	// +kubebuilder:validation:Required
-	MinCapacity int `json:"minCapacity"`
+	MinCapacity int `json:"minCapacity" yaml:"minCapacity"`
 
 	// Max number of instances
 	// +kubebuilder:validation:Required
-	MaxCapacity int `json:"maxCapacity"`
+	MaxCapacity int `json:"maxCapacity" yaml:"maxCapacity"`
 
 	// Instance K8s labels
-	Labels map[string]string `json:"labels,omitempty"`
+	Labels map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
 
 	// Instance K8s taints
-	Taints []string `json:"taints,omitempty"`
+	Taints []string `json:"taints,omitempty" yaml:"taints,omitempty"`
 
 	// EnableKataSupport
-	EnableKataSupport bool `json:"enableKataSupport,omitempty"`
+	EnableKataSupport bool `json:"enableKataSupport,omitempty" yaml:"enableKataSupport,omitempty"`
 
 	// KernelParameters
-	KernelParameters map[string]string `json:"kernelParameters,omitempty"`
+	KernelParameters map[string]string `json:"kernelParameters,omitempty" yaml:"kernelParameters,omitempty"`
 }
 
 // VirtualNetwork information
@@ -235,34 +235,34 @@ type VirtualNetwork struct {
 
 	// Virtual private network Id
 	// +kubebuilder:validation:Required
-	ID string `json:"id"`
+	ID string `json:"id" yaml:"id"`
 
 	// CIDRs used in this VirtualNetwork
 	// +kubebuilder:validation:Required
-	Cidrs []string `json:"cidrs"`
+	Cidrs []string `json:"cidrs" yaml:"cidrs"`
 }
 
 // PeerVirtualNetwork -  peering information done at cluster onboarding
 type PeerVirtualNetwork struct {
 
 	// Remote Virtual Netowrk ID
-	ID string `json:"id,omitempty"`
+	ID string `json:"id,omitempty" yaml:"id,omitempty"`
 
 	// Remote Virtual Netowrk CIDRs
-	Cidrs []string `json:"cidrs,omitempty"`
+	Cidrs []string `json:"cidrs,omitempty" yaml:"cidrs,omitempty"`
 
 	// Cloud account of the owner
-	OwnerID string `json:"ownerID,omitempty"`
+	OwnerID string `json:"ownerID,omitempty" yaml:"ownerID,omitempty"`
 }
 
 // Capacity cluster information
 type Capacity struct {
-	LastUpdated         string `json:"lastUpdated"`
-	ClusterCapacity     int    `json:"clusterCapacity"`
-	ClusterProvisioning int    `json:"clusterProvisioning"`
-	MaxBQUPerRequest    int    `json:"maxBquPerRequest"`
-	ClusterMaxBQU       int    `json:"clusterMaxBqu"`
-	ClusterCurrentBQU   int    `json:"clusterCurrentBqu"`
+	LastUpdated         string `json:"lastUpdated" yaml:"lastUpdated"`
+	ClusterCapacity     int    `json:"clusterCapacity" yaml:"clusterCapacity"`
+	ClusterProvisioning int    `json:"clusterProvisioning" yaml:"clusterProvisioning"`
+	MaxBQUPerRequest    int    `json:"maxBquPerRequest" yaml:"maxBquPerRequest"`
+	ClusterMaxBQU       int    `json:"clusterMaxBqu" yaml:"clusterMaxBqu"`
+	ClusterCurrentBQU   int    `json:"clusterCurrentBqu" yaml:"clusterCurrentBqu"`
 }
 
 type ServiceMetadata map[string]ServiceMetadataItem
@@ -272,8 +272,8 @@ type ServiceMetadataItem map[string]ServiceMetadataMap
 type ServiceMetadataMap map[string]string
 
 type AvailabilityZone struct {
-	Name string `json:"name"`
-	ID   string `json:"id,omitempty"`
+	Name string `json:"name" yaml:"name"`
+	ID   string `json:"id,omitempty" yaml:"id,omitempty"`
 }
 
 // ClusterStatus defines the observed state of Cluster

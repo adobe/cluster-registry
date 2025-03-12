@@ -145,7 +145,7 @@ func main() {
 		Endpoint:          appConfig.SqsEndpoint,
 		QueueName:         appConfig.SqsQueueName,
 		BatchSize:         10,
-		VisibilityTimeout: 120,
+		VisibilityTimeout: 0,
 		WaitSeconds:       5,
 		RunInterval:       20,
 		RunOnce:           false,

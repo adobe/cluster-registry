@@ -66,7 +66,7 @@ func loadAppConfig(cmd *cobra.Command, args []string) {
 	var err error
 	appConfig, err = config.LoadSyncClientConfig()
 	if err != nil {
-		log.Error("Cannot load the cluster-registry-sync-client configuration:", err.Error())
+		log.Error("Cannot load the cluster-registry-sync-client configuration: ", err.Error())
 		os.Exit(1)
 	}
 
@@ -92,7 +92,13 @@ func run(cmd *cobra.Command, args []string) {
 		log.Panicf("Error while trying to create SQS client: %v", err.Error())
 	}
 
-	handler := event.NewPartialClusterUpdateHandler()
+	dynamicClient, err := client.GetDynamicClientSet()
+	if err != nil {
+		log.Error("Error while trying to create dynamic client: ", err.Error())
+		os.Exit(1)
+	}
+
+	handler := event.NewPartialClusterUpdateHandler(dynamicClient, namespace)
 	q.RegisterHandler(func(msg *awssqs.Message) {
 		log.Debugf("Received message: %s", *msg.MessageId)
 		e, err := sqs.NewEvent(msg)

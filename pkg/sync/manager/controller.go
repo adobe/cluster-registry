@@ -304,6 +304,10 @@ func (c *SyncController) enqueueData(instance *registryv1alpha1.ClusterSync) err
 					DataType:    aws.String("String"),
 					StringValue: aws.String(sqs.PartialClusterUpdateEvent),
 				},
+				"ClusterName": {
+					DataType:    aws.String("String"),
+					StringValue: aws.String(instance.Spec.ClusterName),
+				},
 			},
 			MessageBody: aws.String(string(obj)),
 		},

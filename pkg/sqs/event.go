@@ -63,3 +63,11 @@ type EventHandler interface {
 	Type() string
 	Handle(event *Event) error
 }
+
+// GetClusterName returns the cluster name from the message
+func (e *Event) GetClusterName() (string, error) {
+	if e.Message.MessageAttributes[MessageAttributeClusterName] == nil {
+		return "", errors.New("missing cluster name")
+	}
+	return *e.Message.MessageAttributes[MessageAttributeClusterName].StringValue, nil
+}

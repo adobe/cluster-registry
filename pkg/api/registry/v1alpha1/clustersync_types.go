@@ -35,6 +35,8 @@ type WatchedResource struct {
 // ClusterSyncSpec defines the desired state of ClusterSync
 type ClusterSyncSpec struct {
 	// +required
+	ClusterName string `json:"clusterName"`
+	// +required
 	// +kubebuilder:validation:Required
 	WatchedResources []WatchedResource `json:"watchedResources"`
 	// +optional
