@@ -14,6 +14,8 @@ package client
 
 import (
 	"encoding/json"
+	v1 "github.com/adobe/cluster-registry/pkg/api/registry/v1"
+	jsonpatch "github.com/evanphx/json-patch/v5"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -52,4 +54,28 @@ func ToUnstructured(obj interface{}) (*unstructured.Unstructured, error) {
 		return nil, err
 	}
 	return u, nil
+}
+
+func PartialClusterMergePatch(data []byte) ([]byte, error) {
+	original, err := json.Marshal(v1.Cluster{
+		Spec: v1.ClusterSpec{},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	clusterSpec := v1.ClusterSpec{}
+	err = json.Unmarshal(data, &clusterSpec)
+	if err != nil {
+		return nil, err
+	}
+
+	modified, err := json.Marshal(v1.Cluster{
+		Spec: clusterSpec,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return jsonpatch.CreateMergePatch(original, modified)
 }

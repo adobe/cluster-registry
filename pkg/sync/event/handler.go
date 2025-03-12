@@ -63,7 +63,12 @@ func (h *PartialClusterUpdateHandler) Handle(event *sqs.Event) error {
 	}
 
 	msg, _ := strconv.Unquote(*event.Message.Body)
-	data := []byte(msg)
+
+	data, err := client.PartialClusterMergePatch([]byte(msg))
+	if err != nil {
+		log.Error("Failed to create partial merge patch: ", err)
+		return err
+	}
 
 	clusterResource := v1.GroupVersion.WithResource("clusters")
 
@@ -76,7 +81,7 @@ func (h *PartialClusterUpdateHandler) Handle(event *sqs.Event) error {
 			log.Info("Cluster object not found, checking if it is a new cluster")
 
 			clusterSpec := v1.ClusterSpec{}
-			err = json.Unmarshal(data, &clusterSpec)
+			err = json.Unmarshal([]byte(msg), &clusterSpec)
 			if err != nil {
 				log.Error("Failed to unmarshal cluster spec from message")
 				return err
