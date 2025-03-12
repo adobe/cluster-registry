@@ -75,9 +75,11 @@ var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 	gexec.KillAndWait(5 * time.Second)
 
-	err := container.Terminate(ctx)
-	if err != nil {
-		Fail(fmt.Sprintf("Error while terminating the SQS container: %v", err))
+	if container != nil {
+		err := container.Terminate(ctx)
+		if err != nil {
+			Fail(fmt.Sprintf("Error while terminating the SQS container: %v", err))
+		}
 	}
 
 	for k := range sqsTestConfig {

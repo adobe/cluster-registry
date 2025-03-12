@@ -77,9 +77,11 @@ var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 	gexec.KillAndWait(5 * time.Second)
 
-	err := dbContainer.Terminate(ctx)
-	if err != nil {
-		log.Fatalf("Error while creating the database container: %v", err.Error())
+	if dbContainer != nil {
+		err := dbContainer.Terminate(ctx)
+		if err != nil {
+			log.Fatalf("Error while creating the database container: %v", err.Error())
+		}
 	}
 
 	for k := range dbTestConfig {

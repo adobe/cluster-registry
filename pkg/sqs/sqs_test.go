@@ -48,7 +48,7 @@ var _ = Describe("SQS suite", func() {
 			QueueName:         appConfig.SqsQueueName,
 			QueueURL:          fmt.Sprintf("%s/%s/%s", container.Endpoint, "1234567890", appConfig.SqsQueueName),
 			BatchSize:         1,
-			VisibilityTimeout: 120,
+			VisibilityTimeout: 0,
 			WaitSeconds:       10,
 			RunInterval:       5,
 			RunOnce:           true,
