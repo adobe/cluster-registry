@@ -13,16 +13,22 @@ governing permissions and limitations under the License.
 package main
 
 import (
-	"github.com/adobe/cluster-registry/pkg/sync/event"
-	"os"
-
+	"context"
+	"errors"
 	"github.com/adobe/cluster-registry/pkg/config"
 	"github.com/adobe/cluster-registry/pkg/sqs"
 	"github.com/adobe/cluster-registry/pkg/sync/client"
+	"github.com/adobe/cluster-registry/pkg/sync/event"
 	awssqs "github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"k8s.io/klog/v2"
+	"net"
+	"net/http"
+	"os"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 )
 
 var (
@@ -34,10 +40,10 @@ var (
 		Run:              run,
 	}
 
-	logLevel, logFormat string
-	appConfig           *config.AppConfig
-	namespace           string
-	cfgFile             string
+	logLevel, logFormat    string
+	appConfig              *config.AppConfig
+	namespace              string
+	healthProbeBindAddress string
 )
 
 func Execute() {
@@ -48,14 +54,10 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "The path to the yaml configuration file")
 	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", logrus.DebugLevel.String(), "The verbosity level of the logs, can be [panic|fatal|error|warn|info|debug|trace]")
 	rootCmd.PersistentFlags().StringVar(&logFormat, "log-format", "text", "The output format of the logs, can be [text|json]")
 	rootCmd.PersistentFlags().StringVar(&namespace, "namespace", "cluster-registry", "The namespace where cluster-registry-sync-client will run.")
-	err := rootCmd.MarkPersistentFlagRequired("config")
-	if err != nil {
-		log.Fatalln("No config flag configured")
-	}
+	rootCmd.PersistentFlags().StringVar(&healthProbeBindAddress, "health-probe-bind-address", ":8080", "The address the health probes will bind to.")
 }
 
 func loadAppConfig(cmd *cobra.Command, args []string) {
@@ -64,7 +66,7 @@ func loadAppConfig(cmd *cobra.Command, args []string) {
 	log.Info("Loading the configuration")
 
 	var err error
-	appConfig, err = config.LoadSyncClientConfig()
+	appConfig, err = config.LoadSQSConfig()
 	if err != nil {
 		log.Error("Cannot load the cluster-registry-sync-client configuration: ", err.Error())
 		os.Exit(1)
@@ -74,19 +76,19 @@ func loadAppConfig(cmd *cobra.Command, args []string) {
 }
 
 func run(cmd *cobra.Command, args []string) {
-	log.Info("Cluster Registry Sync Client is running")
+	ctx := signals.SetupSignalHandler()
 
 	q, err := sqs.NewSQS(sqs.Config{
 		AWSRegion:         appConfig.SqsAwsRegion,
 		Endpoint:          appConfig.SqsEndpoint,
 		QueueName:         appConfig.SqsQueueName,
-		BatchSize:         10,
-		VisibilityTimeout: 0,
-		WaitSeconds:       5,
-		RunInterval:       20,
+		BatchSize:         appConfig.SqsBatchSize,
+		VisibilityTimeout: appConfig.SqsVisibilityTimeout,
+		WaitSeconds:       appConfig.SqsWaitSeconds,
+		RunInterval:       appConfig.SqsRunInterval,
 		RunOnce:           false,
-		MaxHandlers:       10,
-		BusyTimeout:       30,
+		MaxHandlers:       appConfig.SqsMaxHandlers,
+		BusyTimeout:       appConfig.SqsBusyTimeout,
 	})
 	if err != nil {
 		log.Panicf("Error while trying to create SQS client: %v", err.Error())
@@ -121,9 +123,45 @@ func run(cmd *cobra.Command, args []string) {
 		}
 	})
 
-	log.Info("Starting the Cluster Registry Sync Client")
+	go serveHealthProbes(ctx.Done(), healthProbeBindAddress)
 
+	log.Info("Starting the Cluster Registry Sync Client")
 	q.Poll()
+}
+
+func serveHealthProbes(stop <-chan struct{}, healthProbeBindAddress string) {
+	healthzHandler := &healthz.Handler{Checks: map[string]healthz.Checker{
+		"healthz": healthz.Ping,
+	}}
+	readyzHandler := &healthz.Handler{Checks: map[string]healthz.Checker{
+		"readyz": healthz.Ping,
+	}}
+
+	mux := http.NewServeMux()
+	mux.Handle("/readyz", http.StripPrefix("/readyz", readyzHandler))
+	mux.Handle("/healthz", http.StripPrefix("/healthz", healthzHandler))
+
+	server := http.Server{
+		Handler: mux,
+	}
+
+	ln, err := net.Listen("tcp", healthProbeBindAddress)
+	if err != nil {
+		log.Errorf("error listening on %s: %v", healthProbeBindAddress, err)
+		return
+	}
+
+	log.Infof("Health probes listening on %s", healthProbeBindAddress)
+	go func() {
+		if err := server.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatal(err)
+		}
+	}()
+
+	<-stop
+	if err := server.Shutdown(context.Background()); err != nil {
+		klog.Fatal(err)
+	}
 }
 
 func main() {

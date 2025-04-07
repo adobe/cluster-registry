@@ -72,12 +72,12 @@ func main() {
 		Endpoint:          appConfig.SqsEndpoint,
 		QueueName:         appConfig.SqsQueueName,
 		BatchSize:         appConfig.SqsBatchSize,
-		VisibilityTimeout: 0,
+		VisibilityTimeout: appConfig.SqsVisibilityTimeout,
 		WaitSeconds:       appConfig.SqsWaitSeconds,
 		RunInterval:       appConfig.SqsRunInterval,
 		RunOnce:           false,
-		MaxHandlers:       10,
-		BusyTimeout:       30,
+		MaxHandlers:       appConfig.SqsMaxHandlers,
+		BusyTimeout:       appConfig.SqsBusyTimeout,
 	})
 
 	if err != nil {

@@ -55,6 +55,11 @@ ifeq ($(SYNC_MANAGER),false)
 else
 	SETUP_CMD += "1"
 endif
+ifeq ($(SYNC_CLIENT),false)
+	SETUP_CMD += "0"
+else
+	SETUP_CMD += "1"
+endif
 
 .PHONY: clean
 clean:
@@ -71,7 +76,7 @@ setup:
 ############
 
 .PHONY: build
-build: build-apiserver build-client build-sync-manager
+build: build-apiserver build-client build-sync-manager build-sync-client
 
 .PHONY: build-apiserver
 build-apiserver:
@@ -85,13 +90,17 @@ build-client:
 build-sync-manager:
 	$(GO_BUILD_RECIPE) -o cluster-registry-sync-manager cmd/sync/manager/manager.go
 
+.PHONY: build-sync-client
+build-sync-client:
+	$(GO_BUILD_RECIPE) -o cluster-registry-sync-client cmd/sync/client/client.go
+
 .PHONY: release
 release:
 	./hack/release.sh
 
 .PHONY: image
 image: GOOS := linux
-image: .hack-apiserver-image .hack-client-image .hack-sync-manager-image
+image: .hack-apiserver-image .hack-client-image .hack-sync-manager-image .hack-sync-client-image
 
 .hack-apiserver-image: cmd/apiserver/Dockerfile build-apiserver
 	docker build -t $(IMAGE_APISERVER):$(TAG) -f cmd/apiserver/Dockerfile .
@@ -103,6 +112,10 @@ image: .hack-apiserver-image .hack-client-image .hack-sync-manager-image
 
 .hack-sync-manager-image: cmd/sync/manager/Dockerfile build-sync-manager
 	docker build -t $(IMAGE_SYNC_MANAGER):$(TAG) -f cmd/sync/manager/Dockerfile .
+	touch $@
+
+.hack-sync-client-image: cmd/sync/client/Dockerfile build-sync-client
+	docker build -t $(IMAGE_SYNC_CLIENT):$(TAG) -f cmd/sync/client/Dockerfile .
 	touch $@
 
 .PHONY: update-go-deps

@@ -1,0 +1,52 @@
+nameOverride: cluster-registry-sync-client
+fullnameOverride: cluster-registry-sync-client
+
+replicaCount: 1
+
+imagePullSecrets: []
+image:
+  pullPolicy: IfNotPresent
+  registry: ghcr.io/adobe/cluster-registry-sync-client
+
+ports: []
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 400Mi
+  requests:
+    cpu: 100m
+    memory: 200Mi
+
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 8080
+  initialDelaySeconds: 15
+  periodSeconds: 20
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: 8080
+  initialDelaySeconds: 5
+  periodSeconds: 10
+terminationGracePeriodSeconds: 10
+
+clusterRegistrySyncClient:
+  health:
+    bindAddress: :8080
+
+rbac:
+  create: true
+
+serviceAccount:
+  create: true
+  name: cluster-registry-sync-client
+
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 50%
+
+podMonitor:
+  enabled: false
+  extraLabels: {}

@@ -133,7 +133,7 @@ func main() {
 	m := monitoring.NewMetrics()
 	m.Init(false)
 
-	appConfig, err := config.LoadClientConfig()
+	appConfig, err := config.LoadSQSConfig()
 
 	if err != nil {
 		setupLog.Error(err, "failed to load client configuration")
@@ -144,13 +144,13 @@ func main() {
 		AWSRegion:         appConfig.SqsAwsRegion,
 		Endpoint:          appConfig.SqsEndpoint,
 		QueueName:         appConfig.SqsQueueName,
-		BatchSize:         10,
-		VisibilityTimeout: 0,
-		WaitSeconds:       5,
-		RunInterval:       20,
+		BatchSize:         appConfig.SqsBatchSize,
+		VisibilityTimeout: appConfig.SqsVisibilityTimeout,
+		WaitSeconds:       appConfig.SqsWaitSeconds,
+		RunInterval:       appConfig.SqsRunInterval,
 		RunOnce:           false,
-		MaxHandlers:       10,
-		BusyTimeout:       30,
+		MaxHandlers:       appConfig.SqsMaxHandlers,
+		BusyTimeout:       appConfig.SqsBusyTimeout,
 	})
 	if err != nil {
 		setupLog.Error(err, "cannot create SQS client")

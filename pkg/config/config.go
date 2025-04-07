@@ -38,6 +38,9 @@ type AppConfig struct {
 	SqsBatchSize            int64
 	SqsWaitSeconds          int64
 	SqsRunInterval          int
+	SqsVisibilityTimeout    int64
+	SqsMaxHandlers          int
+	SqsBusyTimeout          int
 	K8sResourceId           string
 	ApiTenantId             string
 	ApiClientId             string
@@ -70,48 +73,6 @@ func LoadApiConfig() (*AppConfig, error) {
 	}
 
 	dbIndexName := getEnv("DB_INDEX_NAME", "")
-
-	sqsEndpoint := getEnv("SQS_ENDPOINT", "")
-	if sqsEndpoint == "" {
-		return nil, fmt.Errorf("environment variable SQS_ENDPOINT is not set")
-	}
-
-	sqsAwsRegion := getEnv("SQS_AWS_REGION", "")
-	if sqsAwsRegion == "" {
-		return nil, fmt.Errorf("environment variable SQS_AWS_REGION is not set")
-	}
-
-	sqsQueueName := getEnv("SQS_QUEUE_NAME", "")
-	if sqsQueueName == "" {
-		return nil, fmt.Errorf("environment variable SQS_QUEUE_NAME is not set")
-	}
-
-	sqsBatchSize := getEnv("SQS_BATCH_SIZE", "")
-	if sqsBatchSize == "" {
-		return nil, fmt.Errorf("environment variable SQS_BATCH_SIZE is not set")
-	}
-	sqsBatchSizeInt, err := strconv.ParseInt(sqsBatchSize, 10, 64)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing SQS_BATCH_SIZE: %v", err)
-	}
-
-	sqsWaitSeconds := getEnv("SQS_WAIT_SECONDS", "")
-	if sqsWaitSeconds == "" {
-		return nil, fmt.Errorf("environment variable SQS_WAIT_SECONDS is not set")
-	}
-	sqsWaitSecondsInt, err := strconv.ParseInt(sqsWaitSeconds, 10, 64)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing SQS_WAIT_SECONDS: %v", err)
-	}
-
-	sqsRunInterval := getEnv("SQS_RUN_INTERVAL", "")
-	if sqsRunInterval == "" {
-		return nil, fmt.Errorf("environment variable SQS_RUN_INTERVAL is not set")
-	}
-	sqsRunIntervalInt, err := strconv.Atoi(sqsRunInterval)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing SQS_RUN_INTERVAL: %v", err)
-	}
 
 	oidcClientId := getEnv("OIDC_CLIENT_ID", "")
 	if oidcClientId == "" {
@@ -181,18 +142,17 @@ func LoadApiConfig() (*AppConfig, error) {
 		return nil, fmt.Errorf("error parsing API_CACHE_REDIS_TLS_ENABLED: %v", err)
 	}
 
+	sqsConfig, err := LoadSQSConfig()
+	if err != nil {
+		return nil, fmt.Errorf("cannot load SQS configuration: %v", err)
+	}
+
 	return &AppConfig{
 		AwsRegion:               awsRegion,
 		DbEndpoint:              dbEndpoint,
 		DbAwsRegion:             dbAwsRegion,
 		DbTableName:             dbTableName,
 		DbIndexName:             dbIndexName,
-		SqsEndpoint:             sqsEndpoint,
-		SqsAwsRegion:            sqsAwsRegion,
-		SqsQueueName:            sqsQueueName,
-		SqsBatchSize:            sqsBatchSizeInt,
-		SqsWaitSeconds:          sqsWaitSecondsInt,
-		SqsRunInterval:          sqsRunIntervalInt,
 		OidcClientId:            oidcClientId,
 		OidcIssuerUrl:           oidcIssuerUrl,
 		ApiRateLimiterEnabled:   apiRateLimiterEnabled,
@@ -206,10 +166,16 @@ func LoadApiConfig() (*AppConfig, error) {
 		ApiCacheTTL:             apiCacheTTL,
 		ApiCacheRedisHost:       apiCacheRedisHost,
 		ApiCacheRedisTLSEnabled: apiCacheRedisTLSEnabledBool,
+		SqsEndpoint:             sqsConfig.SqsEndpoint,
+		SqsAwsRegion:            sqsConfig.SqsAwsRegion,
+		SqsQueueName:            sqsConfig.SqsQueueName,
+		SqsBatchSize:            sqsConfig.SqsBatchSize,
+		SqsWaitSeconds:          sqsConfig.SqsWaitSeconds,
+		SqsRunInterval:          sqsConfig.SqsRunInterval,
 	}, nil
 }
 
-func LoadClientConfig() (*AppConfig, error) {
+func LoadSQSConfig() (*AppConfig, error) {
 	sqsEndpoint := getEnv("SQS_ENDPOINT", "")
 	if sqsEndpoint == "" {
 		return nil, fmt.Errorf("environment variable SQS_ENDPOINT is not set")
@@ -225,33 +191,70 @@ func LoadClientConfig() (*AppConfig, error) {
 		return nil, fmt.Errorf("environment variable SQS_QUEUE_NAME is not set")
 	}
 
+	sqsBatchSize := getEnv("SQS_BATCH_SIZE", "10")
+	if sqsBatchSize == "" {
+		return nil, fmt.Errorf("environment variable SQS_BATCH_SIZE is not set")
+	}
+	sqsBatchSizeInt, err := strconv.ParseInt(sqsBatchSize, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing SQS_BATCH_SIZE: %v", err)
+	}
+
+	sqsWaitSeconds := getEnv("SQS_WAIT_SECONDS", "5")
+	if sqsWaitSeconds == "" {
+		return nil, fmt.Errorf("environment variable SQS_WAIT_SECONDS is not set")
+	}
+	sqsWaitSecondsInt, err := strconv.ParseInt(sqsWaitSeconds, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing SQS_WAIT_SECONDS: %v", err)
+	}
+
+	sqsRunInterval := getEnv("SQS_RUN_INTERVAL", "20")
+	if sqsRunInterval == "" {
+		return nil, fmt.Errorf("environment variable SQS_RUN_INTERVAL is not set")
+	}
+	sqsRunIntervalInt, err := strconv.Atoi(sqsRunInterval)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing SQS_RUN_INTERVAL: %v", err)
+	}
+
+	sqsVisibilityTimeout := getEnv("SQS_VISIBILITY_TIMEOUT", "0")
+	if sqsVisibilityTimeout == "" {
+		return nil, fmt.Errorf("environment variable SQS_VISIBILITY_TIMEOUT is not set")
+	}
+	sqsVisibilityTimeoutInt, err := strconv.ParseInt(sqsVisibilityTimeout, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing SQS_VISIBILITY_TIMEOUT: %v", err)
+	}
+
+	sqsMaxHandlers := getEnv("SQS_MAX_HANDLERS", "10")
+	if sqsMaxHandlers == "" {
+		return nil, fmt.Errorf("environment variable SQS_MAX_HANDLERS is not set")
+	}
+	sqsMaxHandlersInt, err := strconv.Atoi(sqsMaxHandlers)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing SQS_MAX_HANDLERS: %v", err)
+	}
+
+	sqsBusyTimeout := getEnv("SQS_BUSY_TIMEOUT", "30")
+	if sqsBusyTimeout == "" {
+		return nil, fmt.Errorf("environment variable SQS_BUSY_TIMEOUT is not set")
+	}
+	sqsBusyTimeoutInt, err := strconv.Atoi(sqsBusyTimeout)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing SQS_BUSY_TIMEOUT: %v", err)
+	}
+
 	return &AppConfig{
-		SqsEndpoint:  sqsEndpoint,
-		SqsAwsRegion: sqsAwsRegion,
-		SqsQueueName: sqsQueueName,
-	}, nil
-}
-
-func LoadSyncClientConfig() (*AppConfig, error) {
-	sqsEndpoint := getEnv("SQS_ENDPOINT", "")
-	if sqsEndpoint == "" {
-		return nil, fmt.Errorf("environment variable SQS_ENDPOINT is not set")
-	}
-
-	sqsAwsRegion := getEnv("SQS_AWS_REGION", "")
-	if sqsAwsRegion == "" {
-		return nil, fmt.Errorf("environment variable SQS_AWS_REGION is not set")
-	}
-
-	sqsQueueName := getEnv("SQS_QUEUE_NAME", "")
-	if sqsQueueName == "" {
-		return nil, fmt.Errorf("environment variable SQS_QUEUE_NAME is not set")
-	}
-
-	return &AppConfig{
-		SqsEndpoint:  sqsEndpoint,
-		SqsAwsRegion: sqsAwsRegion,
-		SqsQueueName: sqsQueueName,
+		SqsEndpoint:          sqsEndpoint,
+		SqsAwsRegion:         sqsAwsRegion,
+		SqsQueueName:         sqsQueueName,
+		SqsBatchSize:         sqsBatchSizeInt,
+		SqsWaitSeconds:       sqsWaitSecondsInt,
+		SqsRunInterval:       sqsRunIntervalInt,
+		SqsVisibilityTimeout: sqsVisibilityTimeoutInt,
+		SqsMaxHandlers:       sqsMaxHandlersInt,
+		SqsBusyTimeout:       sqsBusyTimeoutInt,
 	}, nil
 }
 
