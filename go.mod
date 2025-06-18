@@ -13,7 +13,7 @@ require (
 	github.com/eko/gocache/store/redis/v4 v4.2.2
 	github.com/evanphx/json-patch/v5 v5.9.0
 	github.com/go-jose/go-jose/v3 v3.0.3
-	github.com/go-logr/logr v1.4.2
+	github.com/go-logr/logr v1.4.3
 	github.com/go-redis/redismock/v9 v9.2.0
 	github.com/google/uuid v1.6.0
 	github.com/gusaul/go-dynamock v0.0.0-20210107061312-3e989056e1e6
