@@ -1,6 +1,6 @@
 # cluster-registry-client
 
-![Version: 0.3.5](https://img.shields.io/badge/Version-0.3.5-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: v1.6.5](https://img.shields.io/badge/AppVersion-v1.6.5-informational?style=flat-square)
+![Version: 0.3.6](https://img.shields.io/badge/Version-0.3.6-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: v1.6.5](https://img.shields.io/badge/AppVersion-v1.6.5-informational?style=flat-square)
 
 Cluster Registry is a Rest API representing the source of record for all Kubernetes clusters in the infrastructure fleet. All clusters are automatically registered, and the information is accurately reflected in the Cluster Registry using a client-server architecture.
 
@@ -25,6 +25,7 @@ Cluster Registry is a Rest API representing the source of record for all Kuberne
 | clusterRegistryClient.leaderElection.resourceNamespace | string | `"cluster-registry"` |  |
 | clusterRegistryClient.metrics.bindAddress | string | `"0.0.0.0:9090"` |  |
 | clusterRegistryClient.webhook.port | int | `9443` |  |
+| deploymentAnnotations | object | `{}` |  |
 | fullnameOverride | string | `"cluster-registry-client"` |  |
 | image.pullPolicy | string | `"IfNotPresent"` |  |
 | image.registry | string | `"ghcr.io/adobe/cluster-registry-client"` |  |
