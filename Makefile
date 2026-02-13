@@ -134,7 +134,7 @@ release-slt:
 
 .PHONY: format-prereq
 format-prereq:
-	@[ -f $(GOSEC) ] || GOBIN=$(shell pwd)/bin go get "github.com/securego/gosec/v2/cmd/gosec";
+	@[ -f $(GOSEC) ] || GOBIN=$(shell pwd)/bin go install github.com/securego/gosec/v2/cmd/gosec@$(GOSEC_VERSION);
 
 .PHONY: format
 format: format-prereq go-fmt go-vet go-lint go-sec
@@ -165,12 +165,13 @@ golangci-lint:
 	@[ -f $(GOLANGCI_LINT) ] || GOBIN=$(shell pwd)/bin go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION);
 
 GOSEC = $(shell pwd)/bin/gosec
+GOSEC_VERSION = "v2.21.4"
 .PHONY: go-sec
 go-sec:
-	@[ -f $(GOSEC) ] || GOBIN=$(shell pwd)/bin go install "github.com/securego/gosec/v2/cmd/gosec";
+	@[ -f $(GOSEC) ] || GOBIN=$(shell pwd)/bin go install github.com/securego/gosec/v2/cmd/gosec@$(GOSEC_VERSION);
 	@echo 'Checking source code for security problems...'
 	$(GOSEC)  ./pkg/...
-	@echo 'No security problems found in go codebase!'	
+	@echo 'No security problems found in go codebase!'
 
 .PHONY: go-vet
 go-vet:
