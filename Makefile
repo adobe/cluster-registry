@@ -134,7 +134,7 @@ release-slt:
 
 .PHONY: format-prereq
 format-prereq:
-	@[ -f $(GOSEC) ] || GOBIN=$(shell pwd)/bin go get "github.com/securego/gosec/v2/cmd/gosec";
+	@[ -f $(GOSEC) ] || GOBIN=$(shell pwd)/bin go install github.com/securego/gosec/v2/cmd/gosec@$(GOSEC_VERSION);
 
 .PHONY: format
 format: format-prereq go-fmt go-vet go-lint go-sec
@@ -165,12 +165,13 @@ golangci-lint:
 	@[ -f $(GOLANGCI_LINT) ] || GOBIN=$(shell pwd)/bin go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION);
 
 GOSEC = $(shell pwd)/bin/gosec
+GOSEC_VERSION = "v2.21.4"
 .PHONY: go-sec
 go-sec:
-	@[ -f $(GOSEC) ] || GOBIN=$(shell pwd)/bin go install "github.com/securego/gosec/v2/cmd/gosec";
+	@[ -f $(GOSEC) ] || GOBIN=$(shell pwd)/bin go install github.com/securego/gosec/v2/cmd/gosec@$(GOSEC_VERSION);
 	@echo 'Checking source code for security problems...'
 	$(GOSEC)  ./pkg/...
-	@echo 'No security problems found in go codebase!'	
+	@echo 'No security problems found in go codebase!'
 
 .PHONY: go-vet
 go-vet:
@@ -183,17 +184,17 @@ go-vet:
 # Testing #
 ###########
 
-KUBEBUILDER_ASSETS=$(shell pwd)/kubebuilder
-K8S_VERSION=1.25.0
+ENVTEST = $(shell pwd)/bin/setup-envtest
+ENVTEST_VERSION ?= $(shell go list -m -f "{{ .Version }}" sigs.k8s.io/controller-runtime | awk -F'[v.]' '{printf "release-%d.%d", $$2, $$3}')
+K8S_VERSION=1.31.0
+
+.PHONY: envtest
+envtest: ## Download setup-envtest locally if necessary.
+	@[ -f $(ENVTEST) ] || GOBIN=$(shell pwd)/bin go install sigs.k8s.io/controller-runtime/tools/setup-envtest@$(ENVTEST_VERSION)
 
 .PHONY: test
-test:
-	@[ -d $(KUBEBUILDER_ASSETS) ] || {\
-		mkdir -p $(KUBEBUILDER_ASSETS);\
-		curl -sSLo envtest-bins.tar.gz "https://go.kubebuilder.io/test-tools/$(K8S_VERSION)/$(GOOS)/$(GOARCH)";\
-		tar -C $(KUBEBUILDER_ASSETS) --strip-components=1 -zvxf envtest-bins.tar.gz;\
-	}
-	KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS)/bin go test -race $(TEST_RUN_ARGS) -short $(PKGS) -count=1 -cover -v
+test: envtest
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(K8S_VERSION) --bin-dir $(shell pwd)/bin -p path)" go test -race $(TEST_RUN_ARGS) -short $(PKGS) -count=1 -cover -v
 
 .PHONY: test-e2e
 test-e2e:

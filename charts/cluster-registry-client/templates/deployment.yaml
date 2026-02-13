@@ -3,6 +3,10 @@ kind: Deployment
 metadata:
   labels:
     {{- include "cluster-registry-client.labels" . | nindent 4 }}
+  {{- with .Values.deploymentAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   name: {{ include "cluster-registry-client.fullname" . }}
   namespace: {{ .Release.Namespace }}
 spec:
