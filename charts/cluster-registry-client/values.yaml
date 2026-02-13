@@ -8,6 +8,8 @@ image:
   pullPolicy: IfNotPresent
   registry: ghcr.io/adobe/cluster-registry-client
 
+deploymentAnnotations: {}
+
 ports:
   - name: metrics
     containerPort: 9090
