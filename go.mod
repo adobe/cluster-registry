@@ -1,8 +1,6 @@
 module github.com/adobe/cluster-registry
 
-go 1.23.0
-
-toolchain go1.23.4
+go 1.25
 
 require (
 	dario.cat/mergo v1.0.1
@@ -38,7 +36,7 @@ require (
 	k8s.io/apimachinery v0.32.1
 	k8s.io/client-go v0.32.1
 	k8s.io/component-base v0.32.1
-	k8s.io/utils v0.0.0-20241210054802-24370beab758
+	k8s.io/utils v0.0.0-20260707023825-cf1189d6abe3
 	sigs.k8s.io/controller-runtime v0.19.4
 	sigs.k8s.io/yaml v1.4.0
 )
