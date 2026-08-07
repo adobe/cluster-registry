@@ -16,7 +16,7 @@ jobs:
       - name: Run license check
         run: make check-license
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version: '${{ env.golang-version }}'
       - name: Run code format check
